@@ -1,19 +1,19 @@
-local f = require('nvim-multiplexer').set_key_map
+local mx = require('nvim-multiplexer')
+local f = mx.set_key_map
 
 f('t', '<c-s>', '<C-\\><C-n>', {})
 f('n', 'c', '', {
     callback = function()
-        require('nvim-multiplexer').open_normal()
-        vim.api.nvim_command('startinsert')
+        mx.open()
     end
 })
 
 f('n', 'p', '', {
-    callback = require('nvim-multiplexer').enter_pane_mode
+    callback = mx.enter_pane_mode
 })
 
 f('p', '<cr>', '', {
-    callback = require('nvim-multiplexer').exit_pane_mode
+    callback = mx.exit_pane_mode
 })
 
 f('p', 'l', '', {
@@ -66,4 +66,7 @@ disable_vim_cmd("qa")
 disable_vim_cmd("qal")
 disable_vim_cmd("qall")
 
-require('nvim-multiplexer').open_normal()
+-- vim.api.nvim_command('terminal')
+mx.open()
+vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
+vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME

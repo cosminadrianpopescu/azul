@@ -4,19 +4,22 @@ local map = vim.api.nvim_set_keymap
 local terminals = {}
 local shell = '/bin/bash'
 local mode = 'n'
+local floats_visible = false
 
 local hiding = false
 local term_close_enabled = true
 
+local find = function(callback, table)
+    local result = vim.tbl_filter(callback, table)
+    if #result == 0 then
+        return nil
+    end
+
+    return result[1]
+end
+
 local is_float = function(t)
-    if t.win_id == nil and t.win_config == nil then
-        return false
-    end
-    if t.win_id ~= nil then
-        local info = vim.api.nvim_win_get_config(t.win_id)
-        return info ~= nil and info['zindex'] ~= nil
-    end
-    return t.win_config['zindex'] ~= nil
+    return t.win_config and t.win_config['zindex'] ~= nil
 end
 
 local remove_term_buf = function(buf)
@@ -28,136 +31,149 @@ local remove_term_buf = function(buf)
     end
 end
 
+local tmp = function(ev)
+    print("EV IS " .. vim.inspect(ev))
+    print("WIN IS " .. vim.fn.winnr())
+    print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
+    print("TITLE IS ALREADY" .. vim.b.term_title)
+    print("JOB ID IS " .. vim.b.terminal_job_id)
+end
+
+local update_current = function(buf)
+    for _, term in ipairs(terminals) do
+        term.is_current = false
+    end
+
+    local t = find(function(t) return t.buf == buf end, terminals)
+    if t == nil then
+        return nil
+    end
+    t.is_current = true
+    t.title = vim.b.term_title
+    t.win_id = vim.fn.win_getid(vim.fn.winnr())
+    t.win_config = vim.api.nvim_win_get_config(t.win_id)
+    return t
+end
+
+local hide_floats = function()
+    local floatings = vim.tbl_filter(function(t) return is_float(t) and t.win_id ~= nil end, terminals)
+    print("FOUND " .. vim.inspect(floatings))
+
+    for _, float in ipairs(floatings) do
+        vim.api.nvim_win_close(float.win_id, true)
+        float.win_id = nil
+    end
+end
+
+local OnEnter = function(ev)
+    local crt = update_current(ev.buf)
+    if crt == nil then
+        return
+    end
+
+    floats_visible = is_float(crt)
+    print("FLOAT VISIBLE " .. vim.inspect(floats_visible))
+    tmp(ev)
+
+    for _, t in ipairs(terminals) do
+        vim.api.nvim_buf_set_option(t.buf, 'buflisted', is_float(t) == floats_visible)
+    end
+
+    if is_float(crt) == false then
+        hide_floats()
+    end
+end
+
+local open = function(start_edit)
+    vim.api.nvim_command('terminal')
+    if type(start_edit) == 'boolean' and start_edit == false then
+        return
+    end
+    vim.api.nvim_command('startinsert')
+end
+
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
-        print("EV IS " .. vim.inspect(ev))
-        print("WIN IS " .. vim.fn.winnr())
-        print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
+        table.insert(terminals, {
+            is_current = false,
+            buf = ev.buf,
+            win_id = vim.fn.win_getid(vim.fn.winnr()),
+            title = vim.b.term_title,
+        })
+        OnEnter(ev)
     end
 })
 
 cmd('TermClose', {
-    pattern = "term://*", callback = function(ev)
-        print("EV IS " .. vim.inspect(ev))
-        print("WIN IS " .. vim.fn.winnr())
-        print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
-        if term_close_enabled ~= true then
-            return
-        end
+    pattern = "*", callback = function(ev)
         remove_term_buf(ev.buf)
     end
 })
 
-local find = function(callback, table)
-    local result = vim.tbl_filter(callback, table)
-    if #result == 0 then
-        return nil
-    end
+cmd('TermEnter', {
+    pattern = "*", callback = OnEnter
+})
 
-    return result[1]
-end
-
-local hide_floats = function()
-    if hiding then
-        return
-    end
-    local floatings = vim.tbl_filter(function(t) return is_float(t) and t.win_id ~= nil end, terminals)
-    hiding = true
-
-    for _, float in ipairs(floatings) do
-        float.win_config = vim.api.nvim_win_get_config(float.win_id)
-        vim.api.nvim_buf_set_option(float.buf, 'buflisted', false)
-        vim.api.nvim_win_close(float.win_id, true)
-        float.win_id = nil
-    end
-
-    hiding = false
-end
-
-cmd('WinClosed', {
+cmd({'WinEnter'}, {
     pattern = "term://*", callback = function(ev)
-        print("BEGIN WINCLOSED" .. vim.inspect(ev))
-        term_close_enabled = false
-        local id = vim.fn.win_getid(vim.fn.winnr())
-        local to_close = vim.tbl_filter(function(t) return t.win_id == id end, terminals)
-        if #to_close == 0 then
-            print("END WINCLOSED PREM")
-            term_close_enabled = true
-            return
-        end
-        for _, t in ipairs(to_close) do
-            remove_term_buf(t.buf)
-            vim.api.nvim_command('bdelete! ' .. t.buf)
-        end
-        term_close_enabled = true
-        print("END WINCLOSED")
+        vim.fn.timer_start(1, function()
+            ev.buf = vim.fn.bufnr()
+            if vim.b.terminal_job_id == nil then
+                open(false)
+            end
+            OnEnter(ev)
+        end)
     end
 })
 
-cmd('BufEnter', {
+cmd({'WinNew'}, {
     pattern = "term://*", callback = function(ev)
-        print("ENTER BUF" .. vim.inspect(ev))
-        for _, t in ipairs(terminals) do
-            t.is_current = false
-        end
-        local t = find(function(t) return t.buf == ev.buf end, terminals)
-        print("FOUND T " .. vim.inspect(t))
-        if t == nil then
-            return
-        end
-        t.is_current = true
-        -- t.win_id = vim.fn.win_getid(vim.fn.winnr())
-        if is_float(t) == false then
-            hide_floats()
-        end
+        vim.fn.timer_start(1, function()
+            ev.buf = vim.fn.bufnr()
+            open(true)
+            OnEnter(ev)
+        end)
     end
 })
 
-local open = function(title, buf)
-    vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
-    vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
-    local channel = vim.fn.termopen(shell)
-    local win = vim.fn.winnr()
-    if title then
-        vim.api.nvim_command('file ' .. title)
-    end
-    for _, term in ipairs(terminals) do
-        term.is_current = false
-    end
-    table.insert(terminals, {
-        is_current = true,
-        buf = buf,
-        title = title,
-        win_id = vim.fn.win_getid(win),
-        channel = channel,
-    })
-end
+-- cmd('TermLeave', {
+--     pattern = "*", callback = tmp
+-- })
+
+-- cmd('WinClosed', {
+--     pattern = "term://*", callback = function(ev)
+--         print("BEGIN WINCLOSED" .. vim.inspect(ev))
+--         term_close_enabled = false
+--         local id = vim.fn.win_getid(vim.fn.winnr())
+--         local to_close = vim.tbl_filter(function(t) return t.win_id == id end, terminals)
+--         if #to_close == 0 then
+--             print("END WINCLOSED PREM")
+--             term_close_enabled = true
+--             return
+--         end
+--         for _, t in ipairs(to_close) do
+--             remove_term_buf(t.buf)
+--             vim.api.nvim_command('bdelete! ' .. t.buf)
+--         end
+--         term_close_enabled = true
+--         print("END WINCLOSED")
+--     end
+-- })
 
 local show_floats = function()
-    local floatings = vim.tbl_filter(function(t) return t['win_config'] ~= nil end, terminals)
+    local floatings = vim.tbl_filter(function(t) return t['win_config'] ~= nil and t.win_config['zindex'] ~= nil end, terminals)
     for _, t in ipairs(floatings) do
-        t.win_id = vim.api.nvim_open_win(t.buf, true, t.win_config)
-        t.win_config = nil
-        vim.api.nvim_buf_set_option(t.buf, 'buflisted', true)
+        vim.api.nvim_open_win(t.buf, true, t.win_config)
     end
 end
 
 local open_float = function(title, opts)
-    show_floats()
+    -- show_floats()
     local buf = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_open_win(buf, true, opts or {
         width = 80, height = 24, row = 30, col = 30, focusable = true, zindex = 1, border = 'rounded', title = title or vim.b.term_title or title, relative = 'editor', style = 'minimal'
     })
-    open(title, buf)
-end
-
-local open_normal = function(title)
-    local buf = vim.fn.buffer_number()
-    if #terminals ~= 0 then
-        vim.api.nvim_command('enew')
-        buf = vim.fn.buffer_number()
-    end
-    open(title, buf)
+    -- open(false)
 end
 
 local set_key_map = function(m, ls, rs, options)
@@ -201,11 +217,11 @@ end
 
 return {
     open_float = open_float,
-    open_normal = open_normal,
     show_terminals = show_terminals,
     set_key_map = set_key_map,
     enter_pane_mode = enter_pane_mode,
     exit_pane_mode = exit_pane_mode,
     hide_floats = hide_floats,
     show_floats = show_floats,
+    open = open,
 }
