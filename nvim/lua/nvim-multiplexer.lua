@@ -5,6 +5,8 @@ local terminals = {}
 local shell = '/bin/bash'
 local mode = 'n'
 local floats_visible = false
+local latest_float = nil
+local crt_highlight = 'FloatBorder:ErrorMsg';
 
 local hiding = false
 local term_close_enabled = true
@@ -19,15 +21,15 @@ local find = function(callback, table)
 end
 
 local is_float = function(t)
-    return t.win_config and t.win_config['zindex'] ~= nil
+    return t and t.win_config and t.win_config['zindex'] ~= nil
 end
 
 local remove_term_buf = function(buf)
     terminals = vim.tbl_filter(function(t) return t.buf ~= buf end, terminals)
     if #terminals == 0 or #vim.tbl_filter(function(t) return is_float(t) == false end, terminals) == 0 then
-        print("WOULD QUIT")
+        -- print("WOULD QUIT")
         -- vim.api.nvim_command('cunabbrev quit')
-        -- vim.api.nvim_command('quit!')
+        vim.api.nvim_command('quit!')
     end
 end
 
@@ -39,25 +41,22 @@ local tmp = function(ev)
     print("JOB ID IS " .. vim.b.terminal_job_id)
 end
 
-local update_current = function(buf)
-    for _, term in ipairs(terminals) do
-        term.is_current = false
-    end
-
+local refresh_buf = function(buf)
     local t = find(function(t) return t.buf == buf end, terminals)
     if t == nil then
         return nil
     end
-    t.is_current = true
     t.title = vim.b.term_title
     t.win_id = vim.fn.win_getid(vim.fn.winnr())
     t.win_config = vim.api.nvim_win_get_config(t.win_id)
+    if t.winhl ~= nil then
+        vim.api.nvim_win_set_option(t.win_id, 'winhl', t.winhl)
+    end
     return t
 end
 
 local hide_floats = function()
     local floatings = vim.tbl_filter(function(t) return is_float(t) and t.win_id ~= nil end, terminals)
-    print("FOUND " .. vim.inspect(floatings))
 
     for _, float in ipairs(floatings) do
         vim.api.nvim_win_close(float.win_id, true)
@@ -66,22 +65,25 @@ local hide_floats = function()
 end
 
 local OnEnter = function(ev)
-    local crt = update_current(ev.buf)
+    local crt = refresh_buf(ev.buf)
+    local old_crt = find(function(t) return t.is_current end, terminals)
     if crt == nil then
-        return
-    end
-
-    floats_visible = is_float(crt)
-    print("FLOAT VISIBLE " .. vim.inspect(floats_visible))
-    tmp(ev)
-
-    for _, t in ipairs(terminals) do
-        vim.api.nvim_buf_set_option(t.buf, 'buflisted', is_float(t) == floats_visible)
+        return nil
     end
 
     if is_float(crt) == false then
+        if is_float(old_crt) then
+            latest_float = old_crt
+        end
         hide_floats()
     end
+
+    for _, t in ipairs(terminals) do
+        vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.buf == ev.buf)
+        t.is_current = t.buf == ev.buf
+    end
+
+    return crt
 end
 
 local open = function(start_edit)
@@ -92,12 +94,22 @@ local open = function(start_edit)
     vim.api.nvim_command('startinsert')
 end
 
+local OnTermClose = function(ev)
+    local t = find(function(t) return t.buf == ev.buf end, terminals)
+    remove_term_buf(ev.buf)
+    if t ~= nil then
+        vim.api.nvim_win_close(t.win_id, true)
+    end
+    vim.api.nvim_buf_delete(ev.buf, {force = true})
+end
+
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
         table.insert(terminals, {
             is_current = false,
             buf = ev.buf,
             win_id = vim.fn.win_getid(vim.fn.winnr()),
+            term_id = vim.b.terminal_job_id,
             title = vim.b.term_title,
         })
         OnEnter(ev)
@@ -105,13 +117,18 @@ cmd('TermOpen',{
 })
 
 cmd('TermClose', {
-    pattern = "*", callback = function(ev)
-        remove_term_buf(ev.buf)
-    end
+    pattern = "*", callback = OnTermClose
 })
 
 cmd('TermEnter', {
-    pattern = "*", callback = OnEnter
+    pattern = "*", callback = function(ev)
+        local t = OnEnter(ev)
+        if t ~= nil then
+            t.winhl = vim.api.nvim_win_get_option(t.win_id, 'winhl')
+            print("SET " .. vim.api.nvim_win_get_option(t.win_id, 'winhl') .. " for " .. t.win_id)
+            vim.api.nvim_win_set_option(t.win_id, 'winhl', crt_highlight)
+        end
+    end
 })
 
 cmd({'WinEnter'}, {
@@ -135,6 +152,14 @@ cmd({'WinNew'}, {
         end)
     end
 })
+
+-- cmd({'WinClosed'}, {
+--     pattern = "*", callback = function(ev)
+--         tmp(ev)
+--         vim.api.nvim_buf_delete(ev.buf, {force = true})
+--         remove_term_buf(ev.buf)
+--     end
+-- })
 
 -- cmd('TermLeave', {
 --     pattern = "*", callback = tmp
@@ -161,10 +186,17 @@ cmd({'WinNew'}, {
 -- })
 
 local show_floats = function()
-    local floatings = vim.tbl_filter(function(t) return t['win_config'] ~= nil and t.win_config['zindex'] ~= nil end, terminals)
+    local floatings = vim.tbl_filter(function(t) return is_float(t) and t ~= latest_float end, terminals)
     for _, t in ipairs(floatings) do
         vim.api.nvim_open_win(t.buf, true, t.win_config)
+        refresh_buf(t.buf)
     end
+
+    if latest_float ~= nil then
+        vim.api.nvim_open_win(latest_float.buf, true, latest_float.win_config)
+    end
+
+    latest_float = nil
 end
 
 local open_float = function(title, opts)

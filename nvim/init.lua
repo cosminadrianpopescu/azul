@@ -4,7 +4,26 @@ local f = mx.set_key_map
 f('t', '<c-s>', '<C-\\><C-n>', {})
 f('n', 'c', '', {
     callback = function()
-        mx.open()
+        vim.api.nvim_command('tabnew')
+    end
+})
+
+local tab_shortcut = function(n)
+    f('n', n .. '', '', {
+        callback = function()
+            vim.api.nvim_command('tabn ' .. n)
+            vim.api.nvim_command('startinsert')
+        end
+    })
+end
+
+for i = 1,9,1 do
+    tab_shortcut(i)
+end
+
+f('n', 'w', '', {
+    callback = function()
+        mx.show_floats()
     end
 })
 
@@ -37,7 +56,7 @@ vim.o.relativenumber = false
 vim.o.backupdir = "/tmp"
 vim.o.backup = false
 vim.o.belloff = "all"
-vim.o.laststatus = 2
+vim.o.laststatus = 3
 vim.o.autoread = true
 vim.o.bufhidden = "hide"
 vim.o.hidden = true
@@ -55,16 +74,16 @@ vim.o.termguicolors = true
 vim.g.TerminusInsertCursorShape = 0
 -- vim.o.guicursor = 'n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50,a:blinkwait700-blinkoff400-blinkon250-Cursor/lCursor,sm:block-blinkwait175-blinkoff150-blinkon17'
 vim.api.nvim_command('colorscheme ' .. (os.getenv('VIM_COLORS') or 'tokyonight-night'))
-disable_vim_cmd("q")
-disable_vim_cmd("qu")
-disable_vim_cmd("qui")
-disable_vim_cmd("quit")
-disable_vim_cmd("quita")
-disable_vim_cmd("quital")
-disable_vim_cmd("quitall")
-disable_vim_cmd("qa")
-disable_vim_cmd("qal")
-disable_vim_cmd("qall")
+-- disable_vim_cmd("q")
+-- disable_vim_cmd("qu")
+-- disable_vim_cmd("qui")
+-- disable_vim_cmd("quit")
+-- disable_vim_cmd("quita")
+-- disable_vim_cmd("quital")
+-- disable_vim_cmd("quitall")
+-- disable_vim_cmd("qa")
+-- disable_vim_cmd("qal")
+-- disable_vim_cmd("qall")
 
 -- vim.api.nvim_command('terminal')
 mx.open()
