@@ -1,91 +1,30 @@
 local mx = require('nvim-multiplexer')
-local f = mx.set_key_map
 
-f('t', '<c-s>', '<C-\\><C-n>', {})
-f('n', 'c', '', {
-    callback = function()
-        vim.api.nvim_command('tabnew')
-    end
-})
-
-local tab_shortcut = function(n)
-    f('n', n .. '', '', {
-        callback = function()
-            vim.api.nvim_command('tabn ' .. n)
-            vim.api.nvim_command('startinsert')
-        end
-    })
-end
-
-for i = 1,9,1 do
-    tab_shortcut(i)
-end
-
-f('n', 'w', '', {
-    callback = function()
-        mx.show_floats()
-    end
-})
-
-f('n', 'p', '', {
-    callback = mx.enter_pane_mode
-})
-
-f('p', '<cr>', '', {
-    callback = mx.exit_pane_mode
-})
-
-f('p', 'l', '', {
-    callback = function()
-        print('did l in pane mode')
-    end
-})
-local options = {noremap = true}
-f('c', '<C-n>', '<Down>', options)
-f('c', '<C-p>', '<Up>', options)
-
-local disable_vim_cmd = function(cmd)
-    vim.api.nvim_command("cabbrev " .. cmd .. " <c-r>=(getcmdtype()==':' && getcmdpos()==1 ? 'echo' : 'q')<CR>")
-end
-
-vim.o.runtimepath = vim.o.runtimepath .. ','
 vim.o.cmdheight = 0
 vim.o.encoding = "utf-8"
 vim.o.number = false
 vim.o.relativenumber = false
-vim.o.backupdir = "/tmp"
-vim.o.backup = false
 vim.o.belloff = "all"
 vim.o.laststatus = 3
-vim.o.autoread = true
 vim.o.bufhidden = "hide"
 vim.o.hidden = true
-vim.o.mouse = ""
-vim.o.expandtab = true
-vim.o.smarttab = true
-vim.o.updatetime = 500
-vim.o.completeopt = "menu,menuone,noselect"
-vim.o.showtabline = 2
-vim.o.dir = "/tmp"
-vim.o.wildmode = "longest,list"
-vim.o.signcolumn = 'number'
-vim.o.foldmethod = "syntax"
 vim.o.termguicolors = true
-vim.g.TerminusInsertCursorShape = 0
--- vim.o.guicursor = 'n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50,a:blinkwait700-blinkoff400-blinkon250-Cursor/lCursor,sm:block-blinkwait175-blinkoff150-blinkon17'
-vim.api.nvim_command('colorscheme ' .. (os.getenv('VIM_COLORS') or 'tokyonight-night'))
--- disable_vim_cmd("q")
--- disable_vim_cmd("qu")
--- disable_vim_cmd("qui")
--- disable_vim_cmd("quit")
--- disable_vim_cmd("quita")
--- disable_vim_cmd("quital")
--- disable_vim_cmd("quitall")
--- disable_vim_cmd("qa")
--- disable_vim_cmd("qal")
--- disable_vim_cmd("qall")
 
--- vim.api.nvim_command('terminal')
-mx.open()
+vim.api.nvim_command('highlight CurrentFloatSel guifg=#db4b4b')
+vim.api.nvim_set_hl(0, 'NormalFloat', {})
+
+mx.set_modifier()
+
 vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
 vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
+
+local config_dir = (vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/tmnvim'
+local config_file = config_dir .. '/init.lua'
+local file = io.open(config_file)
+if file ~= nil then
+    io.close(file)
+    vim.api.nvim_command('source ' .. config_file)
+end
+vim.o.runtimepath = vim.o.runtimepath .. ',' .. config_dir
+
+mx.open()
