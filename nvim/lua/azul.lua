@@ -7,6 +7,7 @@ local mode_mappings = {
     p = {},
     r = {},
     m = {},
+    s = {},
 }
 local default_mod = '<C-s>'
 local mod = default_mod
@@ -95,11 +96,12 @@ local OnEnter = function(ev)
     for _, t in ipairs(terminals) do
         vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.buf == ev.buf)
         t.is_current = t.buf == ev.buf
-        if t.win_id ~= nil then
+        if t.win_id ~= nil and vim.api.nvim_win_is_valid(t.win_id) then
             vim.api.nvim_win_set_option(t.win_id, 'winhl', 'FloatBorder:')
         end
     end
-    vim.api.nvim_win_set_option(crt.win_id, 'winhl', 'FloatBorder:CurrentFloatSel')
+    local what = (is_float(crt) and 'FloatBorder') or 'WinSeparator'
+    vim.api.nvim_win_set_option(crt.win_id, 'winhl', what .. ':CurrentFloatSel')
 end
 
 local open = function(start_edit)
@@ -126,6 +128,12 @@ local OnTermClose = function(ev)
     end)
 end
 
+local enter_mode = function(m)
+    -- print("ENTER MODE " .. m)
+    mode = m
+    vim.api.nvim_command('doautocmd User MxModeChanged')
+end
+
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
         table.insert(terminals, {
@@ -144,10 +152,7 @@ cmd('TermClose', {
 })
 
 cmd('TermEnter', {
-    pattern = "*", callback = function(ev)
-        mode = 't'
-        OnEnter(ev)
-    end
+    pattern = "*", callback = OnEnter
 })
 
 cmd({'WinEnter'}, {
@@ -162,6 +167,12 @@ cmd({'WinEnter'}, {
     end
 })
 
+cmd({'TabLeave'}, {
+    pattern = "*", callback = function()
+        vim.api.nvim_tabpage_set_var(0, 'current_buffer', vim.fn.bufnr())
+    end
+})
+
 cmd({'WinNew'}, {
     pattern = "term://*", callback = function(ev)
         vim.fn.timer_start(1, function()
@@ -172,8 +183,18 @@ cmd({'WinNew'}, {
     end
 })
 
+cmd({'ModeChanged'}, {
+    pattern = {'*'}, callback = function(ev)
+        local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
+        local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
+        -- print(from .. ":" .. to)
+        if to ~= from then
+            enter_mode(to)
+        end
+    end
+})
+
 local restore_float = function(t)
-    print("RESTORE " .. vim.inspect(t.buf))
     if t == nil or not vim.api.nvim_buf_is_valid(t.buf) then
         return
     end
@@ -205,7 +226,11 @@ local show_floats = function()
 end
 
 local floats_are_hidden = function()
-    return #vim.tbl_filter(function(t) return is_float(t) and t.win_id == nil end, terminals) > 0
+    local floatings = vim.tbl_filter(function(t) return is_float(t) end, terminals)
+    if #floatings == 0 then
+        return true
+    end
+    return #vim.tbl_filter(function(t) return t.win_id == nil end, floatings) > 0
 end
 
 local open_float = function(title, opts)
@@ -280,10 +305,6 @@ local show_terminals = function()
     return terminals
 end
 
-local enter_mode = function(m)
-    mode = m
-end
-
 local set_modifier = function(m)
     if m ~= nil then
         vim.api.nvim_command('tunmap ' .. mod)
@@ -349,8 +370,12 @@ local get_row_or_col = function(t, check)
     return result
 end
 
-local select_next_float = function(dir)
+local select_next_term = function(dir)
     if floats_are_hidden() then
+        local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
+        vim.fn.timer_start(1, function()
+            vim.api.nvim_command('wincmd ' .. which)
+        end)
         return
     end
 
@@ -389,6 +414,7 @@ local select_next_float = function(dir)
 end
 
 local current_mode = function()
+    -- print("RETURNING " .. mode)
     return mode
 end
 
@@ -396,10 +422,10 @@ local reload_config = function()
     set_modifier(default_mod)
     local terms = terminals
     is_reloading = true
-    -- vim.cmd('source ' .. os.getenv('TMNVIM_PREFIX') .. '/nvim/lua/nvim-multiplexer.lua')
-    vim.cmd('source ' .. os.getenv('TMNVIM_PREFIX') .. '/nvim/init.lua')
-    -- dofile(os.getenv('TMNVIM_PREFIX') .. '/nvim/lua/nvim-multiplexer.lua')
-    -- dofile(os.getenv('TMNVIM_PREFIX') .. '/nvim/init.lua')
+    -- vim.cmd('source ' .. os.getenv('AZUL_PREFIX') .. '/nvim/lua/azul.lua')
+    vim.cmd('source ' .. os.getenv('AZUL_PREFIX') .. '/nvim/init.lua')
+    -- dofile(os.getenv('AZUL_PREFIX') .. '/nvim/lua/azul.lua')
+    -- dofile(os.getenv('AZUL_PREFIX') .. '/nvim/init.lua')
     is_reloading = false
     terminals = terms
 end
@@ -417,6 +443,38 @@ local send_to_current = function(data)
     send_to_buf(vim.fn.bufnr(), data)
 end
 
+local get_tab_terminal = function(n)
+    if n == vim.api.nvim_tabpage_get_number(0) then
+        return get_current_terminal()
+    end
+
+    return find(function(t) return t.buf == vim.api.nvim_tabpage_get_var(n, 'current_buffer') end, terminals)
+end
+
+local split = function(dir)
+    local cmd = 'split'
+    if dir == 'left' or dir == 'right' then
+        cmd = 'v' .. cmd
+    end
+
+    local splitright = vim.o.splitright
+    local splitbelow = vim.o.splitbelow
+
+    if dir == 'right' then
+        vim.o.splitright = true
+    end
+
+    if dir == 'down' then
+        vim.o.splitbelow = true
+    end
+
+    vim.fn.timer_start(1, function()
+        vim.api.nvim_command(cmd)
+        vim.o.splitright = splitright
+        vim.o.splitbelow = splitbelow
+    end)
+end
+
 return {
     open_float = open_float,
     show_terminals = show_terminals,
@@ -432,7 +490,10 @@ return {
     select_float = select_float,
     debug = debug,
     reload_config = reload_config,
-    select_next_float = select_next_float,
+    select_next_term = select_next_term,
+    get_current_terminal = get_current_terminal,
     send_to_buf = send_to_buf,
     send_to_current = send_to_current,
+    get_tab_terminal = get_tab_terminal,
+    split = split,
 }
