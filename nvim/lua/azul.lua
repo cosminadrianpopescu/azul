@@ -1,8 +1,13 @@
 local cmd = vim.api.nvim_create_autocmd
 local map = vim.api.nvim_set_keymap
 
+local M = {
+    list_buffers = false,
+}
+
 local terminals = {}
 local mode = 'n'
+local is_nested_session = false
 local mode_mappings = {
     p = {},
     r = {},
@@ -13,6 +18,7 @@ local default_mod = '<C-s>'
 local mod = default_mod
 local latest_float = nil
 local is_reloading = false
+local global_last_status = nil
 
 local find = function(callback, table)
     local result = vim.tbl_filter(callback, table)
@@ -36,7 +42,7 @@ local remove_term_buf = function(buf)
     end
 end
 
-local debug = function(ev)
+M.debug = function(ev)
     print("EV IS " .. vim.inspect(ev))
     print("WIN IS " .. vim.fn.winnr())
     print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
@@ -67,12 +73,12 @@ local close_float = function(float)
     float.win_id = nil
 end
 
-local get_current_terminal = function()
+M.get_current_terminal = function()
     return find(function(t) return t.is_current end, terminals)
 end
 
-local hide_floats = function()
-    local crt = get_current_terminal()
+M.hide_floats = function()
+    local crt = M.get_current_terminal()
     if is_float(crt) then
         latest_float = crt
     end
@@ -89,12 +95,14 @@ local OnEnter = function(ev)
     end
 
     if is_float(crt) == false then
-        hide_floats()
+        M.hide_floats()
     end
     crt.last_access = os.time(os.date("!*t"))
 
     for _, t in ipairs(terminals) do
-        vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.buf == ev.buf)
+        if not M.list_buffers then
+            vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
+        end
         t.is_current = t.buf == ev.buf
         if t.win_id ~= nil and vim.api.nvim_win_is_valid(t.win_id) then
             vim.api.nvim_win_set_option(t.win_id, 'winhl', 'FloatBorder:')
@@ -104,7 +112,7 @@ local OnEnter = function(ev)
     vim.api.nvim_win_set_option(crt.win_id, 'winhl', what .. ':CurrentFloatSel')
 end
 
-local open = function(start_edit)
+M.open = function(start_edit)
     if is_reloading then
         return
     end
@@ -119,7 +127,11 @@ local OnTermClose = function(ev)
     local t = find(function(t) return t.buf == ev.buf end, terminals)
     remove_term_buf(ev.buf)
     if t ~= nil then
-        vim.api.nvim_win_close(t.win_id, true)
+        if find(function(t2) return t2.win_id == t.win_id end, terminals) == nil then
+            vim.api.nvim_win_close(t.win_id, true)
+        else
+            vim.api.nvim_command('bnext')
+        end
     end
     vim.api.nvim_buf_delete(ev.buf, {force = true})
     vim.fn.timer_start(1, function()
@@ -128,8 +140,7 @@ local OnTermClose = function(ev)
     end)
 end
 
-local enter_mode = function(m)
-    -- print("ENTER MODE " .. m)
+M.enter_mode = function(m)
     mode = m
     vim.api.nvim_command('doautocmd User MxModeChanged')
 end
@@ -160,7 +171,7 @@ cmd({'WinEnter'}, {
         vim.fn.timer_start(1, function()
             ev.buf = vim.fn.bufnr()
             if vim.b.terminal_job_id == nil then
-                open(false)
+                M.open(false)
             end
             OnEnter(ev)
         end)
@@ -174,11 +185,9 @@ cmd({'TabLeave'}, {
 })
 
 cmd({'WinNew'}, {
-    pattern = "term://*", callback = function(ev)
+    pattern = "term://*", callback = function()
         vim.fn.timer_start(1, function()
-            ev.buf = vim.fn.bufnr()
-            open(true)
-            OnEnter(ev)
+            M.open(true)
         end)
     end
 })
@@ -189,7 +198,7 @@ cmd({'ModeChanged'}, {
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
         -- print(from .. ":" .. to)
         if to ~= from then
-            enter_mode(to)
+            M.enter_mode(to)
         end
     end
 })
@@ -212,7 +221,7 @@ Do_show_floats = function(floatings, idx)
     end)
 end
 
-local show_floats = function()
+M.show_floats = function()
     local floatings = vim.tbl_filter(function(t) return is_float(t) and t ~= latest_float end, terminals)
     table.sort(floatings, function(a, b) return a.last_access < b.last_access end)
     floatings[#floatings+1] = latest_float
@@ -233,9 +242,9 @@ local floats_are_hidden = function()
     return #vim.tbl_filter(function(t) return t.win_id == nil end, floatings) > 0
 end
 
-local open_float = function(title, opts)
+M.open_float = function(title, opts)
     if floats_are_hidden() then
-        show_floats()
+        M.show_floats()
     end
     local buf = vim.api.nvim_create_buf(true, false)
     local factor = 4
@@ -249,11 +258,11 @@ local open_float = function(title, opts)
     })
 end
 
-local toggle_floats = function()
+M.toggle_floats = function()
     if floats_are_hidden() then
-        show_floats()
+        M.show_floats()
     else
-        hide_floats()
+        M.hide_floats()
     end
 end
 
@@ -290,7 +299,7 @@ local do_set_key_map = function(m, ls, rs, options)
     map('n', ls, '', options2)
 end
 
-local set_key_map = function(mode, ls, rs, options)
+M.set_key_map = function(mode, ls, rs, options)
     local modes = mode
     if type(mode) == "string" then
         modes = {mode}
@@ -301,16 +310,16 @@ local set_key_map = function(mode, ls, rs, options)
     end
 end
 
-local show_terminals = function()
+M.get_terminals = function()
     return terminals
 end
 
-local set_modifier = function(m)
+M.set_modifier = function(m)
     if m ~= nil then
         vim.api.nvim_command('tunmap ' .. mod)
         mod = m
     end
-    set_key_map('t', mod, '<C-\\><C-n>', {})
+    M.set_key_map('t', mod, '<C-\\><C-n>', {})
 end
 
 local fix_coord = function(c, max, limit)
@@ -325,7 +334,7 @@ local fix_coord = function(c, max, limit)
     return c
 end
 
-local move_current_float = function(dir, inc)
+M.move_current_float = function(dir, inc)
     local buf = vim.fn.bufnr()
     local t = find(function(t) return t.buf == buf end, terminals)
     local conf = vim.api.nvim_win_get_config(0)
@@ -354,7 +363,7 @@ local move_current_float = function(dir, inc)
     vim.fn.feedkeys('<c-l>')
 end
 
-local select_float = function(buf)
+M.select_float = function(buf)
     vim.api.nvim_command(vim.fn.bufwinnr(buf) .. "wincmd w")
 end
 
@@ -370,7 +379,7 @@ local get_row_or_col = function(t, check)
     return result
 end
 
-local select_next_term = function(dir)
+M.select_next_term = function(dir)
     if floats_are_hidden() then
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
         vim.fn.timer_start(1, function()
@@ -379,7 +388,7 @@ local select_next_term = function(dir)
         return
     end
 
-    local crt = get_current_terminal()
+    local crt = M.get_current_terminal()
     local found = nil
 
     local check1 = ((dir == "left" or dir == "right") and 'col') or 'row'
@@ -409,17 +418,16 @@ local select_next_term = function(dir)
     end
 
     vim.fn.timer_start(1, function()
-        select_float(found.buf)
+        M.select_float(found.buf)
     end)
 end
 
-local current_mode = function()
-    -- print("RETURNING " .. mode)
+M.current_mode = function()
     return mode
 end
 
-local reload_config = function()
-    set_modifier(default_mod)
+M.reload_config = function()
+    M.set_modifier(default_mod)
     local terms = terminals
     is_reloading = true
     -- vim.cmd('source ' .. os.getenv('AZUL_PREFIX') .. '/nvim/lua/azul.lua')
@@ -430,7 +438,7 @@ local reload_config = function()
     terminals = terms
 end
 
-local send_to_buf = function(buf, data)
+M.send_to_buf = function(buf, data)
     local t = find(function(t) return t.buf == buf end, terminals)
     if t == nil then
         return
@@ -439,19 +447,19 @@ local send_to_buf = function(buf, data)
     vim.api.nvim_chan_send(t.term_id, data)
 end
 
-local send_to_current = function(data)
-    send_to_buf(vim.fn.bufnr(), data)
+M.send_to_current = function(data)
+    M.send_to_buf(vim.fn.bufnr(), data)
 end
 
-local get_tab_terminal = function(n)
+M.get_tab_terminal = function(n)
     if n == vim.api.nvim_tabpage_get_number(0) then
-        return get_current_terminal()
+        return M.get_current_terminal()
     end
 
     return find(function(t) return t.buf == vim.api.nvim_tabpage_get_var(n, 'current_buffer') end, terminals)
 end
 
-local split = function(dir)
+M.split = function(dir)
     local cmd = 'split'
     if dir == 'left' or dir == 'right' then
         cmd = 'v' .. cmd
@@ -475,25 +483,21 @@ local split = function(dir)
     end)
 end
 
-return {
-    open_float = open_float,
-    show_terminals = show_terminals,
-    set_key_map = set_key_map,
-    enter_mode = enter_mode,
-    hide_floats = hide_floats,
-    show_floats = show_floats,
-    open = open,
-    toggle_floats = toggle_floats,
-    set_modifier = set_modifier,
-    move_current_float = move_current_float,
-    current_mode = current_mode,
-    select_float = select_float,
-    debug = debug,
-    reload_config = reload_config,
-    select_next_term = select_next_term,
-    get_current_terminal = get_current_terminal,
-    send_to_buf = send_to_buf,
-    send_to_current = send_to_current,
-    get_tab_terminal = get_tab_terminal,
-    split = split,
-}
+M.toggle_nested_mode = function()
+    is_nested_session = not is_nested_session
+    if is_nested_session then
+        global_last_status = vim.o.laststatus
+        vim.o.laststatus = 0
+        vim.api.nvim_command('tunmap ' .. mod)
+        M.set_key_map('t', '<C-\\><C-s>', '', {
+            callback = M.toggle_nested_mode()
+        })
+        return
+    end
+
+    vim.o.laststatus = global_last_status
+    vim.api.nvim_command('tunmap <C-\\><C-s>')
+    M.set_key_map('t', mod, '<C-\\><C-n>', {})
+end
+
+return M
