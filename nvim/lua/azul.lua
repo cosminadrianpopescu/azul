@@ -490,8 +490,9 @@ M.toggle_nested_mode = function()
         vim.o.laststatus = 0
         vim.api.nvim_command('tunmap ' .. mod)
         M.set_key_map('t', '<C-\\><C-s>', '', {
-            callback = M.toggle_nested_mode()
+            callback = M.toggle_nested_mode
         })
+        vim.api.nvim_command('startinsert')
         return
     end
 

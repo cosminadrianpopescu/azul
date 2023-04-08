@@ -16,13 +16,14 @@ f('p', 'h', '', {
 * The function set_key_map will take just check the mode. If the mode is 'p' (pane mode) will do custom things. If the mode is not p, is just going to pass all arguments to the vim.api.nvim_set_key_map function.
 
 * try on windows
-* install script
+* install script - *DONE*
 * demo video
 * tabs with own floats (that are not visible on other tabs)
 * the runner - it should use the new multiplexer - *DONE*
 * the disable of the modifier (for ssh) aka nested mode - *DONE*
 * shortcuts to move a float up, right, bottom, left
 * layouts
+* colors from environment (so that the ssh azul has different colors)
 
 ## README
 

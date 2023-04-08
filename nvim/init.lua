@@ -23,10 +23,19 @@ local config_file = config_dir .. '/init.lua'
 
 vim.o.runtimepath = vim.o.runtimepath .. ',' .. config_dir .. '/pack/start/*,' .. config_dir .. '/pack/opt/*,' .. config_dir
 
-local file = io.open(config_file)
-if file ~= nil then
-    io.close(file)
-    vim.api.nvim_command('source ' .. config_file)
+local try_load_config = function(which)
+    local file = io.open(which)
+    if file ~= nil then
+        io.close(file)
+        vim.api.nvim_command('source ' .. which)
+        return true
+    end
+
+    return false
+end
+
+if not try_load_config(config_file) then
+    try_load_config(config_dir .. 'vimrc')
 end
 
 azul.open()
