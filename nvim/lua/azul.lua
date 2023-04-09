@@ -483,21 +483,24 @@ M.split = function(dir)
     end)
 end
 
-M.toggle_nested_mode = function()
+M.toggle_nested_mode = function(delim)
+    local _delim = delim or '<C-\\><C-s>'
     is_nested_session = not is_nested_session
     if is_nested_session then
         global_last_status = vim.o.laststatus
         vim.o.laststatus = 0
         vim.api.nvim_command('tunmap ' .. mod)
-        M.set_key_map('t', '<C-\\><C-s>', '', {
-            callback = M.toggle_nested_mode
+        M.set_key_map('t', _delim, '', {
+            callback = function()
+                M.toggle_nested_mode(delim)
+            end
         })
         vim.api.nvim_command('startinsert')
         return
     end
 
     vim.o.laststatus = global_last_status
-    vim.api.nvim_command('tunmap <C-\\><C-s>')
+    vim.api.nvim_command('tunmap ' .. _delim)
     M.set_key_map('t', mod, '<C-\\><C-n>', {})
 end
 
