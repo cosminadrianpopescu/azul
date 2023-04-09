@@ -504,4 +504,19 @@ M.toggle_nested_mode = function(delim)
     M.set_key_map('t', mod, '<C-\\><C-n>', {})
 end
 
+M.position_current_float = function(where)
+    local conf = vim.api.nvim_win_get_config(0)
+
+    if where == "top" then
+        conf.row = 0
+    elseif where == "right" then
+        conf.col = fix_coord(conf.width, conf.width, vim.o.columns) + 3
+    elseif where == "bottom" then
+        conf.row = fix_coord(conf.height, conf.height, vim.o.lines - 1) + 2
+    elseif where == "left" then
+        conf.col = 0
+    end
+    vim.api.nvim_win_set_config(0, conf)
+end
+
 return M

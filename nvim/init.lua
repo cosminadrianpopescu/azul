@@ -13,7 +13,7 @@ vim.o.termguicolors = true
 vim.api.nvim_command('highlight CurrentFloatSel guifg=#db4b4b')
 vim.api.nvim_set_hl(0, 'NormalFloat', {})
 
-azul.set_modifier()
+-- azul.set_modifier()
 
 vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
 vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
@@ -35,7 +35,7 @@ local try_load_config = function(which)
 end
 
 if not try_load_config(config_file) then
-    try_load_config(config_dir .. 'vimrc')
+    try_load_config(config_dir .. '/init.vim')
 end
 
 azul.open()
