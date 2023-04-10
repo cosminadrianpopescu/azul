@@ -21,6 +21,7 @@ local mode_mappings = {
     r = {},
     m = {},
     s = {},
+    n = {},
 }
 local mod = nil
 local latest_float = nil
@@ -56,7 +57,7 @@ M.debug = function(ev)
     print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
     print("TITLE IS ALREADY" .. vim.b.term_title)
     print("JOB ID IS " .. vim.b.terminal_job_id)
-    -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MODE IS" .. mode)
 end
 
@@ -204,7 +205,7 @@ cmd({'TabLeave'}, {
 cmd({'WinNew'}, {
     pattern = "term://*", callback = function()
         vim.fn.timer_start(1, function()
-            M.open(true)
+            M.open(false)
         end)
     end
 })
@@ -288,37 +289,62 @@ M.toggle_floats = function()
     end
 end
 
+local clone = function(obj)
+    local result = {}
+    for k, v in pairs(obj) do
+        result[k] = v
+    end
+    return result
+end
+
+local nvim_feedkeys = function(what, mode)
+    local codes = vim.api.nvim_replace_termcodes(what, true, false, true)
+    vim.api.nvim_feedkeys(codes, mode, false)
+end
+
+local map_callback_execute = function(what, mode)
+    vim.fn.timer_start(1, function()
+        if type(what) == "function" then
+            what()
+        else
+            nvim_feedkeys(what, mode)
+        end
+    end)
+
+    return ''
+end
+
 local do_set_key_map = function(m, ls, rs, options)
     if find(function(k) return k == m end, vim.tbl_keys(mode_mappings)) == nil then
-        map(m, ls, rs, options)
+        local options2 = clone(options)
+        options2.callback = function()
+            if is_nested_session then
+                return vim.api.nvim_replace_termcodes(ls, true, false, true)
+            end
+
+            map_callback_execute(options.callback or rs, m)
+            return ''
+        end
+        options2.expr = true
+        map(m, ls, '', options2)
         return
     end
 
     mode_mappings[m][ls] = options.callback or rs
-    local options2 = {}
-
-    for k, v in pairs(options) do
-        options2[k] = v
-    end
+    local options2 = clone(options)
 
     options2.callback = function()
         local mappings = mode_mappings[mode]
-        if mappings == nil or mode_mappings[mode][ls] == nil then
-            return ls
+        if mappings == nil or mode_mappings[mode][ls] == nil or is_nested_session then
+            return vim.api.nvim_replace_termcodes(ls, true, false, true)
         end
-        local what = mode_mappings[mode][ls]
-        if type(what) == "function" then
-            what()
-        else
-            vim.api.nvim_command(what)
-        end
-
-        return ''
+        return map_callback_execute(mode_mappings[mode][ls], 'n')
     end
 
     options2.expr = true
+    options2.base_mode = nil
 
-    map('n', ls, '', options2)
+    map(options.base_mode or 'n', ls, '', options2)
 end
 
 --- Sets a new keymap
@@ -352,7 +378,7 @@ M.set_modifier = function(m)
     end
     mod = m
     if m ~= nil then
-        M.set_key_map('t', mod, '<C-\\><C-n>', {})
+        map('t', mod, '<C-\\><C-n>', {})
     end
 end
 
@@ -368,7 +394,7 @@ local fix_coord = function(c, max, limit)
     return c
 end
 
-M.move_current_float = function(dir, inc, redraw)
+M.move_current_float = function(dir, inc)
     local buf = vim.fn.bufnr()
     local t = find(function(t) return t.buf == buf end, terminals)
     local conf = vim.api.nvim_win_get_config(0)
@@ -393,9 +419,6 @@ M.move_current_float = function(dir, inc, redraw)
     vim.api.nvim_win_set_config(0, conf)
     if t ~= nil then
         t.win_config = conf
-    end
-    if redraw ~= false then
-        vim.fn.feedkeys('<c-l>')
     end
 end
 
@@ -527,7 +550,7 @@ M.toggle_nested_mode = function(delim)
         global_last_modifier = mod
         vim.o.laststatus = 0
         M.set_modifier(nil)
-        M.set_key_map('t', _delim, '', {
+        map('t', _delim, '', {
             callback = function()
                 M.toggle_nested_mode(delim)
             end
