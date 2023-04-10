@@ -34,7 +34,7 @@ just run `~/programs/azul/bin/azul`.
 ```bash
 git clone https://github.com/cosminadrianpopescu/azul
 cd azul
-AZUL_PREFIX=~/usr sudo ./install.sh
+AZUL_PREFIX=/usr sudo ./install.sh
 ```
 
 This will install `azul` in the `/usr` folder. Then you can run it by simply
@@ -55,10 +55,13 @@ AZUL_NVIM_EXE=/opt/nvim.appimage ./install.sh
 
 You can choose to use a normal `tmux` workflow (with a main modifier followed
 by the command for `azul`), a normal `zellij` workflow (with shortcuts
-directly) from the terminal mode (so from your terminal), or a hybrid
-approach, like I do. I like the modes given by `zellij`, but I prefer to use a
-modifier to interact with `azul` and all the key to go normally to my
-terminal.
+directly for selecting various modes), or a hybrid approach, like I do. I like
+the modes given by `zellij`, but I prefer to use a modifier to interact with
+`azul` and all the keys to go normally to my terminal. Or you can even choose
+an emacs like workflow (where you stay only in terminal mode and you do
+everything via modifiers). 
+
+You have examples of these configs (`tmux.lua`, `zellij.lua` and `emacs.lua`)
 
 ### Floating panes
 
@@ -76,7 +79,7 @@ at them as submodes of `normal` mode. This means that any shortcut valid in
 normal that is not defined in these modes will work also in these modes. But
 any shortcut defined in these modes will have priority over the normal ones.
 
-I use this modes because I like (as seen in the demo movie) to open a float
+I use these modes because I like (as seen in the demo movie) to open a float
 and then quickly position it on the screen using `hjkl` movement. Or to resize
 it using `hjkl` movement. Of course, you can use some shortcuts with modifiers
 for there operations (like `<C-h>` to move a float to the left and so on) and
@@ -146,7 +149,7 @@ both of them, for example, changing the themes is not that straight forward
 
 Copy / pasting in `tmux` is painful with the tmux buffer. I mean it was the
 best solution at the time, but still... Synchronizing the terminal, vim and X
-clipboard was difficult. Especially when working from tty. 
+clipboard was difficult. Especially when working from tty or over ssh.
 
 In this respect, zellij was a big step forward. Open the terminal content
 inside vim and I was done. But still, it was a shortcut to click to open the
@@ -155,13 +158,13 @@ terminal.
 
 And the most annoying issue was the nested session. Open a multiplexer
 session, ssh to a server and there connect to another session. I've always
-fixed this by changing the modifier in the ssh session. But this posed issues
+fixed this by changing the modifier in the ssh session. But this raised issues
 when keeping the dotfiles under git, since I have to treat this modifier in
 some way to keep it under git.
 
 `Azul` solves all this issues. It allows me to have the modal zellij workflow,
-combined with the tmux modifier approach. And, one of the bigged pain point,
-it solves the nested sessions issue.
+combined with the tmux modifier approach. And it solves the nested sessions
+issue.
 
 ### Advantages over `tmux` or `zellij`
 
@@ -214,22 +217,37 @@ enough for me.
 Cursor in `neovim` in terminal mode is a kind of hack. See
 [here](https://github.com/neovim/neovim/issues/3681) and
 [here](https://github.com/neovim/neovim/issues/3681) for more details. Until
-these issues are being fixed, `azul` will have to leave with the block cursor
+these issues are being fixed, `azul` will have to live with the block cursor
 inside its terminals. The only thing that we have in `azul` for configuring
 the cursor is `:highlight TermCursor`.
 
-If this is something that you cannot leave without (having a proper cursor
+If this is something that you cannot live without (having a proper cursor
 inside your terminal), again, `azul` is probably not for you yet.
 
 ## Configuring
 
 `Azul` tries to be as unopinionated as possibly. Because of this, it does not
-define any shortcuts by default. 
+define any shortcuts by default. If you just install it and run it, it will
+show you in a bare terminal with a minimal status bar. But configuring it is
+extremely flexible (it's basically neovim configuration). 
+
+You have in the repositories 3 examples for 3 different workflows.
+(`tmux.lua`, `zellij.lua` and `emacs.lua`). These files, together with the API
+documentation should give you an idea of how to configure your environment. 
+
+In order to configure it, you need to create the `$XDG_CONFIG_HOME/azul`
+folder. This is usually `~/.config/azul`. Inside this file, you put all your
+settings in `init.lua` or `init.vim` (of course in lua language or vimscript).
+
+If you want to install some plugins, inside of `~/.config/azul` you need to
+create the folder `pack` and inside this folder the folders `start` and `opt`
+(the normal vim pack folders structure - `~/.config/azul/pack/opt` and
+`~/.config/azul/pack/start`). Of course, here you can put a plugin manager
+also. My config uses [lualine](https://github.com/nvim-lualine/lualine.nvim)
+and [tokyonight](https://github.com/folke/tokyonight.nvim) plugins.
 
 ## Requirements
 
-## Example config
-
-## How it works internally
+* `Neovim` >= 0.9, because of the floating windows title.
 
 ## Roadmap
