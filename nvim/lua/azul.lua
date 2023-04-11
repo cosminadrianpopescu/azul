@@ -311,6 +311,10 @@ local map_callback_execute = function(what, mode)
         end
     end)
 
+    if vim.fn.mode() == 'n' then
+        return '<c-l>'
+    end
+
     return ''
 end
 
@@ -322,8 +326,7 @@ local do_set_key_map = function(m, ls, rs, options)
                 return vim.api.nvim_replace_termcodes(ls, true, false, true)
             end
 
-            map_callback_execute(options.callback or rs, m)
-            return ''
+            return map_callback_execute(options.callback or rs, m)
         end
         options2.expr = true
         map(m, ls, '', options2)
@@ -497,17 +500,21 @@ M.reload_config = function()
     terminals = terms
 end
 
-M.send_to_buf = function(buf, data)
+M.send_to_buf = function(buf, data, escape)
     local t = find(function(t) return t.buf == buf end, terminals)
     if t == nil then
         return
     end
 
-    vim.api.nvim_chan_send(t.term_id, data)
+    local _data = data
+    if escape then
+        _data = vim.api.nvim_replace_termcodes(data, true, false, true)
+    end
+    vim.api.nvim_chan_send(t.term_id, _data)
 end
 
-M.send_to_current = function(data)
-    M.send_to_buf(vim.fn.bufnr(), data)
+M.send_to_current = function(data, escape)
+    M.send_to_buf(vim.fn.bufnr(), data, escape)
 end
 
 M.get_tab_terminal = function(n)

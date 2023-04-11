@@ -57,9 +57,9 @@ You can choose to use a normal `tmux` workflow (with a main modifier followed
 by the command for `azul`), a normal `zellij` workflow (with shortcuts
 directly for selecting various modes), or a hybrid approach, like I do. I like
 the modes given by `zellij`, but I prefer to use a modifier to interact with
-`azul` and all the keys to go normally to my terminal. Or you can even choose
+`azul` all the other keys go normally to my terminal. Or you can even choose
 an emacs like workflow (where you stay only in terminal mode and you do
-everything via modifiers). 
+everything via modifiers, so on modes at all). 
 
 You have examples of these configs (`tmux.lua`, `zellij.lua` and `emacs.lua`)
 
@@ -74,10 +74,11 @@ that you can then manipulate easily via special modes.
 panes or with splits. You have the `Pane select` mode (`'p'`), `Float move`
 mode (`'m'`), `Pane resize` mode (`'r'`) and `Split` (`'s'`) mode. 
 
-This custom modes are built on top of the `neovim` normal mode. You can look
-at them as submodes of `normal` mode. This means that any shortcut valid in
-normal that is not defined in these modes will work also in these modes. But
-any shortcut defined in these modes will have priority over the normal ones.
+This custom modes are built on top of the `neovim` normal mode, by default.
+You can look at them as submodes of `normal` mode. This means that any
+shortcut valid in normal that is not defined in these modes will work also in
+these modes. But any shortcut defined in these modes will have priority over
+the normal ones.
 
 I use these modes because I like (as seen in the demo movie) to open a float
 and then quickly position it on the screen using `hjkl` movement. Or to resize
@@ -87,6 +88,13 @@ then you don't need to use these modes. These modes are completely optional.
 In order to use them, you need to use the `require('azul').set_key_map`
 function instead of `vim.api.nvim_set_keymap` to set a keymap. The parameters
 are identical (see the example config provided).
+
+Sometimes (see the `zellij.lua` workflow config), you might want to build this
+modes as submode of another vim mode (like terminal). This might happen
+because you want to switch to panel mode (for example) from terminal mode,
+rather than passing through normal mode. In this case, you have to set the
+`base_mode` parameter in the options table when calling
+`require('azul').set_key_map`. See the `zellij.lua` file for an example.
 
 ### Nested mode operating
 
@@ -134,7 +142,7 @@ How about that?
 
 I've been a [tmux](https://github.com/tmux/tmux/wiki) user for years. Then
 I've discovered [zellij](https://zellij.dev/) and been using for the past
-months. They are both amazing softwares.
+months. They are both amazing pieces of software.
 
 I've been using `tmux` for the obvious reasons. Then, I've switched to
 `zellij` because of the floating panels and the edit back buffer in the custom
@@ -152,7 +160,7 @@ best solution at the time, but still... Synchronizing the terminal, vim and X
 clipboard was difficult. Especially when working from tty or over ssh.
 
 In this respect, zellij was a big step forward. Open the terminal content
-inside vim and I was done. But still, it was a shortcut to click to open the
+inside vim and I was done. But still, it was a shortcut to press to open the
 content, copy whatever was to copy and then close the editor to go back to the
 terminal.
 
@@ -185,10 +193,10 @@ the real terminal), in normal mode, in visual mode, you name it...
 #### Nested mode
 
 As you seen in the video, you can connect to a ssh session, press a shortcut
-(in my case `<C-s>`, the delimiter and then `<space>n`) and then all the
-control is passed to the nested session. To pass the control back, you press
-the escape shortcut `<C-\><C-s>` (this is the default, but you can set your
-own) and you control again the main session. Very neat...
+(in my case `<A-n>`) and then all the keys are passed to the nested session.
+To pass the control back, you press the escape shortcut `<C-\><C-s>` (this is
+the default, but you can set your own) and you control again the main session.
+Very neat...
 
 ### Disadvantages compared with `tmux` or `zellij`
 
