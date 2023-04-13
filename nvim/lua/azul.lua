@@ -253,7 +253,7 @@ M.show_floats = function()
     -- restore_float(latest_float)
 end
 
-local floats_are_hidden = function()
+M.are_floats_hidden = function()
     local floatings = vim.tbl_filter(function(t) return is_float(t) end, terminals)
     if #floatings == 0 then
         return true
@@ -265,7 +265,7 @@ end
 ---@param title string The title of the float
 ---@param opts table the options of the new window (@ses vim.api.nvim_open_win)
 M.open_float = function(title, opts)
-    if floats_are_hidden() then
+    if M.are_floats_hidden() then
         M.show_floats()
     end
     local buf = vim.api.nvim_create_buf(true, false)
@@ -282,7 +282,7 @@ end
 
 --- Toggles the visibility of the floating windows
 M.toggle_floats = function()
-    if floats_are_hidden() then
+    if M.are_floats_hidden() then
         M.show_floats()
     else
         M.hide_floats()
@@ -442,7 +442,7 @@ local get_row_or_col = function(t, check)
 end
 
 M.select_next_term = function(dir)
-    if floats_are_hidden() then
+    if M.are_floats_hidden() then
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('wincmd ' .. which)

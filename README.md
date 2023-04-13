@@ -96,7 +96,7 @@ rather than passing through normal mode. In this case, you have to set the
 `base_mode` parameter in the options table when calling
 `require('azul').set_key_map`. See the `zellij.lua` file for an example.
 
-### Nested mode operating
+### Nested mode
 
 This solves the issue of running an `azul` session inside another `azul`
 session. Calling the `require('azul').toggle_nested_mode` function will toggle
@@ -254,8 +254,21 @@ create the folder `pack` and inside this folder the folders `start` and `opt`
 also. My config uses [lualine](https://github.com/nvim-lualine/lualine.nvim)
 and [tokyonight](https://github.com/folke/tokyonight.nvim) plugins.
 
+If you think that the documentation is too small for a serious software, this
+is because the neovim documentation is azul's documentation. I just enumerated
+here what you can do with azul which is somehow different than normal nvim.
+The rest is the same as nvim. For example, you want to see what the terminal
+can do, you can read
+[here](https://neovim.io/doc/user/nvim_terminal_emulator.html). If you want to
+see the shortcuts api, you can see it
+[here](https://neovim.io/doc/user/map.html). If you want to see what events
+you can hook into, you can see it [here](https://neovim.io/doc/user/map.html).
+And so on. I think you got the idea...
+
+## How it works
+
+
+
 ## Requirements
 
 * `Neovim` >= 0.9, because of the floating windows title.
-
-## Roadmap
