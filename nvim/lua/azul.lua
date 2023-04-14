@@ -12,6 +12,7 @@ local M = {
 --- @field win_id number
 --- @field term_id number
 --- @field title string
+--- @field group string
 local terminals = {}
 
 local mode = 'n'
@@ -24,10 +25,12 @@ local mode_mappings = {
     n = {},
 }
 local mod = nil
-local latest_float = nil
+local latest_float = {}
 local is_reloading = false
 local global_last_status = nil
 local global_last_modifier = nil
+
+local L = {}
 
 local find = function(callback, table)
     local result = vim.tbl_filter(callback, table)
@@ -57,7 +60,8 @@ M.debug = function(ev)
     print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
     print("TITLE IS ALREADY" .. vim.b.term_title)
     print("JOB ID IS " .. vim.b.terminal_job_id)
-    print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    print("LATEST FLOATS ARE " .. vim.inspect(latest_float))
+    -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MODE IS" .. mode)
 end
 
@@ -92,8 +96,8 @@ end
 --- Hides all the floats
 M.hide_floats = function()
     local crt = M.get_current_terminal()
-    if is_float(crt) then
-        latest_float = crt
+    if crt ~= nil and is_float(crt) then
+        latest_float[crt.group] = crt
     end
 
     for _, float in ipairs(get_visible_floatings()) do
@@ -171,7 +175,9 @@ cmd('TermOpen',{
             win_id = vim.fn.win_getid(vim.fn.winnr()),
             term_id = vim.b.terminal_job_id,
             title = vim.b.term_title,
+            group = L.current_group
         })
+        L.current_group = nil
         OnEnter(ev)
     end
 })
@@ -229,61 +235,66 @@ local restore_float = function(t)
     refresh_buf(t.buf)
 end
 
-Do_show_floats = function(floatings, idx)
+L.do_show_floats = function(floatings, idx, after_callback)
     if idx > #floatings then
+        if after_callback ~= nil then
+            after_callback()
+        end
         return
     end
     restore_float(floatings[idx])
     vim.fn.timer_start(10, function()
-        Do_show_floats(floatings, idx + 1)
+        L.do_show_floats(floatings, idx + 1, after_callback)
     end)
 end
 
 --- Shows all the floats
-M.show_floats = function()
-    local floatings = vim.tbl_filter(function(t) return is_float(t) and t ~= latest_float end, terminals)
+M.show_floats = function(group, after_callback)
+    local g = group or 'default'
+    local floatings = vim.tbl_filter(function(t) return is_float(t) and t ~= latest_float[g] and t.group == g end, terminals)
     table.sort(floatings, function(a, b) return a.last_access < b.last_access end)
-    floatings[#floatings+1] = latest_float
-    Do_show_floats(floatings, 1)
-    -- for _, t in ipairs(floatings) do
-    --     print("RESTORING " .. vim.inspect(t.buf))
-    --     restore_float(t)
-    -- end
-
-    -- restore_float(latest_float)
+    if latest_float[g] ~= nil then
+        floatings[#floatings + 1] = latest_float[g]
+    end
+    L.do_show_floats(floatings, 1, after_callback)
 end
 
-M.are_floats_hidden = function()
+M.are_floats_hidden = function(group)
     local floatings = vim.tbl_filter(function(t) return is_float(t) end, terminals)
     if #floatings == 0 then
         return true
     end
-    return #vim.tbl_filter(function(t) return t.win_id == nil end, floatings) > 0
+    return #vim.tbl_filter(function(t) return t.win_id == nil and t.group == (group or 'default') end, floatings) > 0
 end
 
 --- Opens a new float
 ---@param title string The title of the float
 ---@param opts table the options of the new window (@ses vim.api.nvim_open_win)
-M.open_float = function(title, opts)
-    if M.are_floats_hidden() then
-        M.show_floats()
+M.open_float = function(group, title, opts)
+    local after = function()
+        local buf = vim.api.nvim_create_buf(true, false)
+        local factor = 4
+        local w = (vim.o.columns - factor) / 2
+        local h = (vim.o.lines - factor) / 2
+        local x = (vim.o.columns - w) / 2
+        local y = (vim.o.lines - h) / 2
+        vim.api.nvim_open_win(buf, true, opts or {
+            width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
+            focusable = true, zindex = 1, border = 'rounded', title = title or vim.b.term_title or title, relative = 'editor', style = 'minimal'
+        })
     end
-    local buf = vim.api.nvim_create_buf(true, false)
-    local factor = 4
-    local w = (vim.o.columns - factor) / 2
-    local h = (vim.o.lines - factor) / 2
-    local x = (vim.o.columns - w) / 2
-    local y = (vim.o.lines - h) / 2
-    vim.api.nvim_open_win(buf, true, opts or {
-        width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
-        focusable = true, zindex = 1, border = 'rounded', title = title or vim.b.term_title or title, relative = 'editor', style = 'minimal'
-    })
+    L.current_group = group or 'default'
+    if M.are_floats_hidden(group) then
+        M.show_floats(group, after)
+    else
+        after()
+    end
 end
 
 --- Toggles the visibility of the floating windows
-M.toggle_floats = function()
-    if M.are_floats_hidden() then
-        M.show_floats()
+M.toggle_floats = function(group)
+    if M.are_floats_hidden(group) then
+        M.show_floats(group)
     else
         M.hide_floats()
     end
@@ -441,8 +452,8 @@ local get_row_or_col = function(t, check)
     return result
 end
 
-M.select_next_term = function(dir)
-    if M.are_floats_hidden() then
+M.select_next_term = function(dir, group)
+    if M.are_floats_hidden(group) then
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('wincmd ' .. which)
@@ -458,7 +469,7 @@ M.select_next_term = function(dir)
     local factor = ((dir == "left" or dir == "up") and 1) or -1
     local c1 = get_row_or_col(crt, check1) * factor
     local c2 = get_row_or_col(crt, check2)
-    for _, t in ipairs(vim.tbl_filter(function(t) return t ~= crt and is_float(t) end, terminals)) do
+    for _, t in ipairs(vim.tbl_filter(function(t) return t ~= crt and is_float(t) and t.win_id ~= nil end, terminals)) do
         local t1 = get_row_or_col(t, check1) * factor
         local t2 = get_row_or_col(t, check2)
         if found == nil and t1 >= c1 then
