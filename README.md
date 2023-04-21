@@ -6,7 +6,7 @@ An nvim based terminal multiplexer.
 
 You can install azul in several ways:
 
-### Default 
+### Default
 
 ```bash
 git clone https://github.com/cosminadrianpopescu/azul
@@ -17,6 +17,16 @@ cd azul
 This will install azul inside the `~/.local` folder. Then, to run it, you
 need to run `azul` (if `~/.local/bin`) is in your path. Otherwise, you can run
 directly `~/.local/bin/azul`
+
+### Windows
+
+```powershell
+powershell.exe ./install.ps1 -prefix=c:/Users/johndoe/azul -nvimexe=c:/Users/johndoe/nvim-win64/bin/nvim-qt.exe
+```
+
+This will install azul inside `c:/Users/johndoe/azul` assuming that neovim is
+installed in `c:/User/johndoe/nvim-win64`. Then, you run it like this:
+`c:/Users/johndoe/azul/azul.cmd`
 
 ### Custom folder
 
@@ -67,6 +77,78 @@ You have examples of these configs (`tmux.lua`, `zellij.lua` and `emacs.lua`)
 
 You can call `:lua require('azul').open_float()` to open a new float terminal
 that you can then manipulate easily via special modes.
+
+### Floating panes groups
+
+By default, all panes are visible across all the tabs. However, whenever you
+call `open_float`, `toggle_floats`, `show_floats`, `hide_floats` or
+`are_floats_hidden` you can pass the group. You can create a float by calling
+`open_float('group-1')` and assign it to the group `group-1`. Then, you can
+show the floats of `group-1` or the floats of the `default` group. For
+example, I'm using this function: 
+
+```lua
+local azul = require('azul')
+local map = azul.set_key_map
+
+local float_group = function()
+    return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
+                                          -- then all the floats on that tab
+                                          -- will be assigned to the t:float_group group
+end
+
+local tab_shortcut = function(n)
+    map('n', n .. '', '', {
+        callback = function()
+            local hidden = azul.are_floats_hidden(float_group()) -- check that the floats are displayed for the current group
+            if not hidden then
+                azul.hide_floats() -- hide all the floats
+            end
+            vim.api.nvim_command('tabn ' .. n)
+            vim.api.nvim_command('startinsert')
+            if not hidden then
+                azul.show_floats(float_group()) -- show the floats for the current group
+            end
+        end
+    })
+end
+
+for i = 1,9,1 do
+    tab_shortcut(i)
+end
+
+map('n', 'w', '', {
+    callback = function()
+        azul.toggle_floats(float_group())
+        vim.api.nvim_command('startinsert')
+    end
+})
+```
+
+So, if you set the variable t:float_group to a certain tab, then all the
+floats opened from that terminal tab will be visible only on that tab, while
+for all the others tabs, you'll see the other floats.
+
+### Native on windows
+
+Check out the `install.ps1` script. You can install neovim on windows, and
+then run the `install.ps1` script like this:
+
+```powershell
+install.ps1 -prefix c:/Users/johndoe/azul -nvimexe c:/Users/johndoe/nvim-qt/nvim-qt.exe
+```
+
+Make sure the folder from the `prefix` parameter exists. Then you can run
+`c:/Users/johndoe/azul/azul.cmd`.
+
+I think that this is the only native window terminal multiplexer (not
+considering tmux or screen or others running under cygwin).
+
+By default, the windows install script will install the tmux workflow
+shortcuts inside `c:/Users/johndoe/azul/init.lua`. If you dont'n want that,
+you can remove that file, or you can edit it and use your own settings, or
+you can copy any of the other config examples file over
+`c:/Users/johndoe/azul/init.lua`
 
 ### Custom modes
 
@@ -234,25 +316,24 @@ inside your terminal), again, `azul` is probably not for you yet.
 
 ## Configuring
 
-`Azul` tries to be as unopinionated as possibly. Because of this, it does not
-define any shortcuts by default. If you just install it and run it, it will
-show you in a bare terminal with a minimal status bar. But configuring it is
-extremely flexible (it's basically neovim configuration). 
+`Azul` tries to be as unopinionated as possibly. But to give you a nice start,
+it will, by default, try to configure itself with the tmux workflow. You'll
+find inside the config folder (see bellow) an init.lua which comes from
+`examples/tmux.lua` and the `tokyonight` and `lualine` plugins installed. You
+can afterwards modify these to your liking, or even delete them and install
+your own if you prefer for example another status plugin than lualine.
 
 You have in the repositories 3 examples for 3 different workflows.
 (`tmux.lua`, `zellij.lua` and `emacs.lua`). These files, together with the API
 documentation should give you an idea of how to configure your environment. 
 
-In order to configure it, you need to create the `$XDG_CONFIG_HOME/azul`
-folder. This is usually `~/.config/azul`. Inside this file, you put all your
-settings in `init.lua` or `init.vim` (of course in lua language or vimscript).
+If you want to install some plugins, you need to put them in your config
+folder for plugins (`~/.config/azul/pack/start/` for linux or
+`%AZUL_PREFIX%/.config/azul/pack/start` for windows). Of course, you can even
+install there a plugin manager. The example config uses these 2 plugins: 
 
-If you want to install some plugins, inside of `~/.config/azul` you need to
-create the folder `pack` and inside this folder the folders `start` and `opt`
-(the normal vim pack folders structure - `~/.config/azul/pack/opt` and
-`~/.config/azul/pack/start`). Of course, here you can put a plugin manager
-also. My config uses [lualine](https://github.com/nvim-lualine/lualine.nvim)
-and [tokyonight](https://github.com/folke/tokyonight.nvim) plugins.
+* [lualine](https://github.com/nvim-lualine/lualine.nvim) 
+* [tokyonight](https://github.com/folke/tokyonight.nvim)
 
 If you think that the documentation is too small for a serious software, this
 is because the neovim documentation is azul's documentation. I just enumerated
@@ -267,7 +348,38 @@ And so on. I think you got the idea...
 
 ## How it works
 
+You might've noticed in the example config files that I use tabs for terminals
+rather than buffers. This is because I consider that tabs make more sense for
+this kind of software because of the way vim works. In vim, each tab has a
+window id, like each float window or each split. While the buffers can be
+displayed in a window. But the buffers don't have a window id. 
 
+Internally, in `azul`, every time you create a new window, a terminal is
+automatically spawned in that window by doing
+`vim.api.nvim_command('terminal')`.
+
+Because of that, is basically very easy in `azul` to just do `tabnew`, which
+will automatically create a new tab, with a new window id, so a new terminal
+will be launched automatically. 
+
+This is the prefered way in `azul`. 
+
+Of course, being vim, nobody stops you to do `:terminal` instead of `:tabnew`.
+But be carefull that this will open another terminal in the same window id.
+(the current one). Internally, in azul, if you call `:lua
+=require('azul').get_terminals()` you'll see that each terminal contains a
+win_id field, which is not an array. This means that a buffer can only be
+displayed in a window. This is why the buffers are not listed if they are not
+displayed in another win_id (either in another tab or in another floating
+window)
+
+So, if you prefer to use buffers and `:terminal` window, you'll have to handle
+it by yourself displaying a buffer in several windows.
+
+## Config examples
+
+You have in the `examples` folder several config examples. You can take any of
+them and put in the `$XDG_CONFIG_HOME/init.lua`
 
 ## Requirements
 
