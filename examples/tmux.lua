@@ -4,6 +4,12 @@ local u = require('utils')
 local map = azul.set_key_map
 local cmd = vim.api.nvim_create_autocmd
 
+local float_group = function()
+    return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
+                                          -- then all the floats on that tab
+                                          -- will be assigned to the t:float_group group
+end
+
 local feedkeys = function(keys)
     local codes = vim.api.nvim_replace_termcodes('<C-\\><c-n>' .. keys, true, false, true)
     vim.api.nvim_feedkeys(codes, 't', false)
@@ -38,14 +44,14 @@ end
 local tab_shortcut = function(n)
     map('n', n .. '', '', {
         callback = function()
-            local hidden = azul.are_floats_hidden()
+            local hidden = azul.are_floats_hidden(float_group())
             if not hidden then
                 azul.hide_floats()
             end
             vim.api.nvim_command('tabn ' .. n)
             vim.api.nvim_command('startinsert')
             if not hidden then
-                azul.show_floats()
+                azul.show_floats(float_group())
             end
         end
     })
@@ -57,7 +63,7 @@ end
 
 map('n', 'w', '', {
     callback = function()
-        azul.toggle_floats()
+        azul.toggle_floats(float_group())
         vim.api.nvim_command('startinsert')
     end
 })
@@ -72,7 +78,7 @@ end
 
 map('n', 'f', '', {
     callback = function()
-        azul.open_float()
+        azul.open_float(float_group())
         vim.api.nvim_command('startinsert')
     end
 })
