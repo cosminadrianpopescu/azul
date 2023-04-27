@@ -70,7 +70,6 @@ local refresh_buf = function(buf)
     if t == nil then
         return nil
     end
-    t.title = vim.b.term_title
     t.win_id = vim.fn.win_getid(vim.fn.winnr())
     t.win_config = vim.api.nvim_win_get_config(t.win_id)
     return t
@@ -174,7 +173,6 @@ cmd('TermOpen',{
             buf = ev.buf,
             win_id = vim.fn.win_getid(vim.fn.winnr()),
             term_id = vim.b.terminal_job_id,
-            title = vim.b.term_title,
             group = L.current_group
         })
         L.current_group = nil
@@ -260,7 +258,7 @@ M.show_floats = function(group, after_callback)
 end
 
 M.are_floats_hidden = function(group)
-    local floatings = vim.tbl_filter(function(t) return is_float(t) end, terminals)
+    local floatings = vim.tbl_filter(function(t) return is_float(t) and t.group ==(group or 'default') end, terminals)
     if #floatings == 0 then
         return true
     end
@@ -268,9 +266,8 @@ M.are_floats_hidden = function(group)
 end
 
 --- Opens a new float
----@param title string The title of the float
 ---@param opts table the options of the new window (@ses vim.api.nvim_open_win)
-M.open_float = function(group, title, opts)
+M.open_float = function(group, opts)
     local after = function()
         local buf = vim.api.nvim_create_buf(true, false)
         local factor = 4
@@ -280,7 +277,7 @@ M.open_float = function(group, title, opts)
         local y = (vim.o.lines - h) / 2
         vim.api.nvim_open_win(buf, true, opts or {
             width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
-            focusable = true, zindex = 1, border = 'rounded', title = title or vim.b.term_title or title, relative = 'editor', style = 'minimal'
+            focusable = true, zindex = 1, border = 'rounded', title = vim.b.term_title, relative = 'editor', style = 'minimal'
         })
     end
     L.current_group = group or 'default'
