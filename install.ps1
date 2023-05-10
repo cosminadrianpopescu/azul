@@ -34,4 +34,5 @@ else {
 
     git clone https://github.com/folke/tokyonight.nvim $prefix\.config\azul\pack\start\tokyonight.nvim
     git clone https://github.com/nvim-lualine/lualine.nvim $prefix\.config\azul\pack\start\lualine.nvim
+    git clone https://github.com/folke/which-key.nvim $prefix\.config\azul\pack\start\which-key.nvim
 }
