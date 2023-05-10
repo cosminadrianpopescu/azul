@@ -4,6 +4,8 @@ local map = vim.api.nvim_set_keymap
 local M = {
     --- If set to true, then list all buffers
     list_buffers = false,
+    ---@prop workflow 'azul'|'tmux'|'emacs'|'zellij'
+    workflow = 'azul',
 }
 
 --- @class terminals
@@ -23,6 +25,7 @@ local mode_mappings = {
     m = {},
     s = {},
     n = {},
+    t = {},
 }
 local mod = nil
 local latest_float = {}
@@ -61,7 +64,7 @@ M.debug = function(ev)
     print("TITLE IS ALREADY" .. vim.b.term_title)
     print("JOB ID IS " .. vim.b.terminal_job_id)
     print("LATEST FLOATS ARE " .. vim.inspect(latest_float))
-    -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MODE IS" .. mode)
 end
 
@@ -360,7 +363,7 @@ end
 
 --- Sets a new keymap
 ---
----@param mode string The mode for which to set the shortcut
+---@param mode string|table The mode for which to set the shortcut
 ---@param ls string The left side of the mapping
 ---@param rs string the right side of the mapping
 ---@param options table the options of the mapping

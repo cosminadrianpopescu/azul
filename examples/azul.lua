@@ -2,7 +2,10 @@ require('my-lualine')
 local azul = require('azul')
 local u = require('utils')
 local map = azul.set_key_map
+local map2 = vim.api.nvim_set_keymap
 local cmd = vim.api.nvim_create_autocmd
+
+azul.set_modifier(nil)
 
 local float_group = function()
     return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
@@ -23,26 +26,28 @@ cmd('TermClose', {
     end
 })
 
-map('n', 'c', '', {
+map2('t', '<C-s>c', '', {
     callback = function()
+        feedkeys('')
         vim.api.nvim_command('$tabnew')
-        vim.api.nvim_command('startinsert')
-    end
+        vim.fn.timer_start(1, function()
+            vim.api.nvim_command('startinsert')
+        end)
+    end,
+    desc = "Create new tab",
 })
 
 local set_mode_escape = function(shortcut)
     map({'r', 'p', 'm', 's'}, shortcut, '', {
         callback = function()
-            azul.enter_mode('n')
-            vim.fn.timer_start(1, function()
-                vim.api.nvim_command('startinsert')
-            end)
-        end
+            azul.enter_mode('t')
+        end,
+        base_mode = 't',
     })
 end
 
 local tab_shortcut = function(n)
-    map('n', n .. '', '', {
+    map2('t', '<C-s>'.. n, '', {
         callback = function()
             local hidden = azul.are_floats_hidden(float_group())
             if not hidden then
@@ -53,7 +58,8 @@ local tab_shortcut = function(n)
             if not hidden then
                 azul.show_floats(float_group())
             end
-        end
+        end,
+        desc = 'Go to tab ' .. n
     })
 end
 
@@ -61,26 +67,37 @@ for i = 1,9,1 do
     tab_shortcut(i)
 end
 
-map('n', 'w', '', {
+map2('t', '<C-s>w', '', {
     callback = function()
         azul.toggle_floats(float_group())
         vim.api.nvim_command('startinsert')
-    end
+    end,
+    desc = "Toggle floats visibility",
 })
 
 local enter_mode_mapping = function(mode)
-    map('n', mode, '', {
+    local mapping = {
+        p = 'pane',
+        r = 'resize',
+        m = 'move',
+        s = 'split'
+    }
+    map2('t', '<C-s>' .. mode, '', {
         callback = function()
             azul.enter_mode(mode)
-        end
+        end,
+        desc = "Enter " .. mapping[mode] .. " mode"
     })
 end
 
-map('n', 'f', '', {
+map2('t', '<c-s>f', '', {
     callback = function()
         azul.open_float(float_group())
-        vim.api.nvim_command('startinsert')
-    end
+        vim.fn.timer_start(1, function()
+            vim.api.nvim_command('startinsert')
+        end)
+    end,
+    desc = "Create float"
 })
 
 enter_mode_mapping('p')
@@ -92,14 +109,15 @@ set_mode_escape('<cr>')
 set_mode_escape('<esc>')
 
 local options = {noremap = true}
-map('c', '<C-n>', '<Down>', options)
-map('c', '<C-p>', '<Up>', options)
+map2('c', '<C-n>', '<Down>', options)
+map2('c', '<C-p>', '<Up>', options)
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {
         callback = function()
             azul.move_current_float(dir, inc or 5)
-        end
+        end,
+        base_mode = 't',
     })
 end
 
@@ -107,7 +125,8 @@ local set_hjkl_shortcuts = function(key, dir, mode, callback)
     map(mode, key, '', {
         callback = function()
             callback(dir, float_group())
-        end
+        end,
+        base_mode = 't',
     })
 end
 
@@ -127,15 +146,17 @@ local set_resize_shortcuts = function(key, which)
     map('r', key, '', {
         callback = function()
             vim.api.nvim_command(which)
-        end
+        end,
+        base_mode = 't',
     })
 end
 
 local set_position_shortcut = function(key, where)
-    map('n', key, '', {
+    map('m', key, '', {
         callback = function()
             azul.position_current_float(where)
-        end
+        end,
+        base_mode = 't',
     })
 end
 
@@ -203,3 +224,21 @@ vim.o.smarttab = true
 vim.o.showtabline = false
 vim.o.completeopt = "menu,menuone,noselect"
 vim.o.wildmode = "longest,list"
+vim.o.timeout = true
+vim.o.timeoutlen = 300
+local wk = require('which-key')
+wk.setup({
+    -- triggers = {'<c-s>'}
+    triggers_no_wait = {
+        '<C-s>'
+    }
+})
+wk.register({
+    ["<C-s>"] = {
+        ['<cr>'] = {'', 'Cancel'},
+        i = {'', 'Cancel'},
+        n = {'<C-\\><C-n>', 'Enter normal mode'}
+    }
+}, {
+    mode = "t",
+})

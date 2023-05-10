@@ -54,9 +54,10 @@ then
 
     git clone https://github.com/folke/tokyonight.nvim $AZUL_CONFIG/pack/start/tokyonight.nvim
     git clone https://github.com/nvim-lualine/lualine.nvim $AZUL_CONFIG/pack/start/lualine.nvim
+    git clone https://github.com/folke/which-key.nvim $AZUL_CONFIG/pack/start/which-key.nvim
 
     cp ./examples/lua/* $AZUL_CONFIG/lua/
-    cp ./examples/tmux.lua $AZUL_CONFIG/init.lua
+    cp ./examples/azul.lua $AZUL_CONFIG/init.lua
 fi
 
 
