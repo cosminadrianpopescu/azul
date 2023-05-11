@@ -2,7 +2,10 @@ require('my-lualine')
 local azul = require('azul')
 local u = require('utils')
 local map = azul.set_key_map
+local map2 = vim.api.nvim_set_keymap
 local cmd = vim.api.nvim_create_autocmd
+
+azul.set_workflow('tmux')
 
 local float_group = function()
     return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
@@ -193,7 +196,7 @@ map('n', '<space>p', '', {
 
 map('t', '<c-l>', '<c-s><c-l>i', {})
 
-map({'n', 't'}, '<a-n>', '', {
+map2('t', '<a-n>', '', {
     callback = azul.toggle_nested_mode
 })
 

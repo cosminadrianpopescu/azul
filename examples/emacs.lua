@@ -1,17 +1,8 @@
 require('my-lualine')
 local azul = require('azul')
 local map = azul.set_key_map
-local cmd = vim.api.nvim_create_autocmd
 
-azul.set_modifier(nil)
-
-cmd({'TermClose', 'TermEnter', 'WinEnter'}, {
-    pattern = "*", callback = function()
-        vim.fn.timer_start(1, function()
-            vim.api.nvim_command('startinsert')
-        end)
-    end
-})
+azul.set_workflow('emacs')
 
 local feedkeys = function(keys)
     local codes = vim.api.nvim_replace_termcodes('<C-\\><c-n>' .. keys, true, false, true)
@@ -39,7 +30,6 @@ end
 map('t', '<a-w>', '', {
     callback = function()
         azul.toggle_floats()
-        vim.api.nvim_command('startinsert')
     end
 })
 

@@ -5,8 +5,6 @@ local map = azul.set_key_map
 local map2 = vim.api.nvim_set_keymap
 local cmd = vim.api.nvim_create_autocmd
 
-azul.set_modifier(nil)
-
 local float_group = function()
     return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
                                           -- then all the floats on that tab
@@ -26,9 +24,8 @@ cmd('TermClose', {
     end
 })
 
-map2('t', '<C-s>c', '', {
+map('t', 'c', '', {
     callback = function()
-        feedkeys('')
         vim.api.nvim_command('$tabnew')
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('startinsert')
@@ -42,12 +39,11 @@ local set_mode_escape = function(shortcut)
         callback = function()
             azul.enter_mode('t')
         end,
-        base_mode = 't',
     })
 end
 
 local tab_shortcut = function(n)
-    map2('t', '<C-s>'.. n, '', {
+    map('t', n, '', {
         callback = function()
             local hidden = azul.are_floats_hidden(float_group())
             if not hidden then
@@ -67,7 +63,7 @@ for i = 1,9,1 do
     tab_shortcut(i)
 end
 
-map2('t', '<C-s>w', '', {
+map('t', 'w', '', {
     callback = function()
         azul.toggle_floats(float_group())
         vim.api.nvim_command('startinsert')
@@ -82,7 +78,7 @@ local enter_mode_mapping = function(mode)
         m = 'move',
         s = 'split'
     }
-    map2('t', '<C-s>' .. mode, '', {
+    map('t', mode, '', {
         callback = function()
             azul.enter_mode(mode)
         end,
@@ -90,7 +86,7 @@ local enter_mode_mapping = function(mode)
     })
 end
 
-map2('t', '<c-s>f', '', {
+map('t', 'f', '', {
     callback = function()
         azul.open_float(float_group())
         vim.fn.timer_start(1, function()
@@ -109,15 +105,14 @@ set_mode_escape('<cr>')
 set_mode_escape('<esc>')
 
 local options = {noremap = true}
-map2('c', '<C-n>', '<Down>', options)
-map2('c', '<C-p>', '<Up>', options)
+map('c', '<C-n>', '<Down>', options)
+map('c', '<C-p>', '<Up>', options)
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {
         callback = function()
             azul.move_current_float(dir, inc or 5)
         end,
-        base_mode = 't',
     })
 end
 
@@ -126,7 +121,6 @@ local set_hjkl_shortcuts = function(key, dir, mode, callback)
         callback = function()
             callback(dir, float_group())
         end,
-        base_mode = 't',
     })
 end
 
@@ -147,7 +141,6 @@ local set_resize_shortcuts = function(key, which)
         callback = function()
             vim.api.nvim_command(which)
         end,
-        base_mode = 't',
     })
 end
 
@@ -156,7 +149,6 @@ local set_position_shortcut = function(key, where)
         callback = function()
             azul.position_current_float(where)
         end,
-        base_mode = 't',
     })
 end
 
@@ -197,24 +189,23 @@ set_resize_shortcuts('j', 'res +5')
 set_resize_shortcuts('k', 'res -5')
 set_resize_shortcuts('l', 'vert res +5')
 
-map('n', '<space>P', '', {
+map('t', 'P', '', {
     callback = function()
         u.paste_from_clipboard()
-        vim.api.nvim_command('startinsert')
     end,
+    desc = "Paste",
 })
 
-map('n', '<space>p', '', {
+map('t', 'pp', '', {
     callback = function()
         u.paste()
-        vim.api.nvim_command('startinsert')
         -- feedkeys(' <bs>')
     end,
+    desc = "Paste",
 })
 
-map('t', '<c-l>', '<c-s><c-l>i', {})
-
-map({'n', 't'}, '<a-n>', '', {
+map2('t', '<c-l>', '<c-\\><c-n><c-l>i', {})
+map2('t', '<a-n>', '', {
     callback = azul.toggle_nested_mode
 })
 
@@ -227,6 +218,7 @@ vim.o.wildmode = "longest,list"
 vim.o.timeout = true
 vim.o.timeoutlen = 300
 local wk = require('which-key')
+local keys = require('which-key.keys')
 wk.setup({
     -- triggers = {'<c-s>'}
     triggers_no_wait = {
@@ -241,4 +233,15 @@ wk.register({
     }
 }, {
     mode = "t",
+})
+
+vim.api.nvim_create_autocmd('User', {
+    pattern = "", callback = function(ev)
+        if ev.match ~= 'MxToggleNestedMode' then
+            return
+        end
+
+        local callback = (azul.is_nested_session() and keys.hook_del) or keys.hook_add
+        callback('<C-s>', 't')
+    end
 })

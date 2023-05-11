@@ -1,5 +1,4 @@
 local azul = require('azul')
-local default_mod = '<C-s>'
 
 vim.o.cmdheight = 0
 vim.o.encoding = "utf-8"
@@ -17,8 +16,7 @@ vim.api.nvim_set_hl(0, 'NormalFloat', {})
 vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
 vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
 
-azul.set_modifier(default_mod)
--- azul.set_modifier2(default_mod)
+azul.set_workflow('azul')
 
 local config_dir = (vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/azul'
 local config_file = config_dir .. '/init.lua'

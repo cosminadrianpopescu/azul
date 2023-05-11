@@ -1,10 +1,9 @@
 require('my-lualine')
 local azul = require('azul')
-local u = require('utils')
 local map = azul.set_key_map
 local cmd = vim.api.nvim_create_autocmd
 
-azul.set_modifier(nil)
+azul.set_workflow('zellij')
 
 cmd('TermClose', {
     pattern = "*", callback = function()
@@ -19,21 +18,18 @@ map('p', 'c', '', {
         vim.api.nvim_command('$tabnew')
         azul.enter_mode('t')
     end,
-    base_mode = 't',
 })
 
 map('p', 'H', '', {
     callback = function()
         vim.api.nvim_command('tabprev')
     end,
-    base_mode = 't'
 })
 
 map('p', 'L', '', {
     callback = function()
         vim.api.nvim_command('tabnext')
     end,
-    base_mode = 't',
 })
 
 map('p', 'w', '', {
@@ -41,7 +37,6 @@ map('p', 'w', '', {
         azul.toggle_floats()
         vim.api.nvim_command('startinsert')
     end,
-    base_mode = 't',
 })
 
 local enter_mode_mapping = function(key, mode)
@@ -53,8 +48,10 @@ local enter_mode_mapping = function(key, mode)
 end
 
 map('p', 'f', '', {
-    callback = azul.open_float,
-    base_mode = 't'
+    callback = function()
+        azul.open_float()
+        azul.enter_mode('t')
+    end,
 })
 
 enter_mode_mapping('<c-p>', 'p')
@@ -69,7 +66,6 @@ map({'r', 'p', 'm', 's'}, '<esc>', '', {
             vim.api.nvim_command('startinsert')
         end)
     end,
-    base_mode = 't',
 })
 
 local options = {noremap = true}
@@ -81,7 +77,6 @@ local set_move_shortcuts = function(key, dir, inc)
         callback = function()
             azul.move_current_float(dir, inc or 5)
         end,
-        base_mode = 't',
     })
 end
 
@@ -90,7 +85,6 @@ local set_hjkl_shortcuts = function(key, dir, mode, callback)
         callback = function()
             callback(dir)
         end,
-        base_mode = 't',
     })
 end
 

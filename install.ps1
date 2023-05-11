@@ -30,7 +30,7 @@ else {
     mkdir $prefix\.config\azul\pack\opt
     xcopy .\nvim $prefix\share\azul\nvim /e /s /h
     copy .\examples\lua\*.* $prefix\.config\azul\lua\
-    copy .\examples\tmux.lua $prefix\.config\azul\init.lua
+    copy .\examples\azul.lua $prefix\.config\azul\init.lua
 
     git clone https://github.com/folke/tokyonight.nvim $prefix\.config\azul\pack\start\tokyonight.nvim
     git clone https://github.com/nvim-lualine/lualine.nvim $prefix\.config\azul\pack\start\lualine.nvim

@@ -4,8 +4,6 @@ local map = vim.api.nvim_set_keymap
 local M = {
     --- If set to true, then list all buffers
     list_buffers = false,
-    ---@prop workflow 'azul'|'tmux'|'emacs'|'zellij'
-    workflow = 'azul',
 }
 
 --- @class terminals
@@ -27,6 +25,7 @@ local mode_mappings = {
     n = {},
     t = {},
 }
+local workflow = 'azul'
 local mod = nil
 local latest_float = {}
 local is_reloading = false
@@ -129,6 +128,9 @@ local OnEnter = function(ev)
     end
     local what = (is_float(crt) and 'FloatBorder') or 'WinSeparator'
     vim.api.nvim_win_set_option(crt.win_id, 'winhl', what .. ':CurrentFloatSel')
+    if workflow == 'emacs' then
+        vim.api.nvim_command('startinsert')
+    end
 end
 
 --- Opens a new terminal in the current window
@@ -320,45 +322,38 @@ local map_callback_execute = function(what, mode)
         else
             nvim_feedkeys(what, mode)
         end
+
+        if workflow == 'emacs' then
+            vim.api.nvim_command('startinsert')
+        end
     end)
 
-    if vim.fn.mode() == 'n' then
-        return '<c-l>'
-    end
-
-    return ''
+    return ' <bs>'
 end
 
 local do_set_key_map = function(m, ls, rs, options)
-    if find(function(k) return k == m end, vim.tbl_keys(mode_mappings)) == nil then
-        local options2 = clone(options)
-        options2.callback = function()
-            if is_nested_session then
-                return vim.api.nvim_replace_termcodes(ls, true, false, true)
-            end
-
-            return map_callback_execute(options.callback or rs, m)
-        end
-        options2.expr = true
-        map(m, ls, '', options2)
-        return
+    if mode_mappings[m] == nil then
+        return map(m, ls, rs, options)
     end
-
     mode_mappings[m][ls] = options.callback or rs
     local options2 = clone(options)
+
+    local pref = (workflow == 'azul' and m == 't' and mod) or ''
 
     options2.callback = function()
         local mappings = mode_mappings[mode]
         if mappings == nil or mode_mappings[mode][ls] == nil or is_nested_session then
-            return vim.api.nvim_replace_termcodes(ls, true, false, true)
+            return pref .. ls
         end
-        return map_callback_execute(mode_mappings[mode][ls], 'n')
+        return map_callback_execute(mode_mappings[mode][ls], (workflow == 'tmux' and 'n') or 't')
     end
 
     options2.expr = true
-    options2.base_mode = nil
+    options2.replace_keycodes = true
 
-    map(options.base_mode or 'n', ls, '', options2)
+    local mode = (workflow == 'tmux' and 'n') or 't'
+
+    map(mode, pref .. ls, '', options2)
 end
 
 --- Sets a new keymap
@@ -384,16 +379,6 @@ end
 ---@return table terminals
 M.get_terminals = function()
     return terminals
-end
-
-M.set_modifier = function(m)
-    if mod ~= nil then
-        vim.api.nvim_command('tunmap ' .. mod)
-    end
-    mod = m
-    if m ~= nil then
-        map('t', mod, '<C-\\><C-n>', {})
-    end
 end
 
 local fix_coord = function(c, max, limit)
@@ -500,7 +485,7 @@ M.current_mode = function()
 end
 
 M.reload_config = function()
-    M.set_modifier(mod)
+    M.set_workflow(workflow, mod)
     local terms = terminals
     is_reloading = true
     -- vim.cmd('source ' .. os.getenv('AZUL_PREFIX') .. '/nvim/lua/azul.lua')
@@ -563,11 +548,12 @@ end
 M.toggle_nested_mode = function(delim)
     local _delim = delim or '<C-\\><C-s>'
     is_nested_session = not is_nested_session
+    vim.api.nvim_command('doautocmd User MxToggleNestedMode')
     if is_nested_session then
         global_last_status = vim.o.laststatus
         global_last_modifier = mod
         vim.o.laststatus = 0
-        M.set_modifier(nil)
+        M.set_workflow(workflow, '')
         map('t', _delim, '', {
             callback = function()
                 M.toggle_nested_mode(delim)
@@ -579,7 +565,7 @@ M.toggle_nested_mode = function(delim)
 
     vim.o.laststatus = global_last_status
     vim.api.nvim_command('tunmap ' .. _delim)
-    M.set_modifier(global_last_modifier)
+    M.set_workflow(workflow, global_last_modifier)
 end
 
 M.position_current_float = function(where)
@@ -603,6 +589,21 @@ M.redraw = function()
     vim.fn.timer_start(100, function()
         vim.api.nvim_command('set lines=' .. lines)
     end)
+end
+
+M.is_nested_session = function()
+    return is_nested_session
+end
+
+M.set_workflow = function(w, m)
+    if mod ~= nil and mod ~= '' and workflow == 'tmux' then
+        vim.api.nvim_command('tunmap ' .. mod)
+    end
+    mod = m or '<C-s>'
+    workflow = w
+    if m ~= '' and workflow == 'tmux' then
+        map('t', mod, '<C-\\><C-n>', {})
+    end
 end
 
 return M
