@@ -128,7 +128,7 @@ local OnEnter = function(ev)
     end
     local what = (is_float(crt) and 'FloatBorder') or 'WinSeparator'
     vim.api.nvim_win_set_option(crt.win_id, 'winhl', what .. ':CurrentFloatSel')
-    if workflow == 'emacs' then
+    if workflow == 'emacs' or workflow == 'azul' then
         vim.api.nvim_command('startinsert')
     end
 end
@@ -323,7 +323,7 @@ local map_callback_execute = function(what, mode)
             nvim_feedkeys(what, mode)
         end
 
-        if workflow == 'emacs' then
+        if workflow == 'emacs' or workflow == 'azul' then
             vim.api.nvim_command('startinsert')
         end
     end)

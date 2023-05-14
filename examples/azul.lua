@@ -16,20 +16,9 @@ local feedkeys = function(keys)
     vim.api.nvim_feedkeys(codes, 't', false)
 end
 
-cmd('TermClose', {
-    pattern = "*", callback = function()
-        vim.fn.timer_start(1, function()
-            vim.fn.feedkeys('i')
-        end)
-    end
-})
-
 map('t', 'c', '', {
     callback = function()
         vim.api.nvim_command('$tabnew')
-        vim.fn.timer_start(1, function()
-            vim.api.nvim_command('startinsert')
-        end)
     end,
     desc = "Create new tab",
 })
@@ -50,7 +39,6 @@ local tab_shortcut = function(n)
                 azul.hide_floats()
             end
             vim.api.nvim_command('tabn ' .. n)
-            vim.api.nvim_command('startinsert')
             if not hidden then
                 azul.show_floats(float_group())
             end
@@ -66,7 +54,6 @@ end
 map('t', 'w', '', {
     callback = function()
         azul.toggle_floats(float_group())
-        vim.api.nvim_command('startinsert')
     end,
     desc = "Toggle floats visibility",
 })
@@ -89,9 +76,6 @@ end
 map('t', 'f', '', {
     callback = function()
         azul.open_float(float_group())
-        vim.fn.timer_start(1, function()
-            vim.api.nvim_command('startinsert')
-        end)
     end,
     desc = "Create float"
 })

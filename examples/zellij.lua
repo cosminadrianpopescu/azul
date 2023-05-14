@@ -92,20 +92,8 @@ local set_panel_shortcuts = function(key, dir)
     set_hjkl_shortcuts(key, dir, 'p', azul.select_next_term)
 end
 
-local set_panel_split_shortcuts = function(key, dir)
-    set_hjkl_shortcuts(key, dir, 'p', azul.split)
-end
-
 local set_split_shortcuts = function(key, dir)
     set_hjkl_shortcuts(key, dir, 's', azul.split)
-end
-
-local set_position_shortcut = function(key, where)
-    map('n', key, '', {
-        callback = function()
-            azul.position_current_float(where)
-        end
-    })
 end
 
 local set_resize_shortcuts = function(key, which)

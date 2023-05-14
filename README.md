@@ -1,6 +1,6 @@
 # Azul
 
-An nvim based terminal multiplexer. 
+A nvim based terminal multiplexer. 
 
 ## Install
 
@@ -15,7 +15,7 @@ cd azul
 ```
 
 This will install azul inside the `~/.local` folder. Then, to run it, you
-need to run `azul` (if `~/.local/bin`) is in your path. Otherwise, you can run
+need to run `azul` if `~/.local/bin`, is in your path. Otherwise, you can run
 directly `~/.local/bin/azul`
 
 ### Windows
@@ -61,17 +61,174 @@ AZUL_NVIM_EXE=/opt/nvim.appimage ./install.sh
 
 ## Features
 
-### Flexibile workflow. 
+### Multiple workflows.
 
-You can choose to use a normal `tmux` workflow (with a main modifier followed
-by the command for `azul`), a normal `zellij` workflow (with shortcuts
-directly for selecting various modes), or a hybrid approach, like I do. I like
-the modes given by `zellij`, but I prefer to use a modifier to interact with
-`azul` all the other keys go normally to my terminal. Or you can even choose
-an emacs like workflow (where you stay only in terminal mode and you do
-everything via modifiers, so on modes at all). 
+You have by default 4 types of workflows:
 
-You have examples of these configs (`tmux.lua`, `zellij.lua` and `emacs.lua`)
+#### Emacs workflow
+
+In this workflow, there are no modes and no modifiers. You are always inside
+the `TERMINAL` mode. The default shortcuts are:
+
+* `<A-c>` creates a new tab
+* `<A-1>` to `<A-9>` selects the tabs from 1 to 9
+* `<A-f>` creates a new floating pane
+* `<A-w>` toggles floating panes visibility
+* `<C-A-h>`, `<C-A-j>`, `<C-A-k>`, `<C-A-l>` - moves a floating pane left,
+  down, up and right, respectively
+* `<A-h>`, `<A-j>`, `<A-k>`, `<A-l>` changes a pane (floating or split) to
+  left, down, up and right, respectively
+* `<C-h>`, `<C-j>`, `<C-k>`, `<C-l>` creates a new split to left, down, up
+  and right, respectively
+* `<C-A-n>`, `<C-A-e>`, `<C-A-s>`, `<C-A-w>` moves a floating page to north
+  (top), east (right), south (bottom) or left (west), respectively
+* `<C-left>`, `<C-up>`, `<C-right>`, `<C-down>` resizes a floating page to the
+  left, up, right or down side, respectively.
+* `<A-n>` toggles nested session mode. 
+
+#### Zellij workflow
+
+In this workflow, there are modes, but there is no modifier. You will mostly
+be in `TERMINAL`, `NORMAL` or the custom `azul` modes (`PANE`, `RESIZE`,
+`MOVE` and `SPLIT`). 
+
+Shortcuts for this mode:
+
+* `<C-p>` enters `PANE` mode
+* `<C-r>` enters `RESIZE` mode
+* `<C-v>` enters `MOVE` mode
+* `<C-s>` enters `SPLIT` mode
+* `<esc>` goes back to `TERMINAL` mode
+
+*`PANE` mode shortcuts*
+
+* `c` creates new pane
+* `H` go to the tab to the left
+* `L` go to the tab to the right
+* `w` toggles floating panes visibility
+* `f` creates a new floating pane
+* `h`, `j`, `k`, `l` select a pane or a split pane to the left, down, up
+  or right, respectively
+
+*`MOVE` mode shortcuts*
+
+* `h`, `j`, `k`, `l` moves a floating pane to left, down, up or right,
+  respectively.
+
+*`SPLIT` mode shortcuts
+
+* `h`, `j`, `k`, `l` creates a new split to left, down, up or right,
+  respectively
+
+*`RESIZE` mode shortcuts
+
+* `h`, `j`, `k`, `l` resizes the current pane in the left, down, up or right
+  direction, respectively.
+
+#### Tmux workflow
+
+In this workflow, you have modes and you also have a modifier. This means,
+that by default you are in `TERMINAL` mode and all your keys are sent to your
+`bash` interpreter (or `cmd` for windows). Whenever you want to interact with
+`azul`, you need to press your modifier (by default `<C-s>`). This will put
+`azul` from `TERMINAL` mode in `NORMAL` mode. Now, your key presses will be
+sent to `azul`, instead of your `bash` interpreter, just like with `tmux`.
+
+So, in order for example, to put `azul` in `PANE` mode, you have to press
+`<C-s>` and then `p`
+
+Also, here, you have the same modes as for the `zellij` workflow.
+
+*`NORMAL` mode shortcuts*
+
+* `c` creates new pane
+* `1` to `9` selects tabs from 1 to 9
+* `w` toggles floating panes visibility
+* `f` creates a new floating pane
+* `h`, `j`, `k`, `l` select a pane or a split pane to the left, down, up,
+  respectively
+* `H`, `J`, `K`, `L` splits in the left, down, right, up direction,
+  respectively
+* `p` enters `PANE` mode
+* `r` enters `RESIZE` mode
+* `m` enters `MOVE` mode
+* `s` enters `SPLIT` mode
+* `<cr>`, `<esc>` goes back to `TERMINAL` mode
+
+*`PANE` mode shortcuts
+
+* `h`, `j`, `k`, `l` select a pane or a split pane to the left, down, up
+  or right, respectively
+
+*`MOVE` mode shortcuts*
+
+* `h`, `j`, `k`, `l` moves a floating pane to left, down, up or right,
+  respectively.
+
+*`SPLIT` mode shortcuts
+
+* `h`, `j`, `k`, `l` creates a new split to left, down, up or right,
+  respectively
+
+*`RESIZE` mode shortcuts
+
+* `h`, `j`, `k`, `l` resizes the current pane in the left, down, up or right
+  direction, respectively.
+
+#### Azul workflow
+
+This is the default workflow. After installation, if you don't modify your
+configuration, when you will start `azul`, you will find yourself in the
+`azul` workflow. This workflow is a combination of all the previous workflows.
+You are all the time in the `TERMINAL` mode, you have a modifier (default
+`<C-s>`) and you have modes. 
+
+Unlike `tmux` workflow, when you click the modifier `azul` will remain in
+`TERMINAL` mode, but will wait for the next key and is going to interpret it
+like an `azul` command. If you wait for 300 ms, then you will also have a help
+indicating what are the possible commands that you can send to `azul`.
+
+*`TERMINAL` mode shortcuts*
+
+* `<C-s>c` creates new pane
+* `<C-s>1` to `<C-s>9` selects tabs from 1 to 9
+* `<C-s>w` toggles floating panes visibility
+* `<C-s>f` creates a new floating pane
+* `<C-s>h`, `<C-s>j`, `<C-s>k`, `<C-s>l` select a pane or a split pane to the left, down, up,
+  respectively
+* `<C-s>p` enters `PANE` mode
+* `<C-s>r` enters `RESIZE` mode
+* `<C-s>m` enters `MOVE` mode
+* `<C-s>s` enters `SPLIT` mode
+* `<cr>`, `<esc>` goes back to `TERMINAL` mode
+
+The other modes shortcuts are the same as for the `tmux` workflow shortcuts.
+
+After first installation, an `init.lua` file will be created in your config
+folder. This will contain the `azul` workflow settings. If you want to use any
+of the other workflows, overwrite this file with any of the files in the
+`examples` folder. Of course, these example files are just a starting point.
+You can combine the workflows and you can even create your own workflow. You
+are in `vim`, so you can customize it anyway you like. 
+
+If you want to change the workflow, you need to call `azul.set_workflow`
+method. The first argument is the workflow you want to use (`tmux`, `zellij`,
+`emacs` or `azul`) and the second one is the modifier (if applicable). In
+order for the custom modes (`PANE`, `RESIZE`, `SPLIT` and `MOVE`) to work, you
+need to use the `azul.set_key_map` function to define your keymaps. This
+function takes the same arguments as `vim.api.nvim_set_keymap`. You cannot set
+`expr` to true, though, because this is used internally by `azul`. 
+
+Also, for `azul` workflow, when using `azul.set_key_map` function, keep in
+mind that the shortcut that will be created will contain the modifier before.
+For example, `azul.set_key_map('t', 'c', ':$tabnew<cr>', {})` is equivalent to
+`vim.api.nvim_set_keymap('t', '<C-s>c', ':$tabnew<cr>')`. If you want to
+create a shortcut for the terminal mode that does not contain the modifier,
+you will have to use directly `vim.api.nvim_set_keymap`.
+
+`Azul` is using the [which-key](https://github.com/folke/which-key.nvim)
+plugin to show the possible actions after pressing the modifier in `TERMINAL`
+mode.
 
 ### Floating panes
 
@@ -125,7 +282,7 @@ map('n', 'w', '', {
 })
 ```
 
-So, if you set the variable t:float_group to a certain tab, then all the
+So, if you set the variable `t:float_group` to a certain tab, then all the
 floats opened from that terminal tab will be visible only on that tab, while
 for all the others tabs, you'll see the other floats.
 
@@ -144,23 +301,17 @@ Make sure the folder from the `prefix` parameter exists. Then you can run
 I think that this is the only native window terminal multiplexer (not
 considering tmux or screen or others running under cygwin).
 
-By default, the windows install script will install the tmux workflow
-shortcuts inside `c:/Users/johndoe/azul/init.lua`. If you dont'n want that,
-you can remove that file, or you can edit it and use your own settings, or
-you can copy any of the other config examples file over
-`c:/Users/johndoe/azul/init.lua`
-
 ### Custom modes
 
 `Azul` introduces some new modes if you need to interact with the floating
 panes or with splits. You have the `Pane select` mode (`'p'`), `Float move`
 mode (`'m'`), `Pane resize` mode (`'r'`) and `Split` (`'s'`) mode. 
 
-This custom modes are built on top of the `neovim` normal mode, by default.
-You can look at them as submodes of `normal` mode. This means that any
-shortcut valid in normal that is not defined in these modes will work also in
-these modes. But any shortcut defined in these modes will have priority over
-the normal ones.
+This custom modes are built on top of the `neovim` normal or terminal mode, by
+default. You can look at them as submodes of `normal` or `terminal` mode. This
+means that any shortcut valid in normal that is not defined in these modes
+will work also in these modes. But any shortcut defined in these modes will
+have priority over the normal ones.
 
 I use these modes because I like (as seen in the demo movie) to open a float
 and then quickly position it on the screen using `hjkl` movement. Or to resize
@@ -171,13 +322,6 @@ In order to use them, you need to use the `require('azul').set_key_map`
 function instead of `vim.api.nvim_set_keymap` to set a keymap. The parameters
 are identical (see the example config provided).
 
-Sometimes (see the `zellij.lua` workflow config), you might want to build this
-modes as submode of another vim mode (like terminal). This might happen
-because you want to switch to panel mode (for example) from terminal mode,
-rather than passing through normal mode. In this case, you have to set the
-`base_mode` parameter in the options table when calling
-`require('azul').set_key_map`. See the `zellij.lua` file for an example.
-
 ### Nested mode
 
 This solves the issue of running an `azul` session inside another `azul`
@@ -187,7 +331,7 @@ host session, you call `toggle_nested_mode` then all the controls are passed
 through the first session down to the second session. When you call the
 function again, it will pass the control back to the host main session.
 
-In order to escape back to the host main session, by default you have to click
+In order to escape back to the host main session, by default you have to press
 inside the second session `<C-\><C-s>`. This is the default modifier. This
 will call again `toggle_nested_mode` and it will send the control back to the
 host main session.
@@ -295,7 +439,7 @@ reboot, or any other scenario that you might think of), then probably `azul`
 is not for you. 
 
 If your session needs are minimal (like mine), then you can use something like
-[abduco](https://github.com/neovim/neovim/issues/5035) or
+[abduco](https://github.com/martanne/abduco) or
 [dtach](https://dtach.sourceforge.net/) to handle the sesion outside `azul`.
 
 My normal scenario is to open `azul` with a few tabs and then dettach from
@@ -317,23 +461,26 @@ inside your terminal), again, `azul` is probably not for you yet.
 ## Configuring
 
 `Azul` tries to be as unopinionated as possibly. But to give you a nice start,
-it will, by default, try to configure itself with the tmux workflow. You'll
+it will, by default, try to configure itself with the azul workflow. You'll
 find inside the config folder (see bellow) an init.lua which comes from
-`examples/tmux.lua` and the `tokyonight` and `lualine` plugins installed. You
-can afterwards modify these to your liking, or even delete them and install
-your own if you prefer for example another status plugin than lualine.
+`examples/azul.lua` and the `tokyonight`, `lualine` and `which-key` plugins
+installed. You can afterwards modify these to your liking, or even delete them
+and install your own if you prefer for example another status plugin than
+`lualine`.
 
-You have in the repositories 3 examples for 3 different workflows.
-(`tmux.lua`, `zellij.lua` and `emacs.lua`). These files, together with the API
-documentation should give you an idea of how to configure your environment. 
+You have in the repositories 4 examples for 4 different workflows.
+(`azul.lua`, `tmux.lua`, `zellij.lua` and `emacs.lua`). These files, together
+with the API documentation should give you an idea of how to configure your
+environment. 
 
 If you want to install some plugins, you need to put them in your config
 folder for plugins (`~/.config/azul/pack/start/` for linux or
 `%AZUL_PREFIX%/.config/azul/pack/start` for windows). Of course, you can even
-install there a plugin manager. The example config uses these 2 plugins: 
+install there a plugin manager. The example config uses these 3 plugins: 
 
 * [lualine](https://github.com/nvim-lualine/lualine.nvim) 
 * [tokyonight](https://github.com/folke/tokyonight.nvim)
+* [which-key](https://github.com/folke/which-key.nvim)
 
 If you think that the documentation is too small for a serious software, this
 is because the neovim documentation is azul's documentation. I just enumerated

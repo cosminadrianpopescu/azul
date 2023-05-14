@@ -13,11 +13,6 @@ local float_group = function()
                                           -- will be assigned to the t:float_group group
 end
 
-local feedkeys = function(keys)
-    local codes = vim.api.nvim_replace_termcodes('<C-\\><c-n>' .. keys, true, false, true)
-    vim.api.nvim_feedkeys(codes, 't', false)
-end
-
 cmd('TermClose', {
     pattern = "*", callback = function()
         vim.fn.timer_start(1, function()
@@ -190,7 +185,6 @@ map('n', '<space>p', '', {
     callback = function()
         u.paste()
         vim.api.nvim_command('startinsert')
-        -- feedkeys(' <bs>')
     end,
 })
 
