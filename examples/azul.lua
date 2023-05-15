@@ -89,8 +89,8 @@ set_mode_escape('<cr>')
 set_mode_escape('<esc>')
 
 local options = {noremap = true}
-map('c', '<C-n>', '<Down>', options)
-map('c', '<C-p>', '<Up>', options)
+map2('c', '<C-n>', '<Down>', options)
+map2('c', '<C-p>', '<Up>', options)
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {

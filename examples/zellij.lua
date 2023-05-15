@@ -1,6 +1,7 @@
 require('my-lualine')
 local azul = require('azul')
 local map = azul.set_key_map
+local map2 = vim.api.nvim_set_keymap
 local cmd = vim.api.nvim_create_autocmd
 
 azul.set_workflow('zellij')
@@ -69,8 +70,8 @@ map({'r', 'p', 'm', 's'}, '<esc>', '', {
 })
 
 local options = {noremap = true}
-map('c', '<C-n>', '<Down>', options)
-map('c', '<C-p>', '<Up>', options)
+map2('c', '<C-n>', '<Down>', options)
+map2('c', '<C-p>', '<Up>', options)
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {

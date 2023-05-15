@@ -18,10 +18,6 @@ local terminals = {}
 local mode = 'n'
 local is_nested_session = false
 local mode_mappings = {
-    p = {},
-    r = {},
-    m = {},
-    s = {},
 }
 local workflow = 'azul'
 local mod = nil
@@ -324,53 +320,94 @@ local map_callback_execute = function(what, mode)
     end)
 end
 
-local get_pref2 = function(pref1)
-    if pref1 ~= '' or workflow == 'emacs' then
-        return mod2
-    end
-
-    if workflow == 'zellij' and (mode == 'p' or mode == 'r' or mode == 's' or mode == 'm') then
-        return mod2
-    end
-
-    return ''
-end
+-- local get_pref2 = function(pref1)
+--     if pref1 ~= '' or workflow == 'emacs' then
+--         return mod2
+--     end
+-- 
+--     if workflow == 'zellij' and (mode == 'p' or mode == 'r' or mode == 's' or mode == 'm') then
+--         return mod2
+--     end
+-- 
+--     return ''
+-- end
 
 local do_set_key_map = function(m, ls, rs, options)
-    if mode_mappings[m] ~= nil then
-        mode_mappings[m][ls] = options.callback or rs
-    end
     local options2 = clone(options)
-
     local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
-
     options2.callback = function()
-        local pref2 = get_pref2(pref1)
-        local mappings = mode_mappings[mode]
-        if is_nested_session then
+        local mappings = vim.tbl_filter(function(m) return m.m == mode and m.ls == ls end, mode_mappings)
+        if #mappings == 0 then
             return pref1 .. ls
         end
-        if mappings ~= nil then
-            map_callback_execute(mappings[ls], (workflow == 'tmux' and 'n') or 't')
-            return ''
-        end
-
-        return pref2 .. ls
+        local mapping = mappings[1]
+        map_callback_execute(mapping.options.callback or mapping.rs, 'n')
+        return 0x0 .. '<bs>'
     end
-
-    options2.expr = true
     options2.replace_keycodes = true
-
+    options2.expr = true
     local _mode = (workflow == 'tmux' and 'n') or 't'
-
-    if mode_mappings[m] == nil then
-        _mode = m
-    end
-
-    print("MAPPING" .. pref1 .. ", " .. mod2 .. ", " .. ls)
     map(_mode, pref1 .. ls, '', options2)
-    map(_mode, mod2 .. ls, '', options)
+    table.insert(mode_mappings, {
+        m = m, ls = ls, rs = rs, options = options, pref = pref1, real_mode = _mode
+    })
 end
+
+local unmap_all = function()
+    local cmds = {}
+    for _, m in ipairs(mode_mappings) do
+        local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
+        if vim.tbl_contains(cmds, cmd) == false then
+            print("EXECUTE " .. cmd)
+            vim.api.nvim_command(cmd)
+            table.insert(cmds, cmd)
+        end
+    end
+end
+
+local remap_all = function()
+    local mm = mode_mappings
+    mode_mappings = {}
+    for _, m in ipairs(mm) do
+        do_set_key_map(m.m, m.ls, m.rs, m.options)
+    end
+end
+
+-- local do_set_key_map = function(m, ls, rs, options)
+--     if mode_mappings[m] ~= nil then
+--         mode_mappings[m][ls] = options.callback or rs
+--     end
+--     local options2 = clone(options)
+-- 
+--     local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
+-- 
+--     options2.callback = function()
+--         local pref2 = get_pref2(pref1)
+--         local mappings = mode_mappings[mode]
+--         if is_nested_session then
+--             return pref1 .. ls
+--         end
+--         if mappings ~= nil then
+--             map_callback_execute(mappings[ls], (workflow == 'tmux' and 'n') or 't')
+--             return ''
+--         end
+-- 
+--         return pref2 .. ls
+--     end
+-- 
+--     options2.expr = true
+--     options2.replace_keycodes = true
+-- 
+--     local _mode = (workflow == 'tmux' and 'n') or 't'
+-- 
+--     if mode_mappings[m] == nil then
+--         _mode = m
+--     end
+-- 
+--     print("MAPPING" .. pref1 .. ", " .. mod2 .. ", " .. ls)
+--     map(_mode, pref1 .. ls, '', options2)
+--     map(_mode, mod2 .. ls, '', options)
+-- end
 
 --- Sets a new keymap
 ---
@@ -575,6 +612,7 @@ M.toggle_nested_mode = function(delim)
                 M.toggle_nested_mode(delim)
             end
         })
+        unmap_all()
         vim.api.nvim_command('startinsert')
         return
     end
@@ -582,6 +620,7 @@ M.toggle_nested_mode = function(delim)
     vim.o.laststatus = global_last_status
     vim.api.nvim_command('tunmap ' .. _delim)
     M.set_workflow(workflow, global_last_modifier)
+    remap_all()
 end
 
 M.position_current_float = function(where)
