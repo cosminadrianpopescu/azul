@@ -22,11 +22,10 @@ local mode_mappings = {
     r = {},
     m = {},
     s = {},
-    n = {},
-    t = {},
 }
 local workflow = 'azul'
 local mod = nil
+local mod2 = '<C-y><C-x>'
 local latest_float = {}
 local is_reloading = false
 local global_last_status = nil
@@ -322,38 +321,55 @@ local map_callback_execute = function(what, mode)
         else
             nvim_feedkeys(what, mode)
         end
-
-        if workflow == 'emacs' or workflow == 'azul' then
-            vim.api.nvim_command('startinsert')
-        end
     end)
+end
 
-    return ' <bs>'
+local get_pref2 = function(pref1)
+    if pref1 ~= '' or workflow == 'emacs' then
+        return mod2
+    end
+
+    if workflow == 'zellij' and (mode == 'p' or mode == 'r' or mode == 's' or mode == 'm') then
+        return mod2
+    end
+
+    return ''
 end
 
 local do_set_key_map = function(m, ls, rs, options)
-    if mode_mappings[m] == nil then
-        return map(m, ls, rs, options)
+    if mode_mappings[m] ~= nil then
+        mode_mappings[m][ls] = options.callback or rs
     end
-    mode_mappings[m][ls] = options.callback or rs
     local options2 = clone(options)
 
-    local pref = (workflow == 'azul' and m == 't' and mod) or ''
+    local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
 
     options2.callback = function()
+        local pref2 = get_pref2(pref1)
         local mappings = mode_mappings[mode]
-        if mappings == nil or mode_mappings[mode][ls] == nil or is_nested_session then
-            return pref .. ls
+        if is_nested_session then
+            return pref1 .. ls
         end
-        return map_callback_execute(mode_mappings[mode][ls], (workflow == 'tmux' and 'n') or 't')
+        if mappings ~= nil then
+            map_callback_execute(mappings[ls], (workflow == 'tmux' and 'n') or 't')
+            return ''
+        end
+
+        return pref2 .. ls
     end
 
     options2.expr = true
     options2.replace_keycodes = true
 
-    local mode = (workflow == 'tmux' and 'n') or 't'
+    local _mode = (workflow == 'tmux' and 'n') or 't'
 
-    map(mode, pref .. ls, '', options2)
+    if mode_mappings[m] == nil then
+        _mode = m
+    end
+
+    print("MAPPING" .. pref1 .. ", " .. mod2 .. ", " .. ls)
+    map(_mode, pref1 .. ls, '', options2)
+    map(_mode, mod2 .. ls, '', options)
 end
 
 --- Sets a new keymap
