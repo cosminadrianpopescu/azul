@@ -305,7 +305,7 @@ local clone = function(obj)
     return result
 end
 
-local nvim_feedkeys = function(what, mode)
+M.feedkeys = function(what, mode)
     local codes = vim.api.nvim_replace_termcodes(what, true, false, true)
     vim.api.nvim_feedkeys(codes, mode, false)
 end
@@ -315,7 +315,7 @@ local map_callback_execute = function(what, mode)
         if type(what) == "function" then
             what()
         else
-            nvim_feedkeys(what, mode)
+            M.feedkeys(what, mode)
         end
     end)
 end
@@ -353,12 +353,15 @@ local do_set_key_map = function(m, ls, rs, options)
     })
 end
 
+M.remove_key_map = function(m, ls)
+    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls end, mode_mappings)
+end
+
 local unmap_all = function()
     local cmds = {}
     for _, m in ipairs(mode_mappings) do
         local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
         if vim.tbl_contains(cmds, cmd) == false then
-            print("EXECUTE " .. cmd)
             vim.api.nvim_command(cmd)
             table.insert(cmds, cmd)
         end

@@ -523,11 +523,6 @@ window)
 So, if you prefer to use buffers and `:terminal` window, you'll have to handle
 it by yourself displaying a buffer in several windows.
 
-## Config examples
-
-You have in the `examples` folder several config examples. You can take any of
-them and put in the `$XDG_CONFIG_HOME/init.lua`
-
 ## Requirements
 
 * `Neovim` >= 0.9, because of the floating windows title.
