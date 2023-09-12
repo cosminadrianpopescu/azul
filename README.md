@@ -4,10 +4,10 @@ A nvim based terminal multiplexer.
 
 ## Demo (tldr)
 
-* [Azul workflow](https://cloud.taid.be/s/bJd2rZqeDjHAT8x)
-* [Tmux workflow](https://cloud.taid.be/s/tQ6nZarKzgjcLNW)
-* [Zellij workflow](https://cloud.taid.be/s/ocfCK3m58pFA2FM)
-* [Nested session](https://cloud.taid.be/s/2JC8iNHptT55r4Q)
+* [Azul workflow](https://cloud.taid.be/s/rkLsbJpG8kNHPXq)
+* [Tmux workflow](https://cloud.taid.be/s/6nsSz6bzmcaxnoz)
+* [Zellij workflow](https://cloud.taid.be/s/rCTyPcFWnn3aNCS)
+* [Nested session](https://cloud.taid.be/s/76i6pKnQzperH9r)
 
 ## Install
 
