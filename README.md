@@ -2,6 +2,13 @@
 
 A nvim based terminal multiplexer. 
 
+## Demo (tldr)
+
+* [Azul workflow](./azul-workflow.mkv)
+* [Tmux workflow](./tmux-workflow.mkv)
+* [Zellij workflow](./zellij-workflow.mkv)
+* [Nested session](./nested-session.mkv)
+
 ## Install
 
 You can install azul in several ways:
@@ -298,7 +305,7 @@ install.ps1 -prefix c:/Users/johndoe/azul -nvimexe c:/Users/johndoe/nvim-qt/nvim
 Make sure the folder from the `prefix` parameter exists. Then you can run
 `c:/Users/johndoe/azul/azul.cmd`.
 
-I think that this is the only native window terminal multiplexer (not
+I think that this is the only native windows terminal multiplexer (not
 considering tmux or screen or others running under cygwin).
 
 ### Custom modes
@@ -316,7 +323,7 @@ have priority over the normal ones.
 I use these modes because I like (as seen in the demo movie) to open a float
 and then quickly position it on the screen using `hjkl` movement. Or to resize
 it using `hjkl` movement. Of course, you can use some shortcuts with modifiers
-for there operations (like `<C-h>` to move a float to the left and so on) and
+for these operations (like `<C-h>` to move a float to the left and so on) and
 then you don't need to use these modes. These modes are completely optional.
 In order to use them, you need to use the `require('azul').set_key_map`
 function instead of `vim.api.nvim_set_keymap` to set a keymap. The parameters
