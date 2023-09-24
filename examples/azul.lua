@@ -173,6 +173,10 @@ set_resize_shortcuts('j', 'res +5')
 set_resize_shortcuts('k', 'res -5')
 set_resize_shortcuts('l', 'vert res +5')
 
+map2('n', 's', '', {
+    callback = function() require('sessions').term_select(require('telescope.themes').get_ivy({})) end
+})
+
 map('t', 'P', '', {
     callback = function()
         u.paste_from_clipboard()
@@ -188,7 +192,7 @@ map('t', 'pp', '', {
     desc = "Paste",
 })
 
-map2('t', '<c-l>', '<c-\\><c-n><c-l>i', {})
+map2('t', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
 map2('t', '<a-n>', '', {
     callback = azul.toggle_nested_mode
 })
@@ -196,7 +200,7 @@ map2('t', '<a-n>', '', {
 vim.o.mouse = ""
 vim.o.expandtab = true
 vim.o.smarttab = true
-vim.o.showtabline = false
+vim.o.showtabline = 0
 vim.o.completeopt = "menu,menuone,noselect"
 vim.o.wildmode = "longest,list"
 vim.o.timeout = true

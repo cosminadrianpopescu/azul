@@ -1,1 +1,43 @@
-NVIM_XDG_CONFIG_HOME=$XDG_CONFIG_HOME XDG_CONFIG_HOME=$AZUL_PREFIX/share/azul NVIM_XDG_DATA_HOME=$XDG_DATA_HOME XDG_DATA_HOME=$AZUL_PREFIX/share/azul $AZUL_NVIM_EXE -m -n -i $AZUL_PREFIX/share/azul/shada "$@"
+export NVIM_XDG_CONFIG_HOME=$XDG_CONFIG_HOME
+export XDG_CONFIG_HOME=$AZUL_PREFIX/share/azul
+export NVIM_XDG_DATA_HOME=$XDG_DATA_HOME
+export XDG_DATA_HOME=$AZUL_PREFIX/share/azul
+
+CMD="$AZUL_NVIM_EXE -m -n -i $AZUL_PREFIX/share/azul/shada"
+if [ "$AZUL_SESSION" != "" ]
+then
+    if [ ! -d /tmp/azul ]
+    then
+        mkdir /tmp/azul
+    fi
+
+    if [[ "`abduco | grep $AZUL_SESSION`" == "" ]]
+    then
+        abduco -n $AZUL_SESSION $CMD --listen "/tmp/azul/$AZUL_SESSION" "$@"
+    fi
+
+    sleep 0.2
+    check_file=/tmp/azul/$AZUL_SESSION-session
+    echo $AZUL_SESSION > $check_file
+
+    while [ -e $check_file ]
+    do
+        rm $check_file
+        nohup bash -c "sleep 0.3 && $AZUL_NVIM_EXE --remote-send '<C-s>ni' --server /tmp/azul/$AZUL_SESSION" > /dev/null 2>&1 0< /dev/null &!
+        abduco -e ^q -a $AZUL_SESSION
+        check_file=/tmp/azul/$AZUL_SESSION-session
+        if [ -e $check_file ]
+        then
+            export AZUL_SESSION=`cat $check_file`
+        fi
+    done
+
+    # if [ ! -e /tmp/azul/$AZUL_SESSION ]
+    # then
+    #     NVIM_XDG_CONFIG_HOME=$XDG_CONFIG_HOME XDG_CONFIG_HOME=$AZUL_PREFIX/share/azul NVIM_XDG_DATA_HOME=$XDG_DATA_HOME XDG_DATA_HOME=$AZUL_PREFIX/share/azul nohup $AZUL_NVIM_EXE -m -n -i $AZUL_PREFIX/share/azul/shada --listen /tmp/azul/$AZUL_SESSION --headless "$@" > /dev/null 2>&1 0< /dev/null &!
+    # fi
+    # trap "$AZUL_NVIM_EXE --remote-send '<C-s>n:call chanclose(4)<cr>' --server /tmp/azul/$AZUL_SESSION" SIGTERM
+    # $AZUL_NVIM_EXE --server /tmp/azul/$AZUL_SESSION --remote-ui
+else
+    $CMD "$@"
+fi

@@ -1,6 +1,8 @@
 local cmd = vim.api.nvim_create_autocmd
 local map = vim.api.nvim_set_keymap
 
+local is_suspended = false
+
 local M = {
     --- If set to true, then list all buffers
     list_buffers = false,
@@ -102,6 +104,9 @@ M.hide_floats = function()
 end
 
 local OnEnter = function(ev)
+    if is_suspended then
+        return
+    end
     local crt = refresh_buf(ev.buf)
     if crt == nil then
         return
@@ -143,6 +148,9 @@ M.open = function(start_edit)
 end
 
 local OnTermClose = function(ev)
+    if is_suspended then
+        return
+    end
     local t = find(function(t) return t.buf == ev.buf end, terminals)
     remove_term_buf(ev.buf)
     if t ~= nil then
@@ -168,6 +176,9 @@ end
 
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
+        if is_suspended then
+            return
+        end
         table.insert(terminals, {
             is_current = false,
             buf = ev.buf,
@@ -190,6 +201,9 @@ cmd('TermEnter', {
 
 cmd({'WinEnter'}, {
     pattern = "term://*", callback = function(ev)
+        if is_suspended then
+            return
+        end
         vim.fn.timer_start(1, function()
             ev.buf = vim.fn.bufnr()
             if vim.b.terminal_job_id == nil then
@@ -202,12 +216,18 @@ cmd({'WinEnter'}, {
 
 cmd({'TabLeave'}, {
     pattern = "*", callback = function()
+        if is_suspended then
+            return
+        end
         vim.api.nvim_tabpage_set_var(0, 'current_buffer', vim.fn.bufnr())
     end
 })
 
 cmd({'WinNew'}, {
     pattern = "term://*", callback = function()
+        if is_suspended then
+            return
+        end
         vim.fn.timer_start(1, function()
             M.open(false)
         end)
@@ -216,6 +236,9 @@ cmd({'WinNew'}, {
 
 cmd({'ModeChanged'}, {
     pattern = {'*'}, callback = function(ev)
+        if is_suspended then
+            return
+        end
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
         -- print(from .. ":" .. to)
@@ -662,6 +685,14 @@ M.set_workflow = function(w, m)
     if m ~= '' and workflow == 'tmux' then
         map('t', mod, '<C-\\><C-n>', {})
     end
+end
+
+M.suspend = function()
+    is_suspended = true
+end
+
+M.resume = function()
+    is_suspended = false
 end
 
 return M
