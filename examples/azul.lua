@@ -174,7 +174,10 @@ set_resize_shortcuts('k', 'res -5')
 set_resize_shortcuts('l', 'vert res +5')
 
 map2('n', 's', '', {
-    callback = function() require('sessions').term_select(require('telescope.themes').get_ivy({})) end
+    callback = function()
+        local opts = require('telescope.themes').get_ivy({})
+        require('sessions').sessions_list(opts)
+    end
 })
 
 map('t', 'P', '', {

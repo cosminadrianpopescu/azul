@@ -16,7 +16,9 @@ local M = {
 --- @field title string
 --- @field group string
 local terminals = {}
+local original_size = nil
 
+local splits = {}
 local mode = 'n'
 local is_nested_session = false
 local mode_mappings = {
@@ -693,6 +695,88 @@ end
 
 M.resume = function()
     is_suspended = false
+end
+
+M.save_splits = function()
+    splits = {}
+    for _, t in ipairs(vim.tbl_filter(function(x) return not is_float(x) end, terminals)) do
+        table.insert(splits, {
+            win_id = t.win_id,
+            height = vim.api.nvim_win_get_height(t.win_id),
+            width = vim.api.nvim_win_get_width(t.win_id),
+        })
+    end
+end
+
+M.restore_splits = function()
+    for _, s in ipairs(splits) do
+        if vim.api.nvim_win_is_valid(s.win_id) then
+            vim.api.nvim_win_set_height(s.win_id, s.height)
+            vim.api.nvim_win_set_width(s.win_id, s.width)
+        end
+    end
+end
+
+local get_visible_splits = function()
+    local tab = vim.api.nvim_get_current_tabpage()
+    return vim.tbl_filter(function(x)
+        return not is_float(x)
+            and vim.api.nvim_win_get_tabpage(x.win_id) == tab
+            and (vim.api.nvim_win_get_width(x.win_id) < vim.o.columns or vim.api.nvim_win_get_height(x.win_id) < vim.o.lines)
+    end, terminals)
+end
+
+M.resize = function(w, h)
+    M.suspend()
+    local is_restore = (original_size ~= nil and ((original_size.w == w and original_size.h == h) or (h == 0 and w == 0)))
+    if is_restore and h == 0 and w == 0 then
+        h = original_size.h
+        w = original_size.w
+    end
+    if not is_restore and original_size ~= nil then
+        M.resize(original_size.w, original_size.h)
+    end
+    local ws = w / vim.o.columns
+    local hs = h / vim.o.lines
+    local collection = get_visible_splits()
+    local buf = nil
+    for _, t in ipairs(collection) do
+        if buf == nil then
+            vim.api.nvim_command("e ./tmp")
+            buf = vim.fn.bufnr()
+        else
+            vim.api.nvim_win_set_buf(t.win_id, buf)
+        end
+        if not is_restore then
+            t._w = vim.api.nvim_win_get_width(t.win_id)
+            t._h = vim.api.nvim_win_get_height(t.win_id)
+        end
+    end
+
+    local lines = vim.o.lines
+    local cols = vim.o.columns
+    vim.o.lines = h
+    vim.o.columns = w
+
+    for _, t in ipairs(collection) do
+        if not is_restore then
+            vim.api.nvim_win_set_height(t.win_id, math.ceil(t._h * hs) + 1)
+            vim.api.nvim_win_set_width(t.win_id, math.ceil(t._w * ws) + 1)
+        elseif t._h ~= nil and t._w ~= nil then
+            vim.api.nvim_win_set_height(t.win_id, t._h)
+            vim.api.nvim_win_set_width(t.win_id, t._w)
+        end
+    end
+
+    for _, t in ipairs(collection) do
+        vim.api.nvim_win_set_buf(t.win_id, t.buf)
+    end
+
+    vim.api.nvim_command('bwipeout ' .. buf)
+    if not is_restore then
+        original_size = {w = cols, h = lines}
+    end
+    M.resume()
 end
 
 return M

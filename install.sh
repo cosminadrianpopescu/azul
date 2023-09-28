@@ -5,6 +5,11 @@ then
     export AZUL_PREFIX=$HOME/.local
 fi
 
+if [ "$AZUL_ABDUCO_EXE" == "" ]
+then
+    export AZUL_ABDUCO_EXE="abduco"
+fi
+
 if [ "$AZUL_NVIM_EXE" == "" ]
 then
     export AZUL_NVIM_EXE=nvim
@@ -32,7 +37,7 @@ fi
 
 export AZUL_CONFIG="${XDG_CONFIG_HOME:-$HOME}/.config/azul"
 
-printf "#!/bin/bash\n\nexport AZUL_PREFIX=$AZUL_PREFIX\nexport AZUL_NVIM_EXE=$AZUL_NVIM_EXE\n\n" > $AZUL_PREFIX/bin/azul
+printf "#!/bin/bash\n\nexport AZUL_PREFIX=$AZUL_PREFIX\nexport AZUL_ABDUCO_EXE=$AZUL_ABDUCO_EXE\nexport AZUL_NVIM_EXE=$AZUL_NVIM_EXE\n\n" > $AZUL_PREFIX/bin/azul
 cat ./azul >> $AZUL_PREFIX/bin/azul
 chmod 0755 $AZUL_PREFIX/bin/azul
 cp ./nvim/lua/azul.lua $AZUL_PREFIX/share/azul/nvim/lua
