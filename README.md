@@ -449,8 +449,8 @@ by doing `abduco -A main-session azul`.
 
 However, you can ask `azul` to handle the sessions using `abduco`, by starting
 it like this: `AZUL_SESSION=main-session azul`. This will start abduco with
-the modifier `<C-q>` and with the session name `main-session`. Then, from
-inside `azul`, you can do `<C-S>s` and you will have the current list of
+the `<C-q>` as detach key and with the session name `main-session`. Then, from
+inside `azul`, you can do `<C-S>Ss` and you will have the current list of
 sessions manage by abduco from which you can select one. For this, `azul` is
 using the [telescope](https://github.com/nvim-telescope/telescope.nvim)
 plugin.
