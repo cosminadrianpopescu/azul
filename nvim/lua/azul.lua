@@ -361,7 +361,7 @@ local do_set_key_map = function(m, ls, rs, options)
     local options2 = clone(options)
     local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
     options2.callback = function()
-        local mappings = vim.tbl_filter(function(m) return m.m == mode and m.ls == ls end, mode_mappings)
+        local mappings = vim.tbl_filter(function(m) return m.m == mode and m.ls == ls and m.pref == pref1 end, mode_mappings)
         if #mappings == 0 then
             return pref1 .. ls
         end

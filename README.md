@@ -442,7 +442,7 @@ Very neat...
 
 #### Session support
 
-Zellij for Linux offers minimal session support via
+AZUL for Linux offers minimal session support via
 [abduco](https://github.com/martanne/abduco). You can, of course, start
 `abduco` by yourself and handle the session modifiers and changes by yourself,
 by doing `abduco -A main-session azul`. 
