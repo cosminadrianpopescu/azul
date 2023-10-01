@@ -42,13 +42,13 @@ local find = function(callback, table)
     return result[1]
 end
 
-local is_float = function(t)
+M.is_float = function(t)
     return t and t.win_config and t.win_config['zindex'] ~= nil
 end
 
 local remove_term_buf = function(buf)
     terminals = vim.tbl_filter(function(t) return t.buf ~= buf end, terminals)
-    if #terminals == 0 or #vim.tbl_filter(function(t) return is_float(t) == false end, terminals) == 0 then
+    if #terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0 then
         -- print("WOULD QUIT")
         -- vim.api.nvim_command('cunabbrev quit')
         vim.api.nvim_command('quit!')
@@ -77,7 +77,7 @@ local refresh_buf = function(buf)
 end
 
 local get_visible_floatings = function()
-    return vim.tbl_filter(function(t) return is_float(t) and t.win_id ~= nil end, terminals)
+    return vim.tbl_filter(function(t) return M.is_float(t) and t.win_id ~= nil end, terminals)
 end
 
 local close_float = function(float)
@@ -96,7 +96,7 @@ end
 --- Hides all the floats
 M.hide_floats = function()
     local crt = M.get_current_terminal()
-    if crt ~= nil and is_float(crt) then
+    if crt ~= nil and M.is_float(crt) then
         latest_float[crt.group] = crt
     end
 
@@ -114,7 +114,7 @@ local OnEnter = function(ev)
         return
     end
 
-    if is_float(crt) == false then
+    if M.is_float(crt) == false then
         M.hide_floats()
     end
     crt.last_access = os.time(os.date("!*t"))
@@ -128,7 +128,7 @@ local OnEnter = function(ev)
             vim.api.nvim_win_set_option(t.win_id, 'winhl', 'FloatBorder:')
         end
     end
-    local what = (is_float(crt) and 'FloatBorder') or 'WinSeparator'
+    local what = (M.is_float(crt) and 'FloatBorder') or 'WinSeparator'
     vim.api.nvim_win_set_option(crt.win_id, 'winhl', what .. ':CurrentFloatSel')
     if workflow == 'emacs' or workflow == 'azul' then
         vim.api.nvim_command('startinsert')
@@ -274,7 +274,7 @@ end
 --- Shows all the floats
 M.show_floats = function(group, after_callback)
     local g = group or 'default'
-    local floatings = vim.tbl_filter(function(t) return is_float(t) and t ~= latest_float[g] and t.group == g end, terminals)
+    local floatings = vim.tbl_filter(function(t) return M.is_float(t) and t ~= latest_float[g] and t.group == g end, terminals)
     table.sort(floatings, function(a, b) return a.last_access < b.last_access end)
     if latest_float[g] ~= nil then
         floatings[#floatings + 1] = latest_float[g]
@@ -283,7 +283,7 @@ M.show_floats = function(group, after_callback)
 end
 
 M.are_floats_hidden = function(group)
-    local floatings = vim.tbl_filter(function(t) return is_float(t) and t.group ==(group or 'default') end, terminals)
+    local floatings = vim.tbl_filter(function(t) return M.is_float(t) and t.group ==(group or 'default') end, terminals)
     if #floatings == 0 then
         return true
     end
@@ -535,7 +535,7 @@ M.select_next_term = function(dir, group)
     local factor = ((dir == "left" or dir == "up") and 1) or -1
     local c1 = get_row_or_col(crt, check1) * factor
     local c2 = get_row_or_col(crt, check2)
-    for _, t in ipairs(vim.tbl_filter(function(t) return t ~= crt and is_float(t) and t.win_id ~= nil end, terminals)) do
+    for _, t in ipairs(vim.tbl_filter(function(t) return t ~= crt and M.is_float(t) and t.win_id ~= nil end, terminals)) do
         local t1 = get_row_or_col(t, check1) * factor
         local t2 = get_row_or_col(t, check2)
         if found == nil and t1 >= c1 then
@@ -699,7 +699,7 @@ end
 
 M.save_splits = function()
     splits = {}
-    for _, t in ipairs(vim.tbl_filter(function(x) return not is_float(x) end, terminals)) do
+    for _, t in ipairs(vim.tbl_filter(function(x) return not M.is_float(x) end, terminals)) do
         table.insert(splits, {
             win_id = t.win_id,
             height = vim.api.nvim_win_get_height(t.win_id),
@@ -720,7 +720,7 @@ end
 local get_visible_splits = function()
     local tab = vim.api.nvim_get_current_tabpage()
     return vim.tbl_filter(function(x)
-        return not is_float(x)
+        return not M.is_float(x)
             and vim.api.nvim_win_get_tabpage(x.win_id) == tab
             and (vim.api.nvim_win_get_width(x.win_id) < vim.o.columns or vim.api.nvim_win_get_height(x.win_id) < vim.o.lines)
     end, terminals)

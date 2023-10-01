@@ -45,6 +45,10 @@ local MOD_MAP = {
         text = '   SPLIT   ',
         color = colors.red,
     },
+    T = {
+        text = '    TABS   ',
+        color = colors.red,
+    },
 }
 
 local last_color = nil

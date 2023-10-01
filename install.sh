@@ -41,6 +41,7 @@ printf "#!/bin/bash\n\nexport AZUL_PREFIX=$AZUL_PREFIX\nexport AZUL_ABDUCO_EXE=$
 cat ./azul >> $AZUL_PREFIX/bin/azul
 chmod 0755 $AZUL_PREFIX/bin/azul
 cp ./nvim/lua/azul.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp ./nvim/lua/sessions.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp ./nvim/init.lua $AZUL_PREFIX/share/azul/nvim
 
 if [ ! -d $AZUL_CONFIG ]
@@ -57,15 +58,34 @@ then
         mkdir -p $AZUL_CONFIG/pack/start
     fi
 
-    git clone https://github.com/folke/tokyonight.nvim $AZUL_CONFIG/pack/start/tokyonight.nvim
-    git clone https://github.com/nvim-lualine/lualine.nvim $AZUL_CONFIG/pack/start/lualine.nvim
-    git clone https://github.com/folke/which-key.nvim $AZUL_CONFIG/pack/start/which-key.nvim
-    git clone https://github.com/nvim-lua/plenary.nvim $AZUL_CONFIG/pack/start/plenary.nvim
-    git clone https://github.com/nvim-telescope/telescope.nvim $AZUL_CONFIG/pack/start/telecope.nvim
-
     cp ./examples/lua/* $AZUL_CONFIG/lua/
     cp ./examples/azul.lua $AZUL_CONFIG/init.lua
 fi
 
+if [ ! -d $AZUL_CONFIG/pack/start/tokyonight.nvim ]
+then
+    git clone https://github.com/folke/tokyonight.nvim $AZUL_CONFIG/pack/start/tokyonight.nvim
+fi
+
+if [ ! -d $AZUL_CONFIG/pack/start/lualine.nvim ]
+then
+    git clone https://github.com/nvim-lualine/lualine.nvim $AZUL_CONFIG/pack/start/lualine.nvim
+fi
+
+
+if [ ! -d $AZUL_CONFIG/pack/start/which-key.nvim ]
+then
+    git clone https://github.com/folke/which-key.nvim $AZUL_CONFIG/pack/start/which-key.nvim
+fi
+
+if [ ! -d $AZUL_CONFIG/pack/start/plenary.nvim ]
+then
+    git clone https://github.com/nvim-lua/plenary.nvim $AZUL_CONFIG/pack/start/plenary.nvim
+fi
+
+if [ ! -d $AZUL_CONFIG/pack/start/telescope.nvim ]
+then
+    git clone https://github.com/nvim-telescope/telescope.nvim $AZUL_CONFIG/pack/start/telecope.nvim
+fi
 
 echo "Installation done in $AZUL_PREFIX. Run azul"

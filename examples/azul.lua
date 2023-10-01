@@ -24,7 +24,7 @@ map('t', 'c', '', {
 })
 
 local set_mode_escape = function(shortcut)
-    map({'r', 'p', 'm', 's'}, shortcut, '', {
+    map({'r', 'p', 'm', 's', 'T'}, shortcut, '', {
         callback = function()
             azul.enter_mode('t')
         end,
@@ -63,7 +63,8 @@ local enter_mode_mapping = function(mode)
         p = 'pane',
         r = 'resize',
         m = 'move',
-        s = 'split'
+        s = 'split',
+        T = 'tabs',
     }
     map('t', mode, '', {
         callback = function()
@@ -84,6 +85,7 @@ enter_mode_mapping('p')
 enter_mode_mapping('r')
 enter_mode_mapping('m')
 enter_mode_mapping('s')
+enter_mode_mapping('T')
 
 set_mode_escape('<cr>')
 set_mode_escape('<esc>')
@@ -105,6 +107,18 @@ local set_hjkl_shortcuts = function(key, dir, mode, callback)
         callback = function()
             callback(dir, float_group())
         end,
+    })
+end
+
+local set_tabs_shortcuts = function(key, where)
+    map('T', key, '', {
+        callback = function()
+            local tab = vim.api.nvim_tabpage_get_number(0)
+            if (where:match('-1$') and tab == 1) or (where:match('+1$') and tab == vim.fn.tabpagenr('$')) then
+                return
+            end
+            vim.api.nvim_command(where)
+        end
     })
 end
 
@@ -135,6 +149,11 @@ local set_position_shortcut = function(key, where)
         end,
     })
 end
+
+set_tabs_shortcuts('H', 'tabfirst')
+set_tabs_shortcuts('L', 'tablast')
+set_tabs_shortcuts('h', 'tabn -1')
+set_tabs_shortcuts('l', 'tabn +1')
 
 set_move_shortcuts('h', 'left')
 set_move_shortcuts('j', 'down')
@@ -176,7 +195,7 @@ set_resize_shortcuts('l', 'vert res +5')
 map2('n', 's', '', {
     callback = function()
         local opts = require('telescope.themes').get_ivy({})
-        require('sessions').sessions_list(opts)
+        require('sessions').term_select(opts)
     end
 })
 
