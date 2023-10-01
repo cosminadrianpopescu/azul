@@ -170,7 +170,7 @@ local OnTermClose = function(ev)
 end
 
 --- Enters a custom mode. Use this function for changing custom modes
----@param m 'p'|'r'|'s'|'m'
+---@param m 'p'|'r'|'s'|'m'|'T'|'n'|'t'
 M.enter_mode = function(m)
     mode = m
     vim.api.nvim_command('doautocmd User MxModeChanged')

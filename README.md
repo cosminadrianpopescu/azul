@@ -182,6 +182,11 @@ Also, here, you have the same modes as for the `zellij` workflow.
 * `h`, `j`, `k`, `l` resizes the current pane in the left, down, up or right
   direction, respectively.
 
+*`TABS` mode shortcuts
+
+* `h`, `l` selects the tab previous or next
+* `H`, `L` select the first or last tab
+
 #### Azul workflow
 
 This is the default workflow. After installation, if you don't modify your
@@ -207,6 +212,8 @@ indicating what are the possible commands that you can send to `azul`.
 * `<C-s>r` enters `RESIZE` mode
 * `<C-s>m` enters `MOVE` mode
 * `<C-s>s` enters `SPLIT` mode
+* `<C-s>Ss` selects an abduco session (linux only)
+* `<C-s>St` selects a tab from the current session
 * `<cr>`, `<esc>` goes back to `TERMINAL` mode
 
 The other modes shortcuts are the same as for the `tmux` workflow shortcuts.
@@ -433,25 +440,30 @@ Very neat...
 
 ### Disadvantages compared with `tmux` or `zellij`
 
-#### Lack of session
+#### Session support
 
-Of course, the biggest issue with `azul` is the lack of session support. This
-is being currently handled in `neovim`
-[here](https://github.com/neovim/neovim/issues/5035). When this will be
-merged, then `azul` will recuperate this disadvantage.
+Zellij for Linux offers minimal session support via
+[abduco](https://github.com/martanne/abduco). You can, of course, start
+`abduco` by yourself and handle the session modifiers and changes by yourself,
+by doing `abduco -A main-session azul`. 
 
-Until then, if your session needs are complex (like for example opening
-another session in the current multiplexer, somehow persist the session over a
-reboot, or any other scenario that you might think of), then probably `azul`
-is not for you. 
+However, you can ask `azul` to handle the sessions using `abduco`, by starting
+it like this: `AZUL_SESSION=main-session azul`. This will start abduco with
+the modifier `<C-q>` and with the session name `main-session`. Then, from
+inside `azul`, you can do `<C-S>s` and you will have the current list of
+sessions manage by abduco from which you can select one. For this, `azul` is
+using the [telescope](https://github.com/nvim-telescope/telescope.nvim)
+plugin.
 
-If your session needs are minimal (like mine), then you can use something like
-[abduco](https://github.com/martanne/abduco) or
-[dtach](https://dtach.sourceforge.net/) to handle the sesion outside `azul`.
+If your session needs are more complex than simple dettaching or attaching,
+like persisting or restoring the sessions, then probably `azul` is not for you
+yet.
 
-My normal scenario is to open `azul` with a few tabs and then dettach from
-that session and re-attach later (especially over ssh). For this `abduco` is
-enough for me.
+The connect and disconnect from a `neovim` instance is being worked
+[here](https://github.com/neovim/neovim/issues/5035).
+
+I will start working on session support based on this. However, even that,
+would probably offer limited session support. Just connect and disconnect.
 
 #### Cursor support
 

@@ -29,7 +29,7 @@ map('n', 'c', '', {
 })
 
 local set_mode_escape = function(shortcut)
-    map({'r', 'p', 'm', 's'}, shortcut, '', {
+    map({'r', 'p', 'm', 's', 'T'}, shortcut, '', {
         callback = function()
             azul.enter_mode('n')
             vim.fn.timer_start(1, function()
@@ -85,6 +85,7 @@ enter_mode_mapping('p')
 enter_mode_mapping('r')
 enter_mode_mapping('m')
 enter_mode_mapping('s')
+enter_mode_mapping('T')
 
 set_mode_escape('<cr>')
 set_mode_escape('<esc>')
@@ -105,6 +106,18 @@ local set_hjkl_shortcuts = function(key, dir, mode, callback)
     map(mode, key, '', {
         callback = function()
             callback(dir, float_group())
+        end
+    })
+end
+
+local set_tabs_shortcuts = function(key, where)
+    map('T', key, '', {
+        callback = function()
+            local tab = vim.api.nvim_tabpage_get_number(0)
+            if (where:match('-1$') and tab == 1) or (where:match('+1$') and tab == vim.fn.tabpagenr('$')) then
+                return
+            end
+            vim.api.nvim_command(where)
         end
     })
 end
@@ -136,6 +149,11 @@ local set_position_shortcut = function(key, where)
         end
     })
 end
+
+set_tabs_shortcuts('H', 'tabfirst')
+set_tabs_shortcuts('L', 'tablast')
+set_tabs_shortcuts('h', 'tabn -1')
+set_tabs_shortcuts('l', 'tabn +1')
 
 set_move_shortcuts('h', 'left')
 set_move_shortcuts('j', 'down')
@@ -188,8 +206,7 @@ map('n', '<space>p', '', {
     end,
 })
 
-map('t', '<c-l>', '<c-s><c-l>i', {})
-
+map2('t', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
 map2('t', '<a-n>', '', {
     callback = azul.toggle_nested_mode
 })
@@ -197,6 +214,6 @@ map2('t', '<a-n>', '', {
 vim.o.mouse = ""
 vim.o.expandtab = true
 vim.o.smarttab = true
-vim.o.showtabline = false
+vim.o.showtabline = 0
 vim.o.completeopt = "menu,menuone,noselect"
 vim.o.wildmode = "longest,list"

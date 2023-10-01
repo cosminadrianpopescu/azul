@@ -30,7 +30,7 @@ then
     while [ -e $check_file ]
     do
         rm $check_file
-        nohup bash -c "sleep 0.3 && $AZUL_NVIM_EXE --remote-send '<C-s>ni' --server /tmp/azul/$AZUL_SESSION" > /dev/null 2>&1 0< /dev/null &!
+        nohup bash -c "sleep 0.3 && $AZUL_NVIM_EXE --remote-send '<C-\\><C-n>i' --server /tmp/azul/$AZUL_SESSION" > /dev/null 2>&1 0< /dev/null &!
         $AZUL_ABDUCO_EXE -e ^q -a $AZUL_SESSION
         check_file=/tmp/azul/$AZUL_SESSION-session
         if [ -e $check_file ]

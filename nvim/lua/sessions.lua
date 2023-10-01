@@ -99,6 +99,9 @@ require('telescope').setup{
     },
 }
 local sessions_list = function(opts)
+    if os.getenv("AZUL_SESSION") == nil then
+        return
+    end
     azul.suspend()
     local sessions = run_process(os.getenv("AZUL_ABDUCO_EXE"))
     table.remove(sessions, 1)

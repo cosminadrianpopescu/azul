@@ -109,6 +109,6 @@ map('t', '<a-n>', '', {
 vim.o.mouse = ""
 vim.o.expandtab = true
 vim.o.smarttab = true
-vim.o.showtabline = false
+vim.o.showtabline = 0
 vim.o.completeopt = "menu,menuone,noselect"
 vim.o.wildmode = "longest,list"

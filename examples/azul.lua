@@ -3,7 +3,6 @@ local azul = require('azul')
 local u = require('utils')
 local map = azul.set_key_map
 local map2 = vim.api.nvim_set_keymap
-local cmd = vim.api.nvim_create_autocmd
 
 local float_group = function()
     return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
@@ -16,12 +15,25 @@ local feedkeys = function(keys)
     vim.api.nvim_feedkeys(codes, 't', false)
 end
 
+local t = function(key, callback, what)
+    map('t', key, '', {
+        callback = function()
+            local opts = require('telescope.themes').get_ivy({})
+            callback(opts)
+        end,
+        desc = "Select a " .. what,
+    })
+end
+
 map('t', 'c', '', {
     callback = function()
         vim.api.nvim_command('$tabnew')
     end,
     desc = "Create new tab",
 })
+
+t('Ss', require('sessions').sessions_list, 'session')
+t('St', require('sessions').term_select, 'terminal')
 
 local set_mode_escape = function(shortcut)
     map({'r', 'p', 'm', 's', 'T'}, shortcut, '', {
@@ -113,10 +125,6 @@ end
 local set_tabs_shortcuts = function(key, where)
     map('T', key, '', {
         callback = function()
-            local tab = vim.api.nvim_tabpage_get_number(0)
-            if (where:match('-1$') and tab == 1) or (where:match('+1$') and tab == vim.fn.tabpagenr('$')) then
-                return
-            end
             vim.api.nvim_command(where)
         end
     })
@@ -152,8 +160,8 @@ end
 
 set_tabs_shortcuts('H', 'tabfirst')
 set_tabs_shortcuts('L', 'tablast')
-set_tabs_shortcuts('h', 'tabn -1')
-set_tabs_shortcuts('l', 'tabn +1')
+set_tabs_shortcuts('h', 'tabprev')
+set_tabs_shortcuts('l', 'tabnext')
 
 set_move_shortcuts('h', 'left')
 set_move_shortcuts('j', 'down')
@@ -191,13 +199,6 @@ set_resize_shortcuts('h', 'vert res -5')
 set_resize_shortcuts('j', 'res +5')
 set_resize_shortcuts('k', 'res -5')
 set_resize_shortcuts('l', 'vert res +5')
-
-map2('n', 's', '', {
-    callback = function()
-        local opts = require('telescope.themes').get_ivy({})
-        require('sessions').term_select(opts)
-    end
-})
 
 map('t', 'P', '', {
     callback = function()
