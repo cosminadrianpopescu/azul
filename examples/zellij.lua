@@ -51,7 +51,10 @@ end
 map('p', 'f', '', {
     callback = function()
         azul.open_float()
-        azul.enter_mode('t')
+        vim.fn.timer_start(1, function()
+            azul.enter_mode('t')
+            vim.api.nvim_command('startinsert')
+        end)
     end,
 })
 

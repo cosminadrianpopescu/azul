@@ -24,7 +24,9 @@ cmd('TermClose', {
 map('n', 'c', '', {
     callback = function()
         vim.api.nvim_command('$tabnew')
-        vim.api.nvim_command('startinsert')
+        vim.fn.timer_start(1, function()
+            vim.api.nvim_command('startinsert')
+        end)
     end
 })
 
@@ -62,7 +64,9 @@ end
 map('n', 'w', '', {
     callback = function()
         azul.toggle_floats(float_group())
-        vim.api.nvim_command('startinsert')
+        vim.fn.timer_start(1, function()
+            vim.api.nvim_command('startinsert')
+        end)
     end
 })
 
@@ -77,7 +81,9 @@ end
 map('n', 'f', '', {
     callback = function()
         azul.open_float(float_group())
-        vim.api.nvim_command('startinsert')
+        vim.fn.timer_start(1, function()
+            vim.api.nvim_command('startinsert')
+        end)
     end
 })
 
@@ -195,14 +201,18 @@ set_resize_shortcuts('l', 'vert res +5')
 map('n', '<space>P', '', {
     callback = function()
         u.paste_from_clipboard()
-        vim.api.nvim_command('startinsert')
+        vim.fn.timer_start(1, function()
+            vim.api.nvim_command('startinsert')
+        end)
     end,
 })
 
 map('n', '<space>p', '', {
     callback = function()
         u.paste()
-        vim.api.nvim_command('startinsert')
+        vim.fn.timer_start(1, function()
+            vim.api.nvim_command('startinsert')
+        end)
     end,
 })
 

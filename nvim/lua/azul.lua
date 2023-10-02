@@ -170,10 +170,18 @@ local OnTermClose = function(ev)
 end
 
 --- Enters a custom mode. Use this function for changing custom modes
----@param m 'p'|'r'|'s'|'m'|'T'|'n'|'t'
-M.enter_mode = function(m)
-    mode = m
+---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'
+M.enter_mode = function(new_mode)
+    if not L.is_vim_mode(mode) then
+        L.unmap_all(mode)
+    end
+    mode = new_mode
     vim.api.nvim_command('doautocmd User MxModeChanged')
+    if L.is_vim_mode(new_mode) then
+        return
+    end
+
+    L.remap_all(new_mode)
 end
 
 cmd('TermOpen',{
@@ -357,34 +365,42 @@ end
 --     return ''
 -- end
 
-local do_set_key_map = function(m, ls, rs, options)
-    local options2 = clone(options)
-    local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
-    options2.callback = function()
-        local mappings = vim.tbl_filter(function(m) return m.m == mode and m.ls == ls and m.pref == pref1 end, mode_mappings)
-        if #mappings == 0 then
-            return pref1 .. ls
-        end
-        local mapping = mappings[1]
-        map_callback_execute(mapping.options.callback or mapping.rs, 'n')
-        return 0x0 .. '<bs>'
+L.is_vim_mode = function(m)
+    return (m:match("^[nvxoitc]") and true) or false
+end
+
+local do_set_key_map = function(map_mode, ls, rs, options)
+    local pref1 = (workflow == 'azul' and map_mode == 't' and mod) or ''
+    if L.is_vim_mode(map_mode) then
+        vim.api.nvim_set_keymap(map_mode, pref1 .. ls .. '', rs .. '', options)
+        return
     end
-    options2.replace_keycodes = true
-    options2.expr = true
+    local mappings = vim.tbl_filter(function(m) return m.m == map_mode and m.ls == ls and m.pref == pref1 end, mode_mappings)
     local _mode = (workflow == 'tmux' and 'n') or 't'
-    map(_mode, pref1 .. ls, '', options2)
-    table.insert(mode_mappings, {
-        m = m, ls = ls, rs = rs, options = options, pref = pref1, real_mode = _mode
-    })
+    if #mappings == 0 then
+        table.insert(mode_mappings, {
+            m = map_mode, ls = ls, rs = rs, options = options, pref = pref1, real_mode = _mode
+        })
+    else
+        local x = mappings[1]
+        x.m = map_mode
+        x.ls = ls
+        x.rs = rs
+        x.options = options
+        x.pref = pref1
+        x.real_mode = _mode
+    end
 end
 
 M.remove_key_map = function(m, ls)
-    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls end, mode_mappings)
+    local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
+    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls and m.pref == pref1 end, mode_mappings)
 end
 
-local unmap_all = function()
+L.unmap_all = function(mode)
     local cmds = {}
-    for _, m in ipairs(mode_mappings) do
+    local collection = (mode and vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)) or mode_mappings
+    for _, m in ipairs(collection) do
         local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
         if vim.tbl_contains(cmds, cmd) == false then
             vim.api.nvim_command(cmd)
@@ -393,11 +409,10 @@ local unmap_all = function()
     end
 end
 
-local remap_all = function()
-    local mm = mode_mappings
-    mode_mappings = {}
-    for _, m in ipairs(mm) do
-        do_set_key_map(m.m, m.ls, m.rs, m.options)
+L.remap_all = function(mode)
+    local collection = (mode and vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)) or mode_mappings
+    for _, m in ipairs(collection) do
+        vim.api.nvim_set_keymap(m.real_mode, m.ls, m.rs, m.options)
     end
 end
 
@@ -640,7 +655,7 @@ M.toggle_nested_mode = function(delim)
                 M.toggle_nested_mode(delim)
             end
         })
-        unmap_all()
+        L.unmap_all()
         vim.api.nvim_command('startinsert')
         return
     end
@@ -648,7 +663,7 @@ M.toggle_nested_mode = function(delim)
     vim.o.laststatus = global_last_status
     vim.api.nvim_command('tunmap ' .. _delim)
     M.set_workflow(workflow, global_last_modifier)
-    remap_all()
+    L.remap_all()
 end
 
 M.position_current_float = function(where)
