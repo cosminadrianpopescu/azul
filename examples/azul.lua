@@ -126,6 +126,10 @@ local set_tabs_shortcuts = function(key, where)
     map('T', key, '', {
         callback = function()
             vim.api.nvim_command(where)
+            if where:match('tabnew$') then
+                azul.enter_mode('t')
+                vim.api.nvim_command('startinsert')
+            end
         end
     })
 end
@@ -162,7 +166,7 @@ set_tabs_shortcuts('H', 'tabfirst')
 set_tabs_shortcuts('L', 'tablast')
 set_tabs_shortcuts('h', 'tabprev')
 set_tabs_shortcuts('l', 'tabnext')
-set_tabs_shortcuts('c', 'tabnew')
+set_tabs_shortcuts('c', '$tabnew')
 
 set_move_shortcuts('h', 'left')
 set_move_shortcuts('j', 'down')
