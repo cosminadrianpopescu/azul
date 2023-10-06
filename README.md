@@ -218,7 +218,7 @@ indicating what are the possible commands that you can send to `azul`.
 
 The other modes shortcuts are the same as for the `tmux` workflow shortcuts.
 
-After first installation, an `init.lua` file will be created in your config
+After the first installation, an `init.lua` file will be created in your config
 folder. This will contain the `azul` workflow settings. If you want to use any
 of the other workflows, overwrite this file with any of the files in the
 `examples` folder. Of course, these example files are just a starting point.
@@ -230,8 +230,7 @@ method. The first argument is the workflow you want to use (`tmux`, `zellij`,
 `emacs` or `azul`) and the second one is the modifier (if applicable). In
 order for the custom modes (`PANE`, `RESIZE`, `SPLIT` and `MOVE`) to work, you
 need to use the `azul.set_key_map` function to define your keymaps. This
-function takes the same arguments as `vim.api.nvim_set_keymap`. You cannot set
-`expr` to true, though, because this is used internally by `azul`. 
+function takes the same arguments as `vim.api.nvim_set_keymap`.
 
 Also, for `azul` workflow, when using `azul.set_key_map` function, keep in
 mind that the shortcut that will be created will contain the modifier before.
