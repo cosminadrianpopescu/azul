@@ -2,7 +2,6 @@ require('my-lualine')
 local azul = require('azul')
 local u = require('utils')
 local map = azul.set_key_map
-local map2 = vim.api.nvim_set_keymap
 local cmd = vim.api.nvim_create_autocmd
 
 azul.set_workflow('tmux')
@@ -97,8 +96,8 @@ set_mode_escape('<cr>')
 set_mode_escape('<esc>')
 
 local options = {noremap = true}
-map2('c', '<C-n>', '<Down>', options)
-map2('c', '<C-p>', '<Up>', options)
+map('c', '<C-n>', '<Down>', options)
+map('c', '<C-p>', '<Up>', options)
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {
@@ -216,8 +215,8 @@ map('n', '<space>p', '', {
     end,
 })
 
-map2('t', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
-map2('t', '<a-n>', '', {
+map('n', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
+map('n', 'N', '', {
     callback = azul.toggle_nested_mode
 })
 

@@ -19,7 +19,7 @@ local terminals = {}
 local original_size = nil
 
 local splits = {}
-local mode = 'n'
+local mode = nil
 local is_nested_session = false
 local mode_mappings = {
 }
@@ -369,7 +369,7 @@ end
 
 L.unmap_all = function(mode)
     local cmds = {}
-    local collection = (mode and vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)) or mode_mappings
+    local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
     for _, m in ipairs(collection) do
         local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
         -- print(cmd)
@@ -381,7 +381,7 @@ L.unmap_all = function(mode)
 end
 
 L.remap_all = function(mode)
-    local collection = (mode and vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)) or mode_mappings
+    local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
     for _, m in ipairs(collection) do
         vim.api.nvim_set_keymap(m.real_mode, m.pref .. m.ls, m.rs, m.options)
     end
