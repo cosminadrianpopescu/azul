@@ -103,8 +103,8 @@ set_mode_escape('<cr>')
 set_mode_escape('<esc>')
 
 local options = {noremap = true}
-map2('c', '<C-n>', '<Down>', options)
-map2('c', '<C-p>', '<Up>', options)
+map('c', '<C-n>', '<Down>', options)
+map('c', '<C-p>', '<Up>', options)
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {
@@ -221,8 +221,9 @@ map('t', 'pp', '', {
 })
 
 map2('t', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
-map2('t', '<a-n>', '', {
-    callback = azul.toggle_nested_mode
+map('t', 'N', '', {
+    callback = azul.toggle_nested_mode,
+    desc = 'Toggle nested session'
 })
 
 vim.o.mouse = ""
@@ -241,6 +242,9 @@ wk.setup({
         '<C-s>'
     }
 })
+map('t', 'n', '<C-\\><C-n>', {
+    desc = 'Enter normal mode',
+})
 wk.register({
     ["<C-s>"] = {
         ['<cr>'] = {'', 'Cancel'},
@@ -253,11 +257,15 @@ wk.register({
 
 vim.api.nvim_create_autocmd('User', {
     pattern = "", callback = function(ev)
-        if ev.match ~= 'MxToggleNestedMode' then
-            return
-        end
-
-        local callback = (azul.is_nested_session() and keys.hook_del) or keys.hook_add
-        callback('<C-s>', 't')
+        local callback = (
+            (
+                (ev.match == 'MxToggleNestedMode' and azul.is_nested_session())
+                    or (ev.match == 'MxModeChanged' and azul.current_mode() ~= 't')
+            )
+            and keys.hook_del
+        ) or keys.hook_add
+        vim.fn.timer_start(1, function()
+            callback('<C-s>', 't')
+        end)
     end
 })

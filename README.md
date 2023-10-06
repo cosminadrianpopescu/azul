@@ -433,7 +433,7 @@ the real terminal), in normal mode, in visual mode, you name it...
 #### Nested mode
 
 As you seen in the video, you can connect to a ssh session, press a shortcut
-(in my case `<A-n>`) and then all the keys are passed to the nested session.
+(in my case `<C-s>N`) and then all the keys are passed to the nested session.
 To pass the control back, you press the escape shortcut `<C-\><C-s>` (this is
 the default, but you can set your own) and you control again the main session.
 Very neat...
