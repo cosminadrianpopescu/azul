@@ -1,5 +1,12 @@
 #!/bin/bash
 
+install_from_github() {
+    if [ ! -d $AZUL_CONFIG/pack/start/$2 ]
+    then
+        git clone https://github.com/$1/$2 $AZUL_CONFIG/pack/start/$2
+    fi
+}
+
 if [ "$AZUL_DIR" == "" ]
 then
     export AZUL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -67,30 +74,11 @@ then
     cp $AZUL_DIR/examples/azul.lua $AZUL_CONFIG/init.lua
 fi
 
-if [ ! -d $AZUL_CONFIG/pack/start/tokyonight.nvim ]
-then
-    git clone https://github.com/folke/tokyonight.nvim $AZUL_CONFIG/pack/start/tokyonight.nvim
-fi
-
-if [ ! -d $AZUL_CONFIG/pack/start/lualine.nvim ]
-then
-    git clone https://github.com/nvim-lualine/lualine.nvim $AZUL_CONFIG/pack/start/lualine.nvim
-fi
-
-
-if [ ! -d $AZUL_CONFIG/pack/start/which-key.nvim ]
-then
-    git clone https://github.com/folke/which-key.nvim $AZUL_CONFIG/pack/start/which-key.nvim
-fi
-
-if [ ! -d $AZUL_CONFIG/pack/start/plenary.nvim ]
-then
-    git clone https://github.com/nvim-lua/plenary.nvim $AZUL_CONFIG/pack/start/plenary.nvim
-fi
-
-if [ ! -d $AZUL_CONFIG/pack/start/telescope.nvim ]
-then
-    git clone https://github.com/nvim-telescope/telescope.nvim $AZUL_CONFIG/pack/start/telescope.nvim
-fi
+install_from_github "folke" "tokyonight.nvim"
+install_from_github "nvim-lualine" "lualine.nvim"
+install_from_github "folke" "which-key.nvim"
+install_from_github "nvim-lua" "plenary.nvim"
+install_from_github "nvim-telescope" "telescope.nvim"
+install_from_github "kwkarlwang" "bufresize.nvim"
 
 echo "Installation done in $AZUL_PREFIX. Run azul"

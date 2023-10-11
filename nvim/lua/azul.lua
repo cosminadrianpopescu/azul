@@ -251,6 +251,16 @@ cmd({'ModeChanged'}, {
     end
 })
 
+cmd({'UiEnter'}, {
+    pattern = {'*'}, callback = function(ev)
+        M.feedkeys('<C-s>ni', 't')
+        -- vim.fn.timer_start(1, function()
+        --     M.enter_mode('')
+        --     vim.api.nvim_command('startinsert')
+        -- end)
+    end
+})
+
 local restore_float = function(t)
     if t == nil or not vim.api.nvim_buf_is_valid(t.buf) then
         return
@@ -364,12 +374,19 @@ end
 
 M.remove_key_map = function(m, ls)
     local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
-    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls and m.pref == pref1 end, mode_mappings)
+    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls or m.pref ~= pref1 end, mode_mappings)
+    local f = io.open("/tmp/log", "w")
+    f:write(vim.inspect(mode_mappings))
+    f:close()
 end
 
 L.unmap_all = function(mode)
     local cmds = {}
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
+    local f = io.open("/tmp/log-u", "w")
+    f:write(vim.inspect(mode))
+    f:write(vim.inspect(collection))
+    f:close()
     for _, m in ipairs(collection) do
         local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
         -- print(cmd)
@@ -382,6 +399,10 @@ end
 
 L.remap_all = function(mode)
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
+    local f = io.open("/tmp/log-r", "w")
+    f:write(vim.inspect(mode))
+    f:write(vim.inspect(collection))
+    f:close()
     for _, m in ipairs(collection) do
         vim.api.nvim_set_keymap(m.real_mode, m.pref .. m.ls, m.rs, m.options)
     end
@@ -722,11 +743,19 @@ M.resize = function(w, h)
         vim.api.nvim_win_set_buf(t.win_id, t.buf)
     end
 
-    vim.api.nvim_command('bwipeout ' .. buf)
+    if buf ~=nil and vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) then
+        vim.api.nvim_command('bwipeout ' .. buf)
+    end
     if not is_restore then
         original_size = {w = cols, h = lines}
     end
     M.resume()
+end
+
+M.disconnect = function()
+    for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
+        vim.fn.chanclose(ui.chan)
+    end
 end
 
 return M

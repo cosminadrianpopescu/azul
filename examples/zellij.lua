@@ -5,6 +5,8 @@ local cmd = vim.api.nvim_create_autocmd
 
 azul.set_workflow('zellij')
 
+require('bufresize').setup()
+
 cmd('TermClose', {
     pattern = "*", callback = function()
         vim.fn.timer_start(1, function()

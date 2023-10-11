@@ -1,26 +1,118 @@
+usage() {
+    echo "Usage: "
+    echo "    azul [options]"
+    echo ""
+    echo "Options: "
+    echo "    -a <session-name> Attach to an existing session or create it if it does not exists"
+    echo "    -l                List the existing sessions"
+    echo "    -s <cmd>          Send the command to an existing session (only together with -a)"
+    echo "    -c <config-path>  Load the config from the <config-path> location"
+    echo "    -h --help         Displays this help and exists"
+}
+
+is_session_live() {
+    if [ ! -S /tmp/azul/$1 ]
+    then
+        return 0
+    fi
+    if [ "`ss -l | grep \" /tmp/azul/$1 \"`" == "" ]
+    then
+        return 0
+    fi
+    return 1
+}
+
+check_session() {
+    is_session_live $1
+    if [ $? == 0 ]
+    then
+        echo "The session $1 is not active."
+        exit 1
+    fi
+}
+
+list_sessions() {
+    for f in `ls /tmp/azul`
+    do
+        is_session_live $f
+        if [ $? == 1 ]
+        then
+            echo $f
+        fi
+    done
+}
+
+if [ ! -d /tmp/azul ]
+then
+    mkdir /tmp/azul
+fi
+
+export AZUL_SESSION=""
+export AZUL_LIST=""
+AZUL_CMD=""
+
+while getopts "a:lhs:c:" o
+do
+    case "${o}" in
+        a)
+            AZUL_SESSION=$OPTARG
+            ;;
+        l)
+            list_sessions
+            exit 0
+            ;;
+        s)
+            AZUL_CMD=$OPTARG
+            ;;
+        c)
+            export AZUL_CONFIG_HOME=$OPTARG
+            ;;
+        h)
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [[ "$AZUL_CMD" != "" && "$AZUL_SESSION" == "" ]]
+then
+    echo ""
+    echo "You have to select a session to send a command"
+    echo ""
+    usage
+    exit 1
+fi
+
+if [[ "$AZUL_CMD" != "" && "$AZUL_SESSION" != "" ]]
+then
+    check_session $AZUL_SESSION
+    $AZUL_NVIM_EXE --remote-send "$AZUL_CMD" --server /tmp/azul/$AZUL_SESSION
+    exit 0
+fi
+
 export NVIM_XDG_CONFIG_HOME=$XDG_CONFIG_HOME
 export XDG_CONFIG_HOME=$AZUL_PREFIX/share/azul
 export NVIM_XDG_DATA_HOME=$XDG_DATA_HOME
 export XDG_DATA_HOME=$AZUL_PREFIX/share/azul
 
 CMD="$AZUL_NVIM_EXE -m -n -i $AZUL_PREFIX/share/azul/shada"
-if [ "$1" != "" ]
+# if [[ "$AZUL_X" != "" && "$AZUL_Y" != "" ]]
+# then
+#     $AZUL_NVIM_EXE --remote-send "<C-s>n:lua require('azul').resize($AZUL_X, $AZUL_Y)<cr>i" --server /tmp/azul/$AZUL_SESSION
+#     if [ $AZUL_RESIZE_CONNECT == 1 ]
+#     then
+#         $AZUL_NVIM_EXE --server /tmp/azul/$AZUL_SESSION --remote-ui
+#     fi
+if [ "$AZUL_SESSION" != "" ]
 then
-    $AZUL_NVIM_EXE --remote-send "<C-s>n:lua require('azul').resize($1, $2)<cr>i" --server /tmp/azul/$3
-    if [ "$4" != "" ]
+    is_session_live $AZUL_SESSION
+    if [ $? == 0 ]
     then
-        $AZUL_ABDUCO_EXE -e ^q -a $3
-    fi
-elif [ "$AZUL_SESSION" != "" ]
-then
-    if [ ! -d /tmp/azul ]
-    then
-        mkdir /tmp/azul
-    fi
-
-    if [[ "`$AZUL_ABDUCO_EXE | grep $AZUL_SESSION`" == "" ]]
-    then
-        $AZUL_ABDUCO_EXE -n $AZUL_SESSION $CMD --listen "/tmp/azul/$AZUL_SESSION" "$@"
+        if [ -S /tmp/azul/$AZUL_SESSION ]
+        then
+            rm /tmp/azul/$AZUL_SESSION
+        fi
+        setsid $AZUL_NVIM_EXE --listen /tmp/azul/$AZUL_SESSION --headless >/dev/null 2>&1 0< /dev/null &!
     fi
 
     sleep 0.2
@@ -30,8 +122,7 @@ then
     while [ -e $check_file ]
     do
         rm $check_file
-        nohup bash -c "sleep 0.3 && $AZUL_NVIM_EXE --remote-send '<C-\\><C-n>i' --server /tmp/azul/$AZUL_SESSION" > /dev/null 2>&1 0< /dev/null &!
-        $AZUL_ABDUCO_EXE -e ^q -a $AZUL_SESSION
+        $AZUL_NVIM_EXE --server /tmp/azul/$AZUL_SESSION --remote-ui
         check_file=/tmp/azul/$AZUL_SESSION-session
         if [ -e $check_file ]
         then
@@ -39,16 +130,12 @@ then
         fi
     done
 
-    if [[ "$AZUL_XDOTOOL_EXE" == "" ]]
-    then
-        reset
-    fi
     # if [ ! -e /tmp/azul/$AZUL_SESSION ]
     # then
     #     NVIM_XDG_CONFIG_HOME=$XDG_CONFIG_HOME XDG_CONFIG_HOME=$AZUL_PREFIX/share/azul NVIM_XDG_DATA_HOME=$XDG_DATA_HOME XDG_DATA_HOME=$AZUL_PREFIX/share/azul nohup $AZUL_NVIM_EXE -m -n -i $AZUL_PREFIX/share/azul/shada --listen /tmp/azul/$AZUL_SESSION --headless "$@" > /dev/null 2>&1 0< /dev/null &!
     # fi
     # trap "$AZUL_NVIM_EXE --remote-send '<C-s>n:call chanclose(4)<cr>' --server /tmp/azul/$AZUL_SESSION" SIGTERM
     # $AZUL_NVIM_EXE --server /tmp/azul/$AZUL_SESSION --remote-ui
-else
-    $CMD "$@"
+# else
+#     $CMD "$@"
 fi

@@ -25,46 +25,27 @@ local run_process = function(cmd)
     return result
 end
 
-local run_in_instance = function(session, what)
-    vim.fn.jobstart(os.getenv("AZUL_NVIM_EXE") .. " --remote-send \"<C-s>n:lua require('azul')." .. what .. "()<cr>i\" --server /tmp/azul/" .. session)
-    -- run_process(os.getenv("AZUL_NVIM_EXE") .. " --remote-send \"<C-s>n:lua require('azul')." .. what .. "()<cr>i\" --server /tmp/azul/" .. session)
-end
-
 local act_close = actions.close
 actions.close = function(bufnr)
     act_close(bufnr)
-    local entry = require('telescope.actions.state').get_selected_entry()
-    vim.fn.jobstart(os.getenv("AZUL_PREFIX") .. '/bin/azul 0 0 ' .. entry.value)
     azul.resume()
-    for _, s in ipairs(vim.tbl_filter(function(x) return x.buf ~= nil and vim.api.nvim_buf_is_valid(x.buf) end, _sessions)) do
-        if s.value ~= os.getenv("AZUL_SESSION") then
-            vim.fn.jobstart(os.getenv("AZUL_PREFIX") .. '/bin/azul 0 0 ' .. s.value)
-        end
-        for _, info in ipairs(vim.fn.getbufinfo(s.buf)) do
-            if info.variables ~= nil and info.variables['terminal_job_id'] ~= nil then
-                vim.fn.chanclose(info.variables['terminal_job_id'])
-            end
-        end
-    end
 end
 
 sets.select = function(bufnr)
     local entry = require('telescope.actions.state').get_selected_entry()
     actions.close(bufnr)
     if entry.session ~= nil then
-        local processes = run_process("ps ax | grep -E \"abduco.*-e[^\\\\-]+-a[ ]+" .. os.getenv("AZUL_SESSION") .. "$\"")
-        for _, proc in ipairs(processes) do
-            local p = proc:gsub("^([^ ]+) .*$", "%1")
-            os.execute("echo '" .. entry.value .. "' > /tmp/azul/" .. os.getenv("AZUL_SESSION") .. "-session")
-            if os.getenv("AZUL_XDOTOOL_EXE") ~= nil then
-                os.execute(os.getenv("AZUL_XDOTOOL_EXE") .. " keydown ctrl keydown q keyup ctrl keyup q")
-            else
-                os.execute("kill -15 " .. p)
+        local f = io.open("/tmp/azul/" .. os.getenv("AZUL_SESSION") .. "-session", "w")
+        f:write(entry.value)
+        f:close()
+        for _, s in ipairs(vim.tbl_filter(function(x) return x.buf ~= nil and vim.api.nvim_buf_is_valid(x.buf) end, _sessions)) do
+            for _, info in ipairs(vim.fn.getbufinfo(s.buf)) do
+                if info.variables ~= nil and info.variables['terminal_job_id'] ~= nil then
+                    vim.fn.chanclose(info.variables['terminal_job_id'])
+                end
             end
-            -- vim.fn.timer_start(100, function()
-            --     restore_splits(entry.value)
-            -- end)
         end
+        azul.disconnect()
     elseif entry.terminal then
         if azul.is_float(entry.terminal) then
             azul.show_floats(entry.terminal.group or nil)
@@ -103,21 +84,19 @@ local sessions_list = function(opts)
         return
     end
     azul.suspend()
-    local sessions = run_process(os.getenv("AZUL_ABDUCO_EXE"))
-    table.remove(sessions, 1)
+    local sessions = run_process(os.getenv("AZUL_PREFIX") .. "/bin/azul -l")
     pickers.new(opts, {
         prompt_title = "Sessions",
         cache_picker = false,
         finder = finders.new_table {
             results = sessions,
             entry_maker = function(entry)
-                local value = entry:gsub('^.*\t(.*)$', '%1')
-                local valid = value ~= os.getenv("AZUL_SESSION")
+                local valid = entry ~= os.getenv("AZUL_SESSION")
                 if valid and opts.select_filter ~= nil then
-                    valid = opts.select_filter(value)
+                    valid = opts.select_filter(entry)
                 end
                 local s = {
-                    value = value, valid = valid,
+                    value = entry, valid = valid,
                     ordinal = entry, display = entry, session = entry
                 }
 
@@ -132,11 +111,7 @@ local sessions_list = function(opts)
             get_command = function(entry, status)
                 entry.buf = vim.api.nvim_win_get_buf(status.preview_win)
                 return {
-                    os.getenv("AZUL_PREFIX") .. "/bin/azul",
-                    vim.api.nvim_win_get_width(status.preview_win),
-                    vim.api.nvim_win_get_height(status.preview_win),
-                    entry.value,
-                    "true"
+                    os.getenv('AZUL_PREFIX') .. '/bin/azul', '-a', entry.value,
                 }
             end,
         }),

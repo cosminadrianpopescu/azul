@@ -18,7 +18,7 @@ vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
 
 azul.set_workflow('azul')
 
-local config_dir = (vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/azul'
+local config_dir = vim.env.AZUL_CONFIG_HOME or ((vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/azul')
 local config_file = config_dir .. '/init.lua'
 
 vim.o.runtimepath = vim.o.runtimepath .. ',' .. config_dir .. '/pack/start/*,' .. config_dir .. '/pack/opt/*,' .. config_dir

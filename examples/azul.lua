@@ -10,6 +10,8 @@ local float_group = function()
                                           -- will be assigned to the t:float_group group
 end
 
+require('bufresize').setup()
+
 local feedkeys = function(keys)
     local codes = vim.api.nvim_replace_termcodes('<C-\\><c-n>' .. keys, true, false, true)
     vim.api.nvim_feedkeys(codes, 't', false)
@@ -105,6 +107,10 @@ set_mode_escape('<esc>')
 local options = {noremap = true}
 map('c', '<C-n>', '<Down>', options)
 map('c', '<C-p>', '<Up>', options)
+map('t', 'd', '', {
+    callback = azul.disconnect,
+    desc = "Disconnect",
+})
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {
@@ -249,7 +255,6 @@ wk.register({
     ["<C-s>"] = {
         ['<cr>'] = {'', 'Cancel'},
         i = {'', 'Cancel'},
-        n = {'<C-\\><C-n>', 'Enter normal mode'}
     }
 }, {
     mode = "t",
