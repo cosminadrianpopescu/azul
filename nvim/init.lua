@@ -38,4 +38,6 @@ if not try_load_config(config_file) then
     try_load_config(config_dir .. '/init.vim')
 end
 
-azul.open()
+vim.fn.timer_start(1, function()
+    azul.open()
+end)

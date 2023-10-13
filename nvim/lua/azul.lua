@@ -17,6 +17,8 @@ local M = {
 --- @field group string
 local terminals = {}
 local original_size = nil
+local chan_input_callback = {}
+local chan_buffers = {}
 
 local splits = {}
 local mode = nil
@@ -25,11 +27,11 @@ local mode_mappings = {
 }
 local workflow = 'azul'
 local mod = nil
-local mod2 = '<C-y><C-x>'
 local latest_float = {}
 local is_reloading = false
 local global_last_status = nil
 local global_last_modifier = nil
+local quit_on_last = true
 
 local L = {}
 
@@ -48,9 +50,7 @@ end
 
 local remove_term_buf = function(buf)
     terminals = vim.tbl_filter(function(t) return t.buf ~= buf end, terminals)
-    if #terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0 then
-        -- print("WOULD QUIT")
-        -- vim.api.nvim_command('cunabbrev quit')
+    if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
         vim.api.nvim_command('quit!')
     end
 end
@@ -66,13 +66,31 @@ M.debug = function(ev)
     -- print("MODE IS" .. mode)
 end
 
+local refresh_tab_page = function(t)
+    if M.is_float(t) then
+        return
+    end
+    t.tab_page = vim.api.nvim_tabpage_get_number(vim.api.nvim_win_get_tabpage(t.win_id))
+end
+
+local refresh_win_config = function(t)
+    t.win_config = vim.api.nvim_win_get_config(t.win_id)
+    refresh_tab_page(t)
+    if t.win_config['height'] == nil then
+        t.win_config.height = vim.api.nvim_win_get_height(t.win_id)
+    end
+    if t.win_config['width'] == nil then
+        t.win_config.width = vim.api.nvim_win_get_width(t.win_id)
+    end
+end
+
 local refresh_buf = function(buf)
     local t = find(function(t) return t.buf == buf end, terminals)
     if t == nil then
         return nil
     end
     t.win_id = vim.fn.win_getid(vim.fn.winnr())
-    t.win_config = vim.api.nvim_win_get_config(t.win_id)
+    refresh_win_config(t)
     return t
 end
 
@@ -81,7 +99,7 @@ local get_visible_floatings = function()
 end
 
 local close_float = function(float)
-    float.win_config = vim.api.nvim_win_get_config(float.win_id)
+    refresh_win_config(float)
     vim.api.nvim_win_close(float.win_id, true)
     float.win_id = nil
 end
@@ -135,6 +153,36 @@ local OnEnter = function(ev)
     end
 end
 
+local on_chan_input = function(which, chan_id, data)
+    if #chan_input_callback == 0 then
+        return
+    end
+
+    local t = find(function(x) return x.term_id == chan_id end, terminals)
+    if t == nil then
+        return
+    end
+
+    if chan_buffers[t.term_id] == nil then
+        chan_buffers[t.term_id] = {out = "", err = ""}
+    end
+
+    local b = chan_buffers[t.term_id]
+
+    for _, s in ipairs(data) do
+        for c in s:gmatch(".") do
+            if c == "\r" or c == "\n" then
+                for _, callback in ipairs(chan_input_callback) do
+                    callback(which, b[which], t)
+                    b[which] = ''
+                end
+            else
+                b[which] = b[which] .. c
+            end
+        end
+    end
+end
+
 --- Opens a new terminal in the current window
 ---
 ---@param start_edit boolean If true, then start editing automatically (default true)
@@ -142,7 +190,16 @@ M.open = function(start_edit)
     if is_reloading then
         return
     end
-    vim.api.nvim_command('terminal')
+    vim.fn.termopen(vim.o.shell, {
+        cdw = vim.fn.getcwd(),
+        on_stdout = function(chan, data, _)
+            on_chan_input('out', chan, data)
+        end,
+        on_stderr = function(chan, data, _)
+            on_chan_input('err', chan, data)
+        end,
+    })
+    -- vim.api.nvim_command('terminal')
     if type(start_edit) == 'boolean' and start_edit == false then
         return
     end
@@ -155,6 +212,9 @@ local OnTermClose = function(ev)
     end
     local t = find(function(t) return t.buf == ev.buf end, terminals)
     remove_term_buf(ev.buf)
+    if #terminals == 0 then
+        return
+    end
     if t ~= nil then
         if find(function(t2) return t2.win_id == t.win_id end, terminals) == nil then
             vim.api.nvim_win_close(t.win_id, true)
@@ -180,7 +240,7 @@ end
 
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
-        if is_suspended then
+        if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
             return
         end
         table.insert(terminals, {
@@ -188,7 +248,8 @@ cmd('TermOpen',{
             buf = ev.buf,
             win_id = vim.fn.win_getid(vim.fn.winnr()),
             term_id = vim.b.terminal_job_id,
-            group = L.current_group
+            group = L.current_group,
+            cwd = vim.fn.getcwd(),
         })
         L.current_group = nil
         OnEnter(ev)
@@ -302,7 +363,7 @@ M.are_floats_hidden = function(group)
 end
 
 --- Opens a new float
----@param opts table the options of the new window (@ses vim.api.nvim_open_win)
+--- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
 M.open_float = function(group, opts)
     local after = function()
         local buf = vim.api.nvim_create_buf(true, false)
@@ -375,18 +436,11 @@ end
 M.remove_key_map = function(m, ls)
     local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
     mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls or m.pref ~= pref1 end, mode_mappings)
-    local f = io.open("/tmp/log", "w")
-    f:write(vim.inspect(mode_mappings))
-    f:close()
 end
 
 L.unmap_all = function(mode)
     local cmds = {}
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
-    local f = io.open("/tmp/log-u", "w")
-    f:write(vim.inspect(mode))
-    f:write(vim.inspect(collection))
-    f:close()
     for _, m in ipairs(collection) do
         local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
         -- print(cmd)
@@ -399,10 +453,6 @@ end
 
 L.remap_all = function(mode)
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
-    local f = io.open("/tmp/log-r", "w")
-    f:write(vim.inspect(mode))
-    f:write(vim.inspect(collection))
-    f:close()
     for _, m in ipairs(collection) do
         vim.api.nvim_set_keymap(m.real_mode, m.pref .. m.ls, m.rs, m.options)
     end
@@ -574,7 +624,7 @@ M.get_tab_terminal = function(n)
 end
 
 M.split = function(dir)
-    local cmd = 'split'
+    local cmd = 'new'
     if dir == 'left' or dir == 'right' then
         cmd = 'v' .. cmd
     end
@@ -752,10 +802,71 @@ M.resize = function(w, h)
     M.resume()
 end
 
+--- Disconnects the current session.
 M.disconnect = function()
     for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
         vim.fn.chanclose(ui.chan)
     end
+end
+
+--- Registers a callback that will be called everytime a new line is 
+--- dumped on a terminal. The callback should have the signature:
+---
+--- --- @param mode 'err' | 'out' (the line was emitted on std_err or std_out)
+--- --- @param line a string containing the new line
+--- --- @param term The terminal that dumped the line.
+--- function callback(mode, line, term)
+--- end
+---
+---@return terminals|nil
+M.register_on_chan_line = function(callback)
+    table.insert(chan_input_callback, callback)
+end
+
+M.save_layout = function(where)
+    for _, t in ipairs(terminals) do
+        refresh_tab_page(t)
+    end
+
+    local f = io.open(where, "w")
+    f:write(vim.inspect(terminals))
+    f:close()
+end
+
+--- Restores a saved layout
+---
+--- @param where string The saved file location
+--- @param callback function(t) callback called after each terminal is restores. 
+---                             The t is the just opened terminal
+M.restore_layout = function(where, callback)
+    quit_on_last = false
+    for _, t in ipairs(terminals) do
+        vim.fn.chanclose(t.term_id)
+    end
+    M.suspend()
+    vim.api.nvim_command('source ' .. where)
+    -- local f = io.open(where, "r")
+    -- local s = f:read("*a")
+    -- f:close()
+    -- local f = loadstring("return " .. s)
+    -- local terms = f()
+    -- table.sort(terms, function(a, b)
+    --     if a.tab_page == nil and b.tab_page == nil then
+    --         return true
+    --     end
+
+    --     if a.tab_page == nil or b.tab_page == nil then
+    --         return b.tab_page == nil
+    --     end
+
+    --     return a.tab_page < b.tab_page
+    -- end)
+
+    -- for _, t in ipairs(terms) do
+    --     vim.api.nvim_command('lcd ' .. t.cwd)
+    -- end
+    quit_on_last = true
+    M.resume()
 end
 
 return M
