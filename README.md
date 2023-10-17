@@ -92,6 +92,7 @@ the `TERMINAL` mode. The default shortcuts are:
 * `<C-left>`, `<C-up>`, `<C-right>`, `<C-down>` resizes a floating page to the
   left, up, right or down side, respectively.
 * `<A-n>` toggles nested session mode. 
+* `<A-d>` disconnects the current sessison
 
 #### Zellij workflow
 
@@ -105,6 +106,7 @@ Shortcuts for this mode:
 * `<C-r>` enters `RESIZE` mode
 * `<C-v>` enters `MOVE` mode
 * `<C-s>` enters `SPLIT` mode
+* `<C-T>` enters `TABS` mode
 * `<esc>` goes back to `TERMINAL` mode
 
 *`PANE` mode shortcuts*
@@ -131,6 +133,12 @@ Shortcuts for this mode:
 
 * `h`, `j`, `k`, `l` resizes the current pane in the left, down, up or right
   direction, respectively.
+
+* `TABS` mode shortcuts*
+
+* `h`, `j` changes the tab to the left, right respectively
+* `H`, `J` goes to the first, last tab respectively
+  respectively.
 
 #### Tmux workflow
 
@@ -160,6 +168,7 @@ Also, here, you have the same modes as for the `zellij` workflow.
 * `r` enters `RESIZE` mode
 * `m` enters `MOVE` mode
 * `s` enters `SPLIT` mode
+* `T` enters `TABS` mode
 * `<cr>`, `<esc>` goes back to `TERMINAL` mode
 
 *`PANE` mode shortcuts
@@ -187,6 +196,12 @@ Also, here, you have the same modes as for the `zellij` workflow.
 * `h`, `l` selects the tab previous or next
 * `H`, `L` select the first or last tab
 
+* `TABS` mode shortcuts*
+
+* `h`, `j` changes the tab to the left, right respectively
+* `H`, `J` goes to the first, last tab respectively
+  respectively.
+
 #### Azul workflow
 
 This is the default workflow. After installation, if you don't modify your
@@ -212,6 +227,7 @@ indicating what are the possible commands that you can send to `azul`.
 * `<C-s>r` enters `RESIZE` mode
 * `<C-s>m` enters `MOVE` mode
 * `<C-s>s` enters `SPLIT` mode
+* `<C-s>T` enters `TABS` mode
 * `<C-s>Ss` selects an abduco session (linux only)
 * `<C-s>St` selects a tab from the current session
 * `<cr>`, `<esc>` goes back to `TERMINAL` mode
@@ -376,6 +392,59 @@ floats, you can add any plugin to handle your status and you can basically do
 anything that you might think of, as long as `neovim` allows it (and neovim
 allows a lot...). You can even have macros, if you want, in your terminals...
 How about that?
+
+### Session support
+
+`Azul` offers session support via `nvim` dettach feature. See `:help
+--remote-ui`
+
+When you start `azul`, you have to provide a session name. If the session is
+already started, then you will be connected to that session. If not, a new
+session with the indicated name will be started and you will be connected to
+it. Unlike `tmux` or `zellij` or other terminal multiplexers, when
+disconnecting from one session, if you are connected from several places, all
+the instances will be disconnected. 
+
+### Layout persistence
+
+You can persist your layouts between different sessions. In order to save the
+layout, you can press ...
+
+When restoring a layout, the floats, tabs and splits are restored
+automatically. However, a normal simple terminal is started in each of the
+restored float, tab or split. In order to also restore an application running
+there, rather than trying to assume things, `azul` will either call a callback
+for each of the restored float, tab or split or it will execute anything
+stored in the variable `w:azul_cmd`. You can define this callback and start
+whatever app was running there, like this:
+
+```lua
+local azul = require('azul')
+azul.restore_layouts('/tmp/my-layout.vim', function(t, azul_win_id)
+    if azul_win_id == 'vifm' then
+        azul.send_to_buf(t.buf, 'vifm<cr>')
+    end
+end)
+```
+
+This will restore the vifm in the window identified by the id `vifm`. In order
+to identify a tab, float or split after a layout reload, you can define the
+variable `w:azul_win_id`, like this: `<C-s>n:let w:azul_window_id = 'vifm'`.
+This will set the `azul_win_id` to the `vifm` value in the current terminal.
+The value will be restored uppon a session reload.
+
+Of course, if you don't use the default way of working (using tabs, see the
+chapter 'How it works') and you use for example a buffer based flow, then you
+will have to define your own way to identify the terminals after a layout
+restore, considering that in a window you will have several buffers with the
+same window id and a `w:` variable will correspond to several of those. But if
+you use the normal way of working, this will work out of the box.
+
+The other way to restore an application in a saved tab, split or float: you
+can define before saving the layout in any of the terminal the variable
+`w:azul_cmd` like this `:let w:azul_cmd = "vifm"<cr>`. After saving the
+layout, this variable will be saved. Upon restore, this command is executed
+automatically when the terminal is opened.
 
 ## Why?
 

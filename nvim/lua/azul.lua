@@ -48,6 +48,10 @@ M.is_float = function(t)
     return t and t.win_config and t.win_config['zindex'] ~= nil
 end
 
+local has_splits = function(tab_page)
+    return #vim.tbl_filter(function(x) return x.tab_page == tab_page end, terminals) > 1
+end
+
 local remove_term_buf = function(buf)
     terminals = vim.tbl_filter(function(t) return t.buf ~= buf end, terminals)
     if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
@@ -98,8 +102,24 @@ local get_visible_floatings = function()
     return vim.tbl_filter(function(t) return M.is_float(t) and t.win_id ~= nil end, terminals)
 end
 
+local get_win_var_safe = function(win, var)
+    local status, ret = xpcall(vim.api.nvim_win_get_var, function(_) end, win, var);
+    if not status then
+        return nil
+    end
+    return ret
+end
+
 local close_float = function(float)
     refresh_win_config(float)
+    local azul_win_id = get_win_var_safe(float.win_id, 'azul_win_id')
+    if azul_win_id ~= nil then
+        float.azul_win_id = azul_win_id
+    end
+    local azul_cmd = get_win_var_safe(float.win_id, 'azul_cmd')
+    if azul_cmd ~= nil then
+        float.azul_cmd = azul_cmd
+    end
     vim.api.nvim_win_close(float.win_id, true)
     float.win_id = nil
 end
@@ -200,6 +220,9 @@ M.open = function(start_edit)
         end,
     })
     -- vim.api.nvim_command('terminal')
+    if not vim.fn.exists('w:azul_win_id') then
+        vim.api.nvim_win_set_var(0, 'azul_win_id', os.time())
+    end
     if type(start_edit) == 'boolean' and start_edit == false then
         return
     end
@@ -257,7 +280,9 @@ cmd('TermOpen',{
 })
 
 cmd('TermClose', {
-    pattern = "*", callback = OnTermClose
+    pattern = "*", callback = function(ev)
+        OnTermClose(ev)
+    end
 })
 
 cmd('TermEnter', {
@@ -313,8 +338,8 @@ cmd({'ModeChanged'}, {
 })
 
 cmd({'UiEnter'}, {
-    pattern = {'*'}, callback = function(ev)
-        M.feedkeys('<C-s>ni', 't')
+    pattern = {'*'}, callback = function(_)
+        M.feedkeys('<C-\\><C-n>i', 't')
         -- vim.fn.timer_start(1, function()
         --     M.enter_mode('')
         --     vim.api.nvim_command('startinsert')
@@ -328,6 +353,12 @@ local restore_float = function(t)
     end
     vim.api.nvim_open_win(t.buf, true, t.win_config)
     refresh_buf(t.buf)
+    if t.azul_win_id ~= nil then
+        vim.w.azul_win_id = t.azul_win_id
+    end
+    if t.azul_cmd ~= nil then
+        vim.w.azul_cmd = t.azul_cmd
+    end
 end
 
 L.do_show_floats = function(floatings, idx, after_callback)
@@ -354,8 +385,12 @@ M.show_floats = function(group, after_callback)
     L.do_show_floats(floatings, 1, after_callback)
 end
 
+local get_all_floats = function(group)
+    return vim.tbl_filter(function(t) return M.is_float(t) and ((group ~= nil and t.group == group) or group == nil) end, terminals)
+end
+
 M.are_floats_hidden = function(group)
-    local floatings = vim.tbl_filter(function(t) return M.is_float(t) and t.group ==(group or 'default') end, terminals)
+    local floatings = get_all_floats(group)
     if #floatings == 0 then
         return true
     end
@@ -363,6 +398,7 @@ M.are_floats_hidden = function(group)
 end
 
 --- Opens a new float
+--- @param group string The group in which to open a float
 --- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
 M.open_float = function(group, opts)
     local after = function()
@@ -378,7 +414,7 @@ M.open_float = function(group, opts)
         })
     end
     L.current_group = group or 'default'
-    if M.are_floats_hidden(group) then
+    if #get_all_floats(group) > 0 and M.are_floats_hidden(group) then
         M.show_floats(group, after)
     else
         after()
@@ -823,14 +859,115 @@ M.register_on_chan_line = function(callback)
     table.insert(chan_input_callback, callback)
 end
 
+local serialize = function(var)
+    return string.gsub(string.gsub(vim.inspect(var), "\n", "\\n"), "'", "\\'")
+end
+
+local deserialize = function(var)
+    return loadstring("return " .. string.gsub(var, "\\n", "\n"))()
+end
+
+local get_splits_restore_lines = function(crt, lines)
+    local result = {}
+    table.insert(result, 0)
+    while lines[crt] ~= 'argglobal' do
+        table.insert(result, lines[crt])
+        crt = crt + 1
+    end
+
+    while crt <= #lines and lines[crt] ~= 'tabnext' do
+        crt = crt + 1
+    end
+
+    result[1] = crt
+    return result
+end
+
+local term_by_job_pid = function(pid)
+    return find(function(t) return vim.api.nvim_buf_get_var(t.buf, 'terminal_job_pid') == 1 * pid end, terminals)
+end
+
+local get_tab_windows = function(tab)
+    return vim.tbl_filter(function(x) return vim.api.nvim_win_get_tabpage(x) == tab end, vim.api.nvim_list_wins())
+end
+
+local select_dir = function(t, which)
+    local wins = get_tab_windows(t)
+    if #wins <= 1 then
+        return
+    end
+
+    local prev_id = -1
+    while prev_id ~= vim.fn.win_getid() do
+        prev_id = vim.fn.win_getid()
+        vim.api.nvim_command('wincmd ' .. which)
+    end
+end
+
 M.save_layout = function(where)
     for _, t in ipairs(terminals) do
         refresh_tab_page(t)
     end
 
-    local f = io.open(where, "w")
-    f:write(vim.inspect(terminals))
+    M.hide_floats()
+    M.suspend()
+    vim.api.nvim_command('tabrewind')
+    for _, t in ipairs(vim.api.nvim_list_tabpages()) do
+        select_dir(t, 'h')
+        select_dir(t, 'k')
+        vim.api.nvim_command('tabnext')
+    end
+    M.resume()
+
+    local opts = vim.o.sessionoptions
+    vim.o.sessionoptions = 'tabpages,terminal,winsize'
+    vim.api.nvim_command('mksession! ' .. where)
+
+    local f = io.open(where, "r")
+    local sess = ''
+    local line = f:read('*L')
+    local processed = {}
+    while line do
+        if vim.fn.match(line, '\\v^badd') == 0 then
+            goto continuewhile
+        end
+        if vim.fn.match(line, 'term:\\/\\/') == -1 then
+            sess = sess .. line
+        else
+            local pid = vim.fn.substitute(line, '\\v^.*term:\\/\\/[^:]+\\/([0-9]+):.*$', '\\1', 'gi')
+            local t = term_by_job_pid(pid)
+            if find(function(x) return x == pid end, processed) == nil and t ~= nil and t.win_id ~= nil then
+                if get_win_var_safe(t.win_id, 'azul_win_id') then
+                    sess = sess .. "let w:azul_win_id = '" .. string.gsub(vim.api.nvim_win_get_var(t.win_id, 'azul_win_id'), "'", "\\'") .. "'\n"
+                end
+                if get_win_var_safe(t.win_id, 'azul_cmd') ~= nil then
+                    sess = sess .. "let w:azul_cmd = '" .. string.gsub(get_win_var_safe(t.win_id, 'azul_cmd'), "'", "\\'") .. "'\n"
+                end
+                table.insert(processed, pid)
+            end
+        end
+        ::continuewhile::
+        line = f:read('*L')
+    end
+    sess = sess .. "let g:azul_floats = '" .. serialize(vim.tbl_filter(function(x) return M.is_float(x) end, terminals)) .. "'"
     f:close()
+    f = io.open(where, "w")
+    f:write(sess)
+    f:close()
+    vim.o.sessionoptions = opts
+end
+
+local call_with_last_term = function(callback)
+    local last_t = find(function(x) return x.buf == vim.fn.bufnr() end, terminals)
+    if last_t == nil then
+        return
+    end
+    if last_t ~= nil and callback ~= nil then
+        callback(last_t, vim.w.azul_win_id)
+    end
+    if vim.w.azul_cmd ~= nil then
+        M.send_to_buf(last_t.buf, vim.w.azul_cmd .. '<cr>', true)
+    end
 end
 
 --- Restores a saved layout
@@ -840,33 +977,63 @@ end
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
     quit_on_last = false
+    local floats = get_all_floats()
+    if #floats > 0 then
+        M.hide_floats()
+        M.suspend()
+        for _, f in ipairs(floats) do
+            vim.fn.chanclose(f.term_id)
+        end
+        terminals = vim.tbl_filter(function(t) return not M.is_float(t) end, terminals)
+        M.resume()
+    end
     for _, t in ipairs(terminals) do
         vim.fn.chanclose(t.term_id)
     end
-    M.suspend()
-    vim.api.nvim_command('source ' .. where)
-    -- local f = io.open(where, "r")
-    -- local s = f:read("*a")
-    -- f:close()
-    -- local f = loadstring("return " .. s)
-    -- local terms = f()
-    -- table.sort(terms, function(a, b)
-    --     if a.tab_page == nil and b.tab_page == nil then
-    --         return true
-    --     end
-
-    --     if a.tab_page == nil or b.tab_page == nil then
-    --         return b.tab_page == nil
-    --     end
-
-    --     return a.tab_page < b.tab_page
-    -- end)
-
-    -- for _, t in ipairs(terms) do
-    --     vim.api.nvim_command('lcd ' .. t.cwd)
-    -- end
-    quit_on_last = true
-    M.resume()
+    -- Wait that all the terminals are closed.
+    while #terminals > 0 do
+        vim.fn.timer_start(50, function()
+            M.restore_layout(where, callback)
+        end)
+        return
+    end
+    M.feedkeys("i<cr>", "t")
+    vim.fn.timer_start(1, function()
+        M.suspend()
+        vim.api.nvim_command('source ' .. where)
+        vim.api.nvim_command('tabrewind')
+        M.resume()
+        for _, t in ipairs(vim.api.nvim_list_tabpages()) do
+            local wins = get_tab_windows(t)
+            for _, w in ipairs(wins) do
+                while vim.fn.win_getid() ~= w do
+                    vim.api.nvim_command('wincmd w')
+                end
+                -- vim.api.nvim_command('terminal')
+                vim.api.nvim_command('enew')
+                M.open(true)
+                OnEnter({buf = vim.fn.bufnr()})
+                call_with_last_term(callback)
+            end
+            vim.api.nvim_command("tabnext")
+        end
+        quit_on_last = true
+        local floats = deserialize(vim.g.azul_floats)
+        for _, f in ipairs(floats) do
+            -- M.open_float(f.group, f.win_config)
+            local buf = vim.api.nvim_create_buf(true, false)
+            local w = vim.api.nvim_open_win(buf, true, f.win_config)
+            L.current_group = f.group or 'default'
+            M.open(false)
+            if f.azul_cmd then
+                vim.api.nvim_win_set_var(w, 'azul_cmd', f.azul_cmd)
+            end
+            if f.azul_win_id then
+                vim.api.nvim_win_set_var(w, 'azul_win_id', f.azul_win_id)
+            end
+            call_with_last_term(callback)
+        end
+    end)
 end
 
 return M

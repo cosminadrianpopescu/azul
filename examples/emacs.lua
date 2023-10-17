@@ -35,6 +35,10 @@ map('t', '<a-w>', '', {
     end
 })
 
+map('t', '<a-d>', '', {
+    callback = azul.disconnect,
+})
+
 map('t', '<a-f>', '', {
     callback = function()
         azul.open_float()

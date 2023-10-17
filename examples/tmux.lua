@@ -100,6 +100,9 @@ set_mode_escape('<esc>')
 local options = {noremap = true}
 map('c', '<C-n>', '<Down>', options)
 map('c', '<C-p>', '<Up>', options)
+map('n', 'd', '', {
+    callback = azul.disconnect,
+})
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {

@@ -63,8 +63,9 @@ enter_mode_mapping('<c-p>', 'p')
 enter_mode_mapping('<c-r>', 'r')
 enter_mode_mapping('<c-v>', 'm')
 enter_mode_mapping('<c-s>', 's')
+enter_mode_mapping('<c-t>', 'T')
 
-map({'r', 'p', 'm', 's'}, '<esc>', '', {
+map({'r', 'p', 'm', 's', 'T'}, '<esc>', '', {
     callback = function()
         azul.enter_mode('t')
         vim.fn.timer_start(1, function()
@@ -76,6 +77,9 @@ map({'r', 'p', 'm', 's'}, '<esc>', '', {
 local options = {noremap = true}
 map('c', '<C-n>', '<Down>', options)
 map('c', '<C-p>', '<Up>', options)
+map('t', '<c-d>', '', {
+    callback = azul.disconnect,
+})
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {
@@ -90,6 +94,18 @@ local set_hjkl_shortcuts = function(key, dir, mode, callback)
         callback = function()
             callback(dir)
         end,
+    })
+end
+
+local set_tabs_shortcuts = function(key, where)
+    map('T', key, '', {
+        callback = function()
+            vim.api.nvim_command(where)
+            if where:match('tabnew$') then
+                azul.enter_mode('t')
+                vim.api.nvim_command('startinsert')
+            end
+        end
     })
 end
 
@@ -108,6 +124,11 @@ local set_resize_shortcuts = function(key, which)
         end
     })
 end
+
+set_tabs_shortcuts('H', 'tabfirst')
+set_tabs_shortcuts('L', 'tablast')
+set_tabs_shortcuts('h', 'tabn -1')
+set_tabs_shortcuts('l', 'tabn +1')
 
 set_move_shortcuts('h', 'left')
 set_move_shortcuts('j', 'down')
