@@ -218,6 +218,10 @@ M.open = function(start_edit)
         -- on_stderr = function(chan, data, _)
         --     on_chan_input('err', chan, data)
         -- end,
+        env = {
+            VIM = '',
+            VIMRUNTIME='',
+        },
     })
     -- vim.api.nvim_command('terminal')
     if not vim.fn.exists('w:azul_win_id') then
