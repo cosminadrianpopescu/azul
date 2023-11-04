@@ -212,12 +212,12 @@ M.open = function(start_edit)
     end
     vim.fn.termopen(vim.o.shell, {
         cdw = vim.fn.getcwd(),
-        on_stdout = function(chan, data, _)
-            on_chan_input('out', chan, data)
-        end,
-        on_stderr = function(chan, data, _)
-            on_chan_input('err', chan, data)
-        end,
+        -- on_stdout = function(chan, data, _)
+        --     on_chan_input('out', chan, data)
+        -- end,
+        -- on_stderr = function(chan, data, _)
+        --     on_chan_input('err', chan, data)
+        -- end,
     })
     -- vim.api.nvim_command('terminal')
     if not vim.fn.exists('w:azul_win_id') then
@@ -319,7 +319,9 @@ cmd({'WinNew'}, {
             return
         end
         vim.fn.timer_start(1, function()
-            M.open(false)
+            if vim.b.terminal_job_id == nil then
+                M.open(false)
+            end
         end)
     end
 })
