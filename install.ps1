@@ -19,15 +19,19 @@ else {
     echo "" | Out-File -FilePath "$prefix\azul.cmd" -Append -Encoding ASCII
     echo "%AZUL_NVIM_EXE%" | Out-File -FilePath "$prefix\azul.cmd" -Append -Encoding ASCII
 
-    mkdir $prefix\share
-    mkdir $prefix\share\azul
-    mkdir $prefix\share\azul\nvim
-    mkdir $prefix\.config
-    mkdir $prefix\.config\azul
-    mkdir $prefix\.config\azul\lua
-    mkdir $prefix\.config\azul\pack
-    mkdir $prefix\.config\azul\pack\start
-    mkdir $prefix\.config\azul\pack\opt
+    if (-not (Test-Path "$prefix\share")) {
+        mkdir $prefix\share
+            mkdir $prefix\share\azul
+            mkdir $prefix\share\azul\nvim
+    }
+    if (-not (Test-Path "$prefix\.config")) {
+        mkdir $prefix\.config
+        mkdir $prefix\.config\azul
+        mkdir $prefix\.config\azul\lua
+        mkdir $prefix\.config\azul\pack
+        mkdir $prefix\.config\azul\pack\start
+        mkdir $prefix\.config\azul\pack\opt
+    }
     xcopy .\nvim $prefix\share\azul\nvim /e /s /h
 
     if (-not (Test-Path "$prefix\.config\azul")) {
