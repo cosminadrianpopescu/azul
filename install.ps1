@@ -29,13 +29,28 @@ else {
     mkdir $prefix\.config\azul\pack\start
     mkdir $prefix\.config\azul\pack\opt
     xcopy .\nvim $prefix\share\azul\nvim /e /s /h
-    copy .\examples\lua\*.* $prefix\.config\azul\lua\
-    copy .\examples\azul.lua $prefix\.config\azul\init.lua
 
-    git clone https://github.com/folke/tokyonight.nvim $prefix\.config\azul\pack\start\tokyonight.nvim
-    git clone https://github.com/nvim-lualine/lualine.nvim $prefix\.config\azul\pack\start\lualine.nvim
-    git clone https://github.com/folke/which-key.nvim $prefix\.config\azul\pack\start\which-key.nvim
-    git clone https://github.com/nvim-lua/plenary.nvim $prefix\.config\azul\pack\start\plenary.nvim
-    git clone https://github.com/nvim-telescope/telescope.nvim $prefix\.config\azul\pack\start\telescope.nvim
-    git clone https://github.com/kwkarlwang/bufresize.nvim $prefix\.config\azul\pack\start\bufresize.nvim
+    if (-not (Test-Path "$prefix\.config\azul")) {
+        copy .\examples\lua\*.* $prefix\.config\azul\lua\
+        copy .\examples\azul.lua $prefix\.config\azul\init.lua
+    }
+
+    if (-not (Test-Path "$prefix\.config\azul\pack\start\tokyonight.nvim")) {
+        git clone https://github.com/folke/tokyonight.nvim $prefix\.config\azul\pack\start\tokyonight.nvim
+    }
+    if (-not (Test-Path "$prefix\.config\azul\pack\start\lualine.nvim")) {
+        git clone https://github.com/nvim-lualine/lualine.nvim $prefix\.config\azul\pack\start\lualine.nvim
+    }
+    if (-not (Test-Path "$prefix\.config\azul\pack\start\which-key.nvim")) {
+        git clone https://github.com/folke/which-key.nvim $prefix\.config\azul\pack\start\which-key.nvim
+    }
+    if (-not (Test-Path "$prefix\.config\azul\pack\start\plenary.nvim")) {
+        git clone https://github.com/nvim-lua/plenary.nvim $prefix\.config\azul\pack\start\plenary.nvim
+    }
+    if (-not (Test-Path "$prefix\.config\azul\pack\start\telescope.nvim")) {
+        git clone https://github.com/nvim-telescope/telescope.nvim $prefix\.config\azul\pack\start\telescope.nvim
+    }
+    if (-not (Test-Path "$prefix\.config\azul\pack\start\bufresize.nvim")) {
+        git clone https://github.com/kwkarlwang/bufresize.nvim $prefix\.config\azul\pack\start\bufresize.nvim
+    }
 }
