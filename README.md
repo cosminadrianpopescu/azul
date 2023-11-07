@@ -136,8 +136,8 @@ Shortcuts for this mode:
 
 * `TABS` mode shortcuts*
 
-* `h`, `j` changes the tab to the left, right respectively
-* `H`, `J` goes to the first, last tab respectively
+* `h`, `l` changes the tab to the left, right respectively
+* `H`, `L` goes to the first, last tab respectively
   respectively.
 
 #### Tmux workflow
@@ -160,10 +160,6 @@ Also, here, you have the same modes as for the `zellij` workflow.
 * `1` to `9` selects tabs from 1 to 9
 * `w` toggles floating panes visibility
 * `f` creates a new floating pane
-* `h`, `j`, `k`, `l` select a pane or a split pane to the left, down, up,
-  respectively
-* `H`, `J`, `K`, `L` splits in the left, down, right, up direction,
-  respectively
 * `p` enters `PANE` mode
 * `r` enters `RESIZE` mode
 * `m` enters `MOVE` mode
@@ -175,6 +171,8 @@ Also, here, you have the same modes as for the `zellij` workflow.
 
 * `h`, `j`, `k`, `l` select a pane or a split pane to the left, down, up
   or right, respectively
+* `H`, `J`, `K`, `L` splits in the left, down, right, up direction,
+  respectively
 
 *`MOVE` mode shortcuts*
 
@@ -196,12 +194,6 @@ Also, here, you have the same modes as for the `zellij` workflow.
 * `h`, `l` selects the tab previous or next
 * `H`, `L` select the first or last tab
 
-* `TABS` mode shortcuts*
-
-* `h`, `j` changes the tab to the left, right respectively
-* `H`, `J` goes to the first, last tab respectively
-  respectively.
-
 #### Azul workflow
 
 This is the default workflow. After installation, if you don't modify your
@@ -221,14 +213,12 @@ indicating what are the possible commands that you can send to `azul`.
 * `<C-s>1` to `<C-s>9` selects tabs from 1 to 9
 * `<C-s>w` toggles floating panes visibility
 * `<C-s>f` creates a new floating pane
-* `<C-s>h`, `<C-s>j`, `<C-s>k`, `<C-s>l` select a pane or a split pane to the left, down, up,
-  respectively
 * `<C-s>p` enters `PANE` mode
 * `<C-s>r` enters `RESIZE` mode
 * `<C-s>m` enters `MOVE` mode
 * `<C-s>s` enters `SPLIT` mode
 * `<C-s>T` enters `TABS` mode
-* `<C-s>Ss` selects an abduco session (linux only)
+* `<C-s>Ss` selects a session (linux only)
 * `<C-s>St` selects a tab from the current session
 * `<cr>`, `<esc>` goes back to `TERMINAL` mode
 
@@ -334,7 +324,8 @@ considering tmux or screen or others running under cygwin).
 
 `Azul` introduces some new modes if you need to interact with the floating
 panes or with splits. You have the `Pane select` mode (`'p'`), `Float move`
-mode (`'m'`), `Pane resize` mode (`'r'`) and `Split` (`'s'`) mode. 
+mode (`'m'`), `Pane resize` mode (`'r'`), `Split` (`'s'`) mode ans `Tabs`
+mode(`'T'`). 
 
 This custom modes are built on top of the `neovim` normal or terminal mode, by
 default. You can look at them as submodes of `normal` or `terminal` mode. This
@@ -372,17 +363,6 @@ the second session (the guest `azul` session) and then, in order to pass the
 control back to the host main section, you need to press `<C-x>`. This allows
 you in theory to have as many nested sessions as you want.
 
-For example, you can do in your host main session
-`require('azul').toggle_nested_mode('<C-\><C-1>')` and then, in your second
-session to do another ssh and to start another `azul` session. There (in your
-second session), you can do
-`require('azul').toggle_nested_mode('<C-\><C-2>')`. This would pass the
-control to the third session (second guest session). In this second guest
-session, you can do your job. When you finish, you press `<C-\><C-2>` and the
-control is passed back to your first guest session (second session). Here, you
-can press again `<C-\><C-1>` and the control will be passed back to the host
-main session.
-
 ### Infinite customizability
 
 Remember, you are running inside a `neovim`. So, you can install any plugin,
@@ -408,15 +388,16 @@ the instances will be disconnected.
 ### Layout persistence
 
 You can persist your layouts between different sessions. In order to save the
-layout, you can press ...
+layout, you can call `require('azul').save_layout(<file-name>)`, where
+`<file-name>` is the file location where the layout will be saved.
 
-When restoring a layout, the floats, tabs and splits are restored
-automatically. However, a normal simple terminal is started in each of the
-restored float, tab or split. In order to also restore an application running
-there, rather than trying to assume things, `azul` will either call a callback
-for each of the restored float, tab or split or it will execute anything
-stored in the variable `w:azul_cmd`. You can define this callback and start
-whatever app was running there, like this:
+When restoring a layout (`require('azul').restore_layout(<file-name>)`), the
+floats, tabs and splits are restored automatically. However, a normal simple
+terminal is started in each of the restored float, tab or split. In order to
+also restore an application running there, rather than trying to assume
+things, `azul` will either call a callback for each of the restored float, tab
+or split or it will execute anything stored in the variable `w:azul_cmd`. You
+can define this callback and start whatever app was running there, like this:
 
 ```lua
 local azul = require('azul')
@@ -433,24 +414,22 @@ variable `w:azul_win_id`, like this: `<C-s>n:let w:azul_window_id = 'vifm'`.
 This will set the `azul_win_id` to the `vifm` value in the current terminal.
 The value will be restored uppon a session reload.
 
-Of course, if you don't use the default way of working (using tabs, see the
-chapter 'How it works') and you use for example a buffer based flow, then you
-will have to define your own way to identify the terminals after a layout
-restore, considering that in a window you will have several buffers with the
-same window id and a `w:` variable will correspond to several of those. But if
-you use the normal way of working, this will work out of the box.
-
 The other way to restore an application in a saved tab, split or float: you
 can define before saving the layout in any of the terminal the variable
-`w:azul_cmd` like this `:let w:azul_cmd = "vifm"<cr>`. After saving the
+`w:azul_cmd` like this `<C-s>n:let w:azul_cmd = "vifm"<cr>`. After saving the
 layout, this variable will be saved. Upon restore, this command is executed
 automatically when the terminal is opened.
+
+Although `save_layout` calls the `vim` function `mksession`, please be aware
+that the resulted file will be altered by `azul`. If you are not interested in
+restoring also the application in each tab, split or float, then you can use
+directly `mksession` and `source`.
 
 ## Why?
 
 I've been a [tmux](https://github.com/tmux/tmux/wiki) user for years. Then
-I've discovered [zellij](https://zellij.dev/) and been using for the past
-months. They are both amazing pieces of software.
+I've discovered [zellij](https://zellij.dev/) and been using for a few months.
+They are both amazing pieces of software.
 
 I've been using `tmux` for the obvious reasons. Then, I've switched to
 `zellij` because of the floating panels and the edit back buffer in the custom
@@ -490,7 +469,8 @@ You are inside neovim. So, you can use any plugin you want to handle the
 status bar or the tabline, you can have both, you can have none, the sky (or
 should I say neovim) is the limit. My status bar that you saw in the demo
 video is using [lualine](https://github.com/nvim-lualine/lualine.nvim) with a
-minimal configuration. But you can choose whatever you like.
+minimal configuration that you can find in the `examples` folder. But you can
+choose whatever you like.
 
 #### Very flexibile shortcuts
 
@@ -508,30 +488,13 @@ Very neat...
 
 ### Disadvantages compared with `tmux` or `zellij`
 
-#### Session support
+#### Text reflow
 
-Azul for Linux offers minimal session support via
-[abduco](https://github.com/martanne/abduco). You can, of course, start
-`abduco` by yourself and handle the session modifiers and changes by yourself,
-by doing `abduco -A main-session azul`. 
-
-However, you can ask `azul` to handle the sessions using `abduco`, by starting
-it like this: `AZUL_SESSION=main-session azul`. This will start abduco with
-the `<C-q>` as detach key and with the session name `main-session`. Then, from
-inside `azul`, you can do `<C-S>Ss` and you will have the current list of
-sessions manage by abduco from which you can select one. For this, `azul` is
-using the [telescope](https://github.com/nvim-telescope/telescope.nvim)
-plugin.
-
-If your session needs are more complex than simple dettaching or attaching,
-like persisting or restoring the sessions, then probably `azul` is not for you
-yet.
-
-The connect and disconnect from a `neovim` instance is being worked
-[here](https://github.com/neovim/neovim/issues/5035).
-
-I will start working on session support based on this. However, even that,
-would probably offer limited session support. Just connect and disconnect.
+At the moment, `neovim` supports limited text reflow of the terminals. See
+[here](https://github.com/neovim/neovim/issues/2514). You can reflow the
+current terminal, but only the current view (not the scrollback buffer). We'll
+have to wait for this issue to be closed and then `azul` will also have proper
+text reflow.
 
 #### Cursor support
 
@@ -563,11 +526,14 @@ environment.
 If you want to install some plugins, you need to put them in your config
 folder for plugins (`~/.config/azul/pack/start/` for linux or
 `%AZUL_PREFIX%/.config/azul/pack/start` for windows). Of course, you can even
-install there a plugin manager. The example config uses these 3 plugins: 
+install there a plugin manager. The example config uses these 6 plugins: 
 
 * [lualine](https://github.com/nvim-lualine/lualine.nvim) 
 * [tokyonight](https://github.com/folke/tokyonight.nvim)
 * [which-key](https://github.com/folke/which-key.nvim)
+* [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
+* [nvim-telescope](https://github.com/nvim-telescope/telescope.nvim)
+* [kwkarlwang](https://github.com/folke/bufresize.nvim)
 
 If you think that the documentation is too small for a serious software, this
 is because the neovim documentation is azul's documentation. I just enumerated
@@ -582,19 +548,17 @@ And so on. I think you got the idea...
 
 ## How it works
 
-You might've noticed in the example config files that I use tabs for terminals
-rather than buffers. This is because I consider that tabs make more sense for
-this kind of software because of the way vim works. In vim, each tab has a
-window id, like each float window or each split. While the buffers can be
-displayed in a window. But the buffers don't have a window id. 
+I consider that tabs make more sense for this kind of software because of the
+way vim works. In vim, each tab has a window id, like each float window or
+each split. While the buffers can be displayed in a window. But the buffers
+don't have a window id. 
 
 Internally, in `azul`, every time you create a new window, a terminal is
-automatically spawned in that window by doing
-`vim.api.nvim_command('terminal')`.
+automatically spawned in that window by calling `vim.fn.termopen`.
 
 Because of that, is basically very easy in `azul` to just do `tabnew`, which
-will automatically create a new tab, with a new window id, so a new terminal
-will be launched automatically. 
+will create a new tab, with a new window id, so a new terminal will be
+launched automatically. 
 
 This is the prefered way in `azul`. 
 
@@ -607,8 +571,12 @@ displayed in a window. This is why the buffers are not listed if they are not
 displayed in another win_id (either in another tab or in another floating
 window)
 
-So, if you prefer to use buffers and `:terminal` window, you'll have to handle
-it by yourself displaying a buffer in several windows.
+Also, you can always call `require('azul').suspend()`, to prevent the azul
+events of being triggered, create your new buffer or what you need to be
+created, then call `require('azul').resume()` and `require('azul').open(true,
+true)`. The second parameter of `open` will force the new terminal to be
+opened in the current window instead of creating a new window. If you just
+call `require('azul').open()`, automatically a new tab will be generated.
 
 ## Requirements
 

@@ -173,11 +173,7 @@ local OnEnter = function(ev)
     end
 end
 
-local on_chan_input = function(which, chan_id, data)
-    if #chan_input_callback == 0 then
-        return
-    end
-
+local on_chan_input = function(callback, which, chan_id, data)
     local t = find(function(x) return x.term_id == chan_id end, terminals)
     if t == nil then
         return
@@ -192,10 +188,8 @@ local on_chan_input = function(which, chan_id, data)
     for _, s in ipairs(data) do
         for c in s:gmatch(".") do
             if c == "\r" or c == "\n" then
-                for _, callback in ipairs(chan_input_callback) do
-                    callback(which, b[which], t)
-                    b[which] = ''
-                end
+                callback(which, b[which], t)
+                b[which] = ''
             else
                 b[which] = b[which] .. c
             end
@@ -206,24 +200,40 @@ end
 --- Opens a new terminal in the current window
 ---
 ---@param start_edit boolean If true, then start editing automatically (default true)
-M.open = function(start_edit)
+---@param force boolean If true, then open the terminal without opening a new tab in the current place
+---@param callback function If set, then the callback will be called everytime for a new line in the terminal
+M.open = function(start_edit, force, callback)
     if is_reloading then
         return
     end
-    vim.fn.termopen(vim.o.shell, {
+    if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and not force then
+        L.open_params = {start_edit, force, callback}
+        vim.api.nvim_command('$tabnew')
+        return
+    end
+    if L.open_params ~= nil then
+        start_edit = L.open_params[1]
+        force = L.open_params[2]
+        callback = L.open_params[3]
+        L.open_params = nil
+    end
+    local opts = {
         cdw = vim.fn.getcwd(),
-        -- on_stdout = function(chan, data, _)
-        --     on_chan_input('out', chan, data)
-        -- end,
-        -- on_stderr = function(chan, data, _)
-        --     on_chan_input('err', chan, data)
-        -- end,
         env = {
             VIM = '',
             VIMRUNTIME='',
         },
-    })
-    -- vim.api.nvim_command('terminal')
+    }
+
+    if callback ~= nil then
+        opts['on_stdout'] = function(chan, data, _)
+            on_chan_input(callback, 'out', chan, data)
+        end
+        opts['on_stderr'] = function(chan, data, _)
+            on_chan_input(callback, 'err', chan, data)
+        end
+    end
+    vim.fn.termopen(vim.o.shell, opts)
     if not vim.fn.exists('w:azul_win_id') then
         vim.api.nvim_win_set_var(0, 'azul_win_id', os.time())
     end
@@ -891,6 +901,10 @@ end
 
 local term_by_job_pid = function(pid)
     return find(function(t) return vim.api.nvim_buf_get_var(t.buf, 'terminal_job_pid') == 1 * pid end, terminals)
+end
+
+L.term_by_buf_id = function(id)
+    return find(function(t) return t.buf == 1 * id end, terminals)
 end
 
 local get_tab_windows = function(tab)

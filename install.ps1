@@ -35,4 +35,7 @@ else {
     git clone https://github.com/folke/tokyonight.nvim $prefix\.config\azul\pack\start\tokyonight.nvim
     git clone https://github.com/nvim-lualine/lualine.nvim $prefix\.config\azul\pack\start\lualine.nvim
     git clone https://github.com/folke/which-key.nvim $prefix\.config\azul\pack\start\which-key.nvim
+    git clone https://github.com/nvim-lua/plenary.nvim $prefix\.config\azul\pack\start\plenary.nvim
+    git clone https://github.com/nvim-telescope/telescope.nvim $prefix\.config\azul\pack\start\telescope.nvim
+    git clone https://github.com/kwkarlwang/bufresize.nvim $prefix\.config\azul\pack\start\bufresize.nvim
 }

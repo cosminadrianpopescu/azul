@@ -13,7 +13,7 @@ end
 
 map('t', '<a-c>', '', {
     callback = function()
-        feedkeys(':$tabnew<cr>')
+        azul.open()
     end
 })
 
