@@ -533,7 +533,7 @@ install there a plugin manager. The example config uses these 6 plugins:
 * [which-key](https://github.com/folke/which-key.nvim)
 * [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
 * [nvim-telescope](https://github.com/nvim-telescope/telescope.nvim)
-* [kwkarlwang](https://github.com/folke/bufresize.nvim)
+* [bufresize](https://github.com/folke/bufresize.nvim)
 
 If you think that the documentation is too small for a serious software, this
 is because the neovim documentation is azul's documentation. I just enumerated
