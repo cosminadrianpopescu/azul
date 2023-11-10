@@ -10,12 +10,14 @@ usage() {
     echo "    -h --help         Displays this help and exists"
 }
 
+RUN_DIR="/tmp/azul-`id -u`"
+
 is_session_live() {
-    if [ ! -S /tmp/azul/$1 ]
+    if [ ! -S $RUN_DIR/$1 ]
     then
         return 0
     fi
-    if [ "`ss -l | grep \" /tmp/azul/$1 \"`" == "" ]
+    if [ "`ss -l | grep \" $RUN_DIR/$1 \"`" == "" ]
     then
         return 0
     fi
@@ -32,7 +34,7 @@ check_session() {
 }
 
 list_sessions() {
-    for f in `ls /tmp/azul`
+    for f in `ls $RUN_DIR`
     do
         is_session_live $f
         if [ $? == 1 ]
@@ -42,9 +44,9 @@ list_sessions() {
     done
 }
 
-if [ ! -d /tmp/azul ]
+if [ ! -d $RUN_DIR ]
 then
-    mkdir /tmp/azul
+    mkdir $RUN_DIR
 fi
 
 export AZUL_SESSION=""
@@ -86,7 +88,7 @@ fi
 if [[ "$AZUL_CMD" != "" && "$AZUL_SESSION" != "" ]]
 then
     check_session $AZUL_SESSION
-    $AZUL_NVIM_EXE --remote-send "$AZUL_CMD" --server /tmp/azul/$AZUL_SESSION
+    $AZUL_NVIM_EXE --remote-send "$AZUL_CMD" --server $RUN_DIR/$AZUL_SESSION
     exit 0
 fi
 
@@ -98,32 +100,32 @@ export XDG_DATA_HOME=$AZUL_PREFIX/share/azul
 CMD="$AZUL_NVIM_EXE -m -n -i $AZUL_PREFIX/share/azul/shada"
 # if [[ "$AZUL_X" != "" && "$AZUL_Y" != "" ]]
 # then
-#     $AZUL_NVIM_EXE --remote-send "<C-s>n:lua require('azul').resize($AZUL_X, $AZUL_Y)<cr>i" --server /tmp/azul/$AZUL_SESSION
+#     $AZUL_NVIM_EXE --remote-send "<C-s>n:lua require('azul').resize($AZUL_X, $AZUL_Y)<cr>i" --server $RUN_DIR/$AZUL_SESSION
 #     if [ $AZUL_RESIZE_CONNECT == 1 ]
 #     then
-#         $AZUL_NVIM_EXE --server /tmp/azul/$AZUL_SESSION --remote-ui
+#         $AZUL_NVIM_EXE --server $RUN_DIR/$AZUL_SESSION --remote-ui
 #     fi
 if [ "$AZUL_SESSION" != "" ]
 then
     is_session_live $AZUL_SESSION
     if [ $? == 0 ]
     then
-        if [ -S /tmp/azul/$AZUL_SESSION ]
+        if [ -S $RUN_DIR/$AZUL_SESSION ]
         then
-            rm /tmp/azul/$AZUL_SESSION
+            rm $RUN_DIR/$AZUL_SESSION
         fi
-        setsid $AZUL_NVIM_EXE --listen /tmp/azul/$AZUL_SESSION --headless >/dev/null 2>&1 0< /dev/null &!
+        setsid $AZUL_NVIM_EXE --listen $RUN_DIR/$AZUL_SESSION --headless >/dev/null 2>&1 0< /dev/null &!
     fi
 
     sleep 0.2
-    check_file=/tmp/azul/$AZUL_SESSION-session
+    check_file=$RUN_DIR/$AZUL_SESSION-session
     echo $AZUL_SESSION > $check_file
 
     while [ -e $check_file ]
     do
         rm $check_file
-        $AZUL_NVIM_EXE --server /tmp/azul/$AZUL_SESSION --remote-ui
-        check_file=/tmp/azul/$AZUL_SESSION-session
+        $AZUL_NVIM_EXE --server $RUN_DIR/$AZUL_SESSION --remote-ui
+        check_file=$RUN_DIR/$AZUL_SESSION-session
         if [ -e $check_file ]
         then
             export AZUL_SESSION=`cat $check_file`
