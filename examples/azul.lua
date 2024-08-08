@@ -242,11 +242,13 @@ vim.o.wildmode = "longest,list"
 vim.o.timeout = true
 vim.o.timeoutlen = 300
 local wk = require('which-key')
-local keys = require('which-key.keys')
 wk.setup({
     -- triggers = {'<c-s>'}
     triggers_no_wait = {
         '<C-s>'
+    },
+    win = {
+        height = { min = 8, max = 25 }
     }
 })
 map('t', 'n', '<C-\\><C-n>', {
@@ -259,19 +261,4 @@ wk.register({
     }
 }, {
     mode = "t",
-})
-
-vim.api.nvim_create_autocmd('User', {
-    pattern = "", callback = function(ev)
-        local callback = (
-            (
-                (ev.match == 'MxToggleNestedMode' and azul.is_nested_session())
-                    or (ev.match == 'MxModeChanged' and azul.current_mode() ~= 't')
-            )
-            and keys.hook_del
-        ) or keys.hook_add
-        vim.fn.timer_start(1, function()
-            callback('<C-s>', 't')
-        end)
-    end
 })

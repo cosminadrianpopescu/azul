@@ -1,14 +1,6 @@
 local mx = require('azul')
-vim.api.nvim_create_autocmd('User', {
-    pattern = "", callback = function(ev)
-        if ev.match ~= 'MxModeChanged' then
-            return
-        end
-        require('lualine').refresh()
-    end
-})
 
-local colors = require('tokyonight.colors').default
+local colors = require('tokyonight.colors.moon')
 
 vim.api.nvim_command('highlight CurrentTab guibg=' .. colors.yellow)
 
@@ -175,3 +167,11 @@ require('lualine').setup {
     extensions = {}
 }
 
+vim.api.nvim_create_autocmd('User', {
+    pattern = "", callback = function(ev)
+        if ev.match ~= 'MxModeChanged' then
+            return
+        end
+        require('lualine').refresh()
+    end
+})
