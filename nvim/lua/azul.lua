@@ -552,7 +552,13 @@ M.move_current_float = function(dir, inc)
     local t = find(function(t) return t.buf == buf end, terminals)
     local conf = vim.api.nvim_win_get_config(0)
     if conf.relative == "" then return end
-    local row, col = conf["row"][false], conf["col"][false]
+    local row, col = conf["row"], conf["col"]
+    if type(row) ~= "number" then
+        row = row[false]
+    end
+    if type(col) ~= 'number' then
+        col = col[false]
+    end
     local _inc = inc or 1
 
 	if dir == "down" and (row + conf.height) < vim.o.lines then
