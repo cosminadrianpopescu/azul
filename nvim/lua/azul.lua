@@ -17,7 +17,6 @@ local M = {
 --- @field group string
 local terminals = {}
 local original_size = nil
-local chan_input_callback = {}
 local chan_buffers = {}
 
 local splits = {}
@@ -859,20 +858,6 @@ M.disconnect = function()
     for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
         vim.fn.chanclose(ui.chan)
     end
-end
-
---- Registers a callback that will be called everytime a new line is 
---- dumped on a terminal. The callback should have the signature:
----
---- --- @param mode 'err' | 'out' (the line was emitted on std_err or std_out)
---- --- @param line a string containing the new line
---- --- @param term The terminal that dumped the line.
---- function callback(mode, line, term)
---- end
----
----@return terminals|nil
-M.register_on_chan_line = function(callback)
-    table.insert(chan_input_callback, callback)
 end
 
 local serialize = function(var)
