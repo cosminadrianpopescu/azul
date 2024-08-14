@@ -54,8 +54,11 @@ cd azul
 AZUL_PREFIX=/usr sudo ./install.sh
 ```
 
-This will install `azul` in the `/usr` folder. Then you can run it by simply
-running `azul`.
+### Running azul
+
+If you installed `azul` in the `~/.local` folder, you can run it with
+`~/.local/bin/azul -a <session-name>`. This will start a new session that you
+can disconnect from and re-connect later on.
 
 *NOTE*: In case your `nvim` executable is not `nvim`, you need to specify this
 when installing by using the variable `AZUL_NVIM_EXE`. For example: 
@@ -111,7 +114,7 @@ Shortcuts for this mode:
 
 *`PANE` mode shortcuts*
 
-* `c` creates new pane
+* `c` creates new tab
 * `H` go to the tab to the left
 * `L` go to the tab to the right
 * `w` toggles floating panes visibility
@@ -220,6 +223,8 @@ indicating what are the possible commands that you can send to `azul`.
 * `<C-s>T` enters `TABS` mode
 * `<C-s>Ss` selects a session (linux only)
 * `<C-s>St` selects a tab from the current session
+* `<C-s>d` disconects from the current session
+* `<C-s>N` toggle the nested session (passes the control to the next azul)
 * `<cr>`, `<esc>` goes back to `TERMINAL` mode
 
 The other modes shortcuts are the same as for the `tmux` workflow shortcuts.
@@ -258,9 +263,9 @@ that you can then manipulate easily via special modes.
 
 By default, all panes are visible across all the tabs. However, whenever you
 call `open_float`, `toggle_floats`, `show_floats`, `hide_floats` or
-`are_floats_hidden` you can pass the group. You can create a float by calling
-`open_float('group-1')` and assign it to the group `group-1`. Then, you can
-show the floats of `group-1` or the floats of the `default` group. For
+`are_floats_hidden` you can pass the `group` argument. You can create a float
+by calling `open_float('group-1')` and assign it to the group `group-1`. Then,
+you can show the floats of `group-1` or the floats of the `default` group. For
 example, I'm using this function: 
 
 ```lua
@@ -378,12 +383,16 @@ How about that?
 `Azul` offers session support via `nvim` dettach feature. See `:help
 --remote-ui`
 
-When you start `azul`, you have to provide a session name. If the session is
-already started, then you will be connected to that session. If not, a new
-session with the indicated name will be started and you will be connected to
-it. Unlike `tmux` or `zellij` or other terminal multiplexers, when
-disconnecting from one session, if you are connected from several places, all
-the instances will be disconnected. 
+When you start `azul`, you have to provide a session name (`azul -a
+my-new-session`). If the session is already started, then you will be
+connected to that session. If not, a new session with the indicated name will
+be started and you will be connected to it. Unlike `tmux` or `zellij` or other
+terminal multiplexers, when disconnecting from one session, if you are
+connected from several places, all the instances will be disconnected. 
+
+*NOTE*: If you run `azul` without any arguments, a list of current opened sessions is
+displayed. So, if you don't have any sessions opened, it will appear as
+nothing is happening. Try `azul --help`
 
 ### Layout persistence
 
@@ -408,9 +417,9 @@ azul.restore_layouts('/tmp/my-layout.vim', function(t, azul_win_id)
 end)
 ```
 
-This will restore the vifm in the window identified by the id `vifm`. In order
+This will restore the `vifm` in the window identified by the id `vifm`. In order
 to identify a tab, float or split after a layout reload, you can define the
-variable `w:azul_win_id`, like this: `<C-s>n:let w:azul_window_id = 'vifm'`.
+variable `w:azul_win_id`, like this: `<C-s>n:let w:azul_window_id = 'vifm'<cr>`.
 This will set the `azul_win_id` to the `vifm` value in the current terminal.
 The value will be restored uppon a session reload.
 
@@ -452,7 +461,7 @@ content, copy whatever was to copy and then close the editor to go back to the
 terminal.
 
 And the most annoying issue was the nested session. Open a multiplexer
-session, ssh to a server and there connect to another session. I've always
+session, `ssh` to a server and there connect to another session. I've always
 fixed this by changing the modifier in the ssh session. But this raised issues
 when keeping the dotfiles under git, since I have to treat this modifier in
 some way to keep it under git.
