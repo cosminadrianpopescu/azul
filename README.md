@@ -380,8 +380,8 @@ How about that?
 
 ### Session support
 
-`Azul` offers session support via `nvim` dettach feature. See `:help
---remote-ui`
+`Azul` offers session support via `nvim` dettach feature for linux. There is
+no session support for the windows version. See `:help --remote-ui`
 
 When you start `azul`, you have to provide a session name (`azul -a
 my-new-session`). If the session is already started, then you will be
