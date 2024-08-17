@@ -317,6 +317,14 @@ cmd({'WinEnter'}, {
     end
 })
 
+cmd({'TabEnter', 'WinResized', 'VimResized'}, {
+    pattern = "*", callback = function()
+        vim.fn.timer_start(1, function()
+            vim.o.cmdheight = 0
+        end)
+    end
+})
+
 cmd({'TabLeave'}, {
     pattern = "*", callback = function()
         if is_suspended then
@@ -735,9 +743,9 @@ M.position_current_float = function(where)
     if where == "top" then
         conf.row = 0
     elseif where == "right" then
-        conf.col = fix_coord(conf.width, conf.width, vim.o.columns) + 3
+        conf.col = fix_coord(vim.o.columns - conf.width, conf.width, vim.o.columns)
     elseif where == "bottom" then
-        conf.row = fix_coord(conf.height, conf.height, vim.o.lines - 1) + 2
+        conf.row = fix_coord(vim.o.lines - conf.height, conf.height, vim.o.lines - 1)
     elseif where == "left" then
         conf.col = 0
     end
