@@ -1,45 +1,53 @@
 local mx = require('azul')
+local theme = 'everforest'
 
-local colors = require('tokyonight.colors.moon')
+local colors = require('lualine.themes.' .. theme)
+if colors.terminal == nil then
+    colors.terminal = colors.visual
+end
+if colors.command == nil then
+    colors.command = colors.inactive
+end
 
-vim.api.nvim_command('highlight CurrentTab guibg=' .. colors.yellow)
+vim.api.nvim_command('highlight CurrentFloatSel guifg=' .. colors.replace.a.bg)
+vim.api.nvim_set_hl(0, 'NormalFloat', {})
 
 local MOD_MAP = {
     t = {
         text = '  TERMINAL ',
-        color = colors.green,
+        color = colors.terminal.a.bg,
     },
     c = {
         text = '  COMMAND  ',
-        color = colors.yellow,
+        color = colors.command.a.fg,
     },
     n = {
         text = '   NORMAL  ',
-        color = colors.blue,
+        color = colors.normal.a.fg,
     },
     v = {
-        text = '  VISUAL  ',
-        color = colors.magenta,
+        text = '   VISUAL  ',
+        color = colors.visual.a.fg,
     },
     p = {
         text = 'PANE SELECT',
-        color = colors.red,
+        color = colors.insert.a.bg,
     },
     m = {
         text = ' FLOAT MOVE',
-        color = colors.red,
+        color = colors.insert.a.bg,
     },
     r = {
         text = 'PANE RESIZE',
-        color = colors.red,
+        color = colors.insert.a.bg,
     },
     s = {
         text = '   SPLIT   ',
-        color = colors.red,
+        color = colors.insert.a.bg,
     },
     T = {
         text = '    TABS   ',
-        color = colors.red,
+        color = colors.insert.a.bg,
     },
 }
 
@@ -104,11 +112,14 @@ obj.update_status = function(self)
     end
     return line_utils.stl_escape(result) or ''
 end
+local other_colors = function()
+    return {bg = colors.normal.a.fg, fg = colors.normal.a.bg}
+end
 
 require('lualine').setup {
     options = {
         icons_enabled = true,
-        theme = 'auto',
+        theme = theme,
         component_separators = { left = '', right = ''},
         section_separators = { left = '', right = ''},
         disabled_filetypes = {
@@ -117,7 +128,11 @@ require('lualine').setup {
         },
         color = function(section)
             if section.section == 'a' then
-                return {bg = last_color, fg = colors.bg_dark}
+                local fg = colors.terminal.a.fg
+                if last_color == fg then
+                    return {bg = colors.normal.a.bg, fg = fg}
+                end
+                return {bg = last_color, fg = fg}
             end
 
             return nil
@@ -141,17 +156,16 @@ require('lualine').setup {
             {
                 prev_tabs,
                 separator = { right = '', left = ''},
+                color = other_colors,
             },
             {
                 current_tab,
-                color = function()
-                    return {bg = colors.yellow, fg = colors.bg_dark}
-                end,
                 separator = { right = '', left = ''},
             },
             {
                 next_tabs,
                 separator = { right = '', left = ''},
+                color = other_colors,
             },
         },
         lualine_c = {

@@ -1,4 +1,3 @@
-require('my-lualine')
 local azul = require('azul')
 local u = require('utils')
 local map = azul.set_key_map
@@ -205,8 +204,6 @@ set_position_shortcut('L', 'right')
 set_position_shortcut('J', 'bottom')
 set_position_shortcut('H', 'left')
 
-vim.api.nvim_command('colorscheme ' .. (os.getenv('AZUL_COLORS') or 'tokyonight-night'))
-
 set_resize_shortcuts('h', 'vert res -5')
 set_resize_shortcuts('j', 'res +5')
 set_resize_shortcuts('k', 'res -5')
@@ -248,7 +245,8 @@ wk.setup({
         '<C-s>'
     },
     win = {
-        height = { min = 8, max = 25 }
+        height = { min = 8, max = 25 },
+        no_overlap = false,
     }
 })
 map('t', 'n', '<C-\\><C-n>', {

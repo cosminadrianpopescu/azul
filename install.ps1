@@ -39,9 +39,6 @@ else {
         copy .\examples\azul.lua $prefix\.config\azul\init.lua
     }
 
-    if (-not (Test-Path "$prefix\.config\azul\pack\start\tokyonight.nvim")) {
-        git clone https://github.com/folke/tokyonight.nvim $prefix\.config\azul\pack\start\tokyonight.nvim
-    }
     if (-not (Test-Path "$prefix\.config\azul\pack\start\lualine.nvim")) {
         git clone https://github.com/nvim-lualine/lualine.nvim $prefix\.config\azul\pack\start\lualine.nvim
     }

@@ -1,4 +1,3 @@
-require('my-lualine')
 local azul = require('azul')
 local map = azul.set_key_map
 local cmd = vim.api.nvim_create_autocmd
@@ -145,8 +144,6 @@ set_split_shortcuts('h', 'left')
 set_split_shortcuts('j', 'down')
 set_split_shortcuts('k', 'up')
 set_split_shortcuts('l', 'right')
-
-vim.api.nvim_command('colorscheme ' .. (os.getenv('AZUL_COLORS') or 'tokyonight-night'))
 
 set_resize_shortcuts('h', 'vert res -5')
 set_resize_shortcuts('j', 'res +5')

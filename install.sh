@@ -52,6 +52,8 @@ export AZUL_CONFIG="${XDG_CONFIG_HOME:-$HOME}/.config/azul"
 printf "#!/bin/bash\n\nexport AZUL_PREFIX=$AZUL_PREFIX\nexport AZUL_ABDUCO_EXE=$AZUL_ABDUCO_EXE\nexport AZUL_NVIM_EXE=$AZUL_NVIM_EXE\n\n" > $AZUL_PREFIX/bin/azul
 cat $AZUL_DIR/azul >> $AZUL_PREFIX/bin/azul
 chmod 0755 $AZUL_PREFIX/bin/azul
+cp $AZUL_DIR/nvim/lua/theme.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/config.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/azul.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/sessions.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/init.lua $AZUL_PREFIX/share/azul/nvim
@@ -74,7 +76,6 @@ then
     cp $AZUL_DIR/examples/azul.lua $AZUL_CONFIG/init.lua
 fi
 
-install_from_github "folke" "tokyonight.nvim"
 install_from_github "nvim-lualine" "lualine.nvim"
 install_from_github "folke" "which-key.nvim"
 install_from_github "nvim-lua" "plenary.nvim"

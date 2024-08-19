@@ -10,9 +10,6 @@ vim.o.bufhidden = "hide"
 vim.o.hidden = true
 vim.o.termguicolors = true
 
-vim.api.nvim_command('highlight CurrentFloatSel guifg=#db4b4b')
-vim.api.nvim_set_hl(0, 'NormalFloat', {})
-
 vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
 vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
 
@@ -39,5 +36,6 @@ if not try_load_config(config_file) then
 end
 
 vim.fn.timer_start(1, function()
+    require('theme')
     azul.open()
 end)
