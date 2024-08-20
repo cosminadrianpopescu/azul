@@ -1,5 +1,5 @@
 local mx = require('azul')
-local theme = 'everforest'
+local theme = 'dracula'
 
 local colors = require('lualine.themes.' .. theme)
 if colors.terminal == nil then
@@ -22,7 +22,7 @@ local MOD_MAP = {
         color = colors.command.a.fg,
     },
     n = {
-        text = '   NORMAL  ',
+        text = '    AZUL   ',
         color = colors.normal.a.fg,
     },
     v = {
