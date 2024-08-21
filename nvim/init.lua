@@ -1,6 +1,23 @@
 local azul = require('azul')
+local files = require('files')
 
-vim.o.cmdheight = 0
+vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
+vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
+
+files.init()
+local cfg = require('config')
+
+if files.exists(files.config_dir .. '/config.ini') then
+    cfg.load_config(files.config_dir .. '/config.ini')
+end
+azul.set_workflow(cfg.default_config.options.workflow, cfg.default_config.options.modifier)
+cfg.apply_config()
+
+vim.o.cmdheight = cfg.default_config.options.cmdheight
+vim.o.scrollback = cfg.default_config.options.scrollback
+vim.o.termguicolors = cfg.default_config.options.termguicolors
+vim.o.mouse = cfg.default_config.options.mouse
+vim.o.shell = cfg.default_config.options.shell
 vim.o.encoding = "utf-8"
 vim.o.number = false
 vim.o.relativenumber = false
@@ -8,31 +25,10 @@ vim.o.belloff = "all"
 vim.o.laststatus = 3
 vim.o.bufhidden = "hide"
 vim.o.hidden = true
-vim.o.termguicolors = true
 
-vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
-vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
-
-azul.set_workflow('azul')
-
-local config_dir = vim.env.AZUL_CONFIG_HOME or ((vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/azul')
-local config_file = config_dir .. '/init.lua'
-
-vim.o.runtimepath = vim.o.runtimepath .. ',' .. config_dir .. '/pack/start/*,' .. config_dir .. '/pack/opt/*,' .. config_dir
-
-local try_load_config = function(which)
-    local file = io.open(which)
-    if file ~= nil then
-        io.close(file)
-        vim.api.nvim_command('source ' .. which)
-        return true
-    end
-
-    return false
-end
-
-if not try_load_config(config_file) then
-    try_load_config(config_dir .. '/init.vim')
+local config_file = files.config_dir .. '/init.lua'
+if not files.try_load_config(config_file) then
+    files.try_load_config(files.config_dir .. '/init.vim')
 end
 
 vim.fn.timer_start(1, function()

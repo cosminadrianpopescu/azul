@@ -52,3 +52,4 @@ f('p', 'h', '', {
 * there should be a config.lua that should enumerate the config options.
 * document the public lua API, so that advanced users can really customize it.
 * create separate doc pages for api.md, config.md and the README.md
+* expose the azul api and the shortcuts as vim commands

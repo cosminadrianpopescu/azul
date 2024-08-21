@@ -1,5 +1,6 @@
 local mx = require('azul')
-local theme = 'dracula'
+local cfg = require('config')
+local theme = cfg.default_config.options.theme
 
 local colors = require('lualine.themes.' .. theme)
 if colors.terminal == nil then

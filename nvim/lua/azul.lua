@@ -1055,4 +1055,16 @@ M.restore_layout = function(where, callback)
     end)
 end
 
+M.set_win_id = function(id)
+    vim.api.nvim_win_set_var(0, 'azul_win_id', id)
+end
+
+M.set_cmd = function(cmd)
+    vim.api.nvim_win_set_var(0, 'azul_cmd', cmd)
+end
+
+M.get_current_workflow = function()
+    return workflow
+end
+
 return M

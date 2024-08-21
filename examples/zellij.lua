@@ -72,6 +72,10 @@ map({'r', 'p', 'm', 's', 'T'}, '<esc>', '', {
     end,
 })
 
+map('t', '<C-a>', '<C-\\><C-n>', {
+    desc = 'Enter normal mode',
+})
+
 local options = {noremap = true}
 map('c', '<C-n>', '<Down>', options)
 map('c', '<C-p>', '<Up>', options)

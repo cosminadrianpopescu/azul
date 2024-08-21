@@ -11,11 +11,6 @@ end
 
 require('bufresize').setup()
 
-local feedkeys = function(keys)
-    local codes = vim.api.nvim_replace_termcodes('<C-\\><c-n>' .. keys, true, false, true)
-    vim.api.nvim_feedkeys(codes, 't', false)
-end
-
 local t = function(key, callback, what)
     map('t', key, '', {
         callback = function()
@@ -219,7 +214,6 @@ map('t', 'P', '', {
 map('t', 'pp', '', {
     callback = function()
         u.paste()
-        -- feedkeys(' <bs>')
     end,
     desc = "Paste",
 })
