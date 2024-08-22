@@ -9,11 +9,13 @@ A nvim based terminal multiplexer.
 * [Zellij workflow](https://cloud.taid.be/s/rCTyPcFWnn3aNCS)
 * [Nested session](https://cloud.taid.be/s/76i6pKnQzperH9r)
 
+## Table of contents
+
 * [Installation](#installation)
   - [Requirements](#requirements)
   - [Linux](#linux)
   - [Windows](#windows)
-* [Usage](#usage)
+* [Launching](#launching)
 * [Configuration](#configuration)
   - [Options](#options)
   - [Shortcuts](#shortcuts)
@@ -86,7 +88,7 @@ installed in `c:/User/johndoe/nvim-win64`.
 Then, to run it:
 `c:/Users/johndoe/azul/azul.cmd`
 
-## Usage
+## Launching
 
 By running `~/.local/bin/azul` you will get a list of the current running azul
 sessions. In order to start a new session, you need to run `~/.local/bin/azul
