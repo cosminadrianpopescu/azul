@@ -192,9 +192,9 @@ set_move_shortcuts('<c-k>', 'up', 1)
 set_move_shortcuts('<c-l>', 'right', 1)
 
 set_position_shortcut('K', 'top')
-set_position_shortcut('L', 'right')
+set_position_shortcut('L', 'end')
 set_position_shortcut('J', 'bottom')
-set_position_shortcut('H', 'left')
+set_position_shortcut('H', 'start')
 
 set_resize_shortcuts('h', 'vert res -5')
 set_resize_shortcuts('j', 'res +5')

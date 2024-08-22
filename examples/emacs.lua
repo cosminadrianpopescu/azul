@@ -96,9 +96,9 @@ set_split_shortcuts('<c-k>', 'up')
 set_split_shortcuts('<c-l>', 'right')
 
 set_position_shortcut('<c-a-n>', 'top')
-set_position_shortcut('<c-a-e>', 'right')
+set_position_shortcut('<c-a-e>', 'end')
 set_position_shortcut('<c-a-s>', 'bottom')
-set_position_shortcut('<c-a-w>', 'left')
+set_position_shortcut('<c-a-w>', 'start')
 
 set_resize_shortcut('<C-left>', ':vert res -5<cr>i')
 set_resize_shortcut('<C-down>', ':res +5<cr>i')

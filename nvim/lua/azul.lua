@@ -742,11 +742,11 @@ M.position_current_float = function(where)
 
     if where == "top" then
         conf.row = 0
-    elseif where == "right" then
+    elseif where == "end" then
         conf.col = fix_coord(vim.o.columns - conf.width, conf.width, vim.o.columns)
     elseif where == "bottom" then
         conf.row = fix_coord(vim.o.lines - conf.height, conf.height, vim.o.lines - 1)
-    elseif where == "left" then
+    elseif where == "start" then
         conf.col = 0
     end
     vim.api.nvim_win_set_config(0, conf)
@@ -1057,6 +1057,10 @@ end
 
 M.set_win_id = function(id)
     vim.api.nvim_win_set_var(0, 'azul_win_id', id)
+end
+
+M.set_tab_variable = function(key, value)
+    vim.t[key] = value
 end
 
 M.set_cmd = function(cmd)

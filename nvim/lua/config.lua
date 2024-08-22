@@ -3,11 +3,17 @@ local M = {}
 local files = require('files')
 local split = require('split')
 local cmd = vim.api.nvim_create_autocmd
+local tabs = 0
 
 local float_group = function()
     return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
                                           -- then all the floats on that tab
                                           -- will be assigned to the t:float_group group
+end
+
+local feedkeys = function(keys)
+    local codes = vim.api.nvim_replace_termcodes('<C-\\><c-n>' .. keys, true, false, true)
+    vim.api.nvim_feedkeys(codes, 't', false)
 end
 
 cmd('TermClose', {
@@ -35,12 +41,10 @@ local actions = {
     'resize_left', 'resize_right', 'resize_up', 'resize_down',
     'select_left', 'select_right', 'select_up', 'select_down',
     'move_left', 'move_right', 'move_up', 'move_down',
+    'move_top', 'move_bottom', 'move_start', 'move_end',
     'split_left', 'split_right', 'split_up', 'split_down',
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous'
-
 }
-
-local workflows = {'azul', 'tmux', 'zellij', 'emacs'}
 
 local modes = {
     terminal = 't', azul = 'n', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T'
@@ -90,7 +94,7 @@ M.default_config = {
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'l',
+                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'j',
             },
             pane = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -154,7 +158,7 @@ M.default_config = {
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'l',
+                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'j',
             },
             pane = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -205,7 +209,7 @@ M.default_config = {
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'l',
+                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'j',
             },
             pane = {
                 create_tab = 'c',
@@ -269,6 +273,18 @@ M.default_config = {
                 split_right = '<c-l>',
                 split_up = '<c-k>',
                 split_down = '<c-j>',
+                move_left = {
+                    ["5"] = '<c-a-h>',
+                },
+                move_right = {
+                    ["5"] = '<c-a-l>',
+                },
+                move_up = {
+                    ["5"] = '<c-a-k>',
+                },
+                move_down = {
+                    ["5"] = '<c-a-j>',
+                },
                 move_top = '<c-a-n>',
                 move_bottom = '<c-a-s>',
                 move_start = '<c-a-w>',
@@ -278,6 +294,10 @@ M.default_config = {
                 resize_up = '<c-up>',
                 resize_down = '<c-down>',
                 nested = '<a-n>',
+                tab_select_first = '<c-x>H',
+                tab_select_last = '<c-x>L',
+                tab_select_previous = '<c-x>h',
+                tab_select_next = '<c-x>l',
             },
         }
     }
@@ -287,7 +307,6 @@ local set_shortcut = function(action, shortcut, mode, arg)
     local azul = require('azul')
     local map = azul.set_key_map
     local wf = azul.get_current_workflow()
-    local map2 = vim.api.nvim_set_keymap
 
     local t = function(key, callback, what)
         map(mode, key, '', {
@@ -299,18 +318,23 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     end
 
-    local wrap_for_insert = function(callback)
-        callback()
-        if wf ~= 'zellij' and wf ~= 'tmux' then
-            return
-        end
+    local start_insert = function()
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('startinsert')
         end)
     end
 
-    if action == 'select_terminal' then
-        t(shortcut, require('sessions').term_select, 'terminal')
+    local wrap_for_insert = function(callback)
+        callback()
+        if wf ~= 'zellij' and wf ~= 'tmux' then
+            return
+        end
+        start_insert()
+    end
+
+    if action == 'select_terminal' or action == 'select_session' then
+        local callback = (action == 'select_terminal' and require('sessions').term_select) or require('sessions').sessions_list
+        t(shortcut, callback, action:gsub('select_', ''))
     elseif action == 'create_tab' then
         map(mode, shortcut, '', {
             callback = function()
@@ -318,20 +342,28 @@ local set_shortcut = function(action, shortcut, mode, arg)
                     azul.enter_mode('t')
                 end
                 azul.open()
+                if M.default_config.options.link_floats_with_tabs then
+                    vim.fn.timer_start(1, function()
+                        azul.set_tab_variable('float_group', 'tab-' .. tabs)
+                        tabs = tabs + 1
+                    end)
+                end
             end,
             desc = 'Creates a new tab',
         })
     elseif action == 'tab_select' then
         map(mode, shortcut, '', {
             callback = function()
-                local hidden = azul.are_floats_hidden(float_group())
-                if not hidden then
-                    azul.hide_floats()
-                end
-                vim.api.nvim_command('tabn ' .. arg)
-                if not hidden then
-                    azul.show_floats(float_group())
-                end
+                wrap_for_insert(function()
+                    local hidden = azul.are_floats_hidden(float_group())
+                    if not hidden then
+                        azul.hide_floats()
+                    end
+                    vim.api.nvim_command('tabn ' .. arg)
+                    if not hidden then
+                        azul.show_floats(float_group())
+                    end
+                end)
             end,
             desc = 'Go to tab ' .. arg
         })
@@ -363,6 +395,9 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 azul.enter_mode(arg)
+                if arg == 't' and (wf == 'tmux' or wf == 'zellij') then
+                    start_insert()
+                end
             end,
             desc = "Enter " .. mapping[arg] .. " mode"
         })
@@ -374,6 +409,73 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 end)
             end,
             desc = "Create float"
+        })
+    elseif action == 'disconnect' then
+        map(mode, shortcut, '', {
+            callback = azul.disconnect,
+            desc = "Disconnect",
+        })
+    elseif action == 'nested' then
+        map(mode, shortcut, '', {
+            callback = azul.toggle_nested_mode,
+            desc = 'Toggle nested session'
+        })
+    elseif action == 'resize_left' or action == 'resize_right' or action == 'resize_down' or action == 'resize_up' then
+        local args = {
+            resize_left = 'vert res -5',
+            resize_right = 'vert res +5',
+            resize_up = 'res -5',
+            resize_down = 'res +5',
+        }
+        map(mode, shortcut, '', {
+            callback = function()
+                if wf ~= 'emacs' then
+                    vim.api.nvim_command(args[action])
+                else
+                    feedkeys(':' .. args[action] .. '<cr>i')
+                end
+            end,
+        })
+    elseif action == 'select_left' or action == 'select_right' or action == 'select_down' or action == 'select_up' then
+        local dir = action:gsub('select_', '')
+        map(mode, shortcut, '', {
+            callback = function()
+                azul.select_next_term(dir, float_group())
+            end,
+            desc = 'Select a pane to the ' .. dir
+        })
+    elseif action == 'move_left' or action == 'move_right' or action == 'move_up' or action == 'move_down' then
+        local dir = action:gsub('move_', '')
+        map(mode, shortcut, '', {
+            callback = function()
+                azul.move_current_float(dir, arg)
+            end,
+            desc = 'Move a panel to ' .. dir
+        })
+    elseif action == 'split_left' or action == 'split_right' or action == 'split_up' or action == 'split_down' then
+        local dir = action:gsub('split_', '')
+        map(mode, shortcut, '', {
+            callback = function()
+                azul.split(dir)
+            end,
+            desc = 'Split to ' .. dir
+        })
+    elseif action == 'move_top' or action == 'move_bottom' or action == 'move_start' or action == 'move_end' then
+        local dir = action:gsub('move_', '')
+        map(mode, shortcut, '', {
+            callback = function()
+                azul.position_current_float(dir)
+            end,
+            desc = 'Move current pane to ' .. dir
+        })
+    elseif action == 'tab_select_first' or action == 'tab_select_last' or action == 'tab_select_previous' or action == 'tab_select_next' then
+        local args = {
+            tab_select_first = 'tabfirst', tab_select_next = 'tabnext', tab_select_previous = 'tabprev', tab_select_last = 'tablast',
+        }
+        map(mode, shortcut, '', {
+            callback = function()
+                vim.api.nvim_command(args[action])
+            end
         })
     end
 end
@@ -402,12 +504,13 @@ M.load_config = function(where)
         end
         for mode, shortcuts in pairs(collection) do
             for action, keys in pairs(shortcuts) do
+                if M.default_config.shortcuts[wf][mode] == nil and modes[mode] ~= nil then
+                    M.default_config.shortcuts[wf][mode] = {}
+                end
                 if type(keys) ~= 'table' or (vim.tbl_contains(actions, action) and M.default_config.shortcuts[wf][mode][action] == nil) then
                     M.default_config.shortcuts[wf][mode][action] = keys
                 else
                     for arg, real_keys in pairs(keys) do
-                        print("TRYING")
-                        print(vim.inspect(wf) .. ", " .. vim.inspect(mode) .. ", " .. vim.inspect(action) .. ", " .. vim.inspect(arg))
                         M.default_config.shortcuts[wf][mode][action][arg] = real_keys
                     end
                 end
@@ -416,8 +519,15 @@ M.load_config = function(where)
     end
 end
 
-local set_wk = function(config)
+local set_wk = function(wf)
     local wk = require('which-key')
+    if wf ~= 'azul' then
+        wk.setup({
+            triggers = {},
+        })
+
+        return
+    end
     wk.setup({
         -- triggers = {'<c-s>'}
         triggers_no_wait = {
@@ -442,9 +552,7 @@ end
 M.apply_config = function(_config)
     local config = _config or M.default_config
     local wf = config.options.workflow
-    if wf == 'azul' then
-        set_wk(config)
-    end
+    set_wk(wf)
     local do_setshortcut = function(shortcuts, mode)
         for action, keys in pairs(shortcuts) do
             if type(keys) ~= 'table' then

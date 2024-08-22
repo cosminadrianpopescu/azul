@@ -26,6 +26,14 @@ vim.o.laststatus = 3
 vim.o.bufhidden = "hide"
 vim.o.hidden = true
 
+vim.o.expandtab = true
+vim.o.smarttab = true
+vim.o.showtabline = 0
+vim.o.completeopt = "menu,menuone,noselect"
+vim.o.wildmode = "longest,list"
+vim.o.timeout = true
+vim.o.timeoutlen = 300
+
 local config_file = files.config_dir .. '/init.lua'
 if not files.try_load_config(config_file) then
     files.try_load_config(files.config_dir .. '/init.vim')
