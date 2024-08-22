@@ -16,10 +16,10 @@ A nvim based terminal multiplexer.
   - [Linux](#linux)
   - [Windows](#windows)
 * [Launching](#launching)
+* [Workflows](#workflows)
 * [Configuration](#configuration)
   - [Options](#options)
   - [Shortcuts](#shortcuts)
-  - [Workflows](#workflows)
   - [Copy/Pasting](#copy/pasting)
 * [Nested session](#nested-session)
 * [Session restore](#session-restore)
@@ -108,4 +108,15 @@ Azul can be configured in several ways. For
 [neovim](https://github.com/neovim/neovim) users, you can configure azul
 directly via an init file places in `~/.config/azul/init.lua`. This will
 expose the full power and all the configurations of azul. You can check the
-api [here](./api.md)
+`azul` api [here](./api.md).
+
+You have examples of configuration for each workflow inside the `examples/`
+folder (for examples, `examples/azul.lua`). You can get any of the example
+files, corresponding to each of the possible workflows, rename it to
+`init.lua` and copy it to `~/.config/azul` folder.
+
+If you don't need to access the full power of `neovim` or you are not familiar
+with `lua` or `neovim`, you can configure azul via a simple `ini` file format.
+The file should be placed in `~/.config/azul/config.ini`.
+
+### Options
