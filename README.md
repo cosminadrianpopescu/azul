@@ -120,9 +120,9 @@ A tab can contain one or several embeded panes or floating panes.
 The pane is the backbone of `azul`. Each pane contains a running shell (for
 example `/bin/bash` for a `linux` environment). 
 
-You can add another pane in a tab by changing to split mode (for example, for
+You can add another pane in a tab by changing to `SPLIT` mode (for example, for
 `azul` workflow, pressing `<C-s>s`, see [Workflows][#workflows]) and splitting
-to left, right, top or bottom (for `azul`, in split mode, clicking on the
+to left, right, top or bottom (for `azul`, in `SPLIT` mode, clicking on the
 cursors).
 
 Other then the embeded tabs, you can also have floating panes.
@@ -153,56 +153,57 @@ discarded once the job is finished.
 The `tmux`, `zellij` and `azul` workflows, have multiple modes.
 
 Like in `vim`, a mode is a certain way of interacting with the app. For
-example, in `resize` mode, pressing `h`, `j`, `k` and `l` will resize the
-currently selected pane, in `move` mode, same keys will move the currently
-selected pane while in `terminal` mode, the keys will be sent you your shell
-intepreter. The default mode when you start the app is `terminal` mode. In
-`terminal` mode, every key you send is sent automatically to the shell
-(`/bin/bash` for `linux` environments).
+example, in `PANE RESIZE` mode, pressing `h`, `j`, `k` and `l` will resize the
+currently selected pane, in `FLOAT MOVE` mode, same keys will move the
+currently selected pane while in `TERMINAL` mode, the keys will be sent you
+your shell intepreter. The default mode when you start the app is `TERMINAL`
+mode. In `TERMINAL` mode, every key you send is sent automatically to the
+shell (`/bin/bash` for `linux` environments).
 
 The possible modes are:
-  * `terminal` (all your keys are sent to your shell)
-  * `visual` (moving the cursor in the terminal buffer will modify the current
+  * `TERMINAL` (all your keys are sent to your shell)
+  * `VISUAL` (moving the cursor in the terminal buffer will modify the current
     selection)
-  * `pane select` (you can change the currently selected pane)
-  * `float move` (you can move the currently selected float pane)
-  * `pane resize` (you can resize the currently selected pane)
-  * `split` (you can add new splits in the currently selected tab)
-  * `tabs` (you can change the currently selected tab or add a new one)
-  * `azul`.
+  * `PANE SELECT` (you can change the currently selected pane)
+  * `FLOAT MOVE` (you can move the currently selected float pane)
+  * `PANE RESIZE` (you can resize the currently selected pane)
+  * `SPLIT` (you can add new splits in the currently selected tab)
+  * `TABS` (you can change the currently selected tab or add a new one)
+  * `AZUL`.
 
-The `azul` mode is a special mode in which you interact automatically with
+The `AZUL` mode is a special mode in which you interact automatically with
 `azul`, rather than the currently selected shell.
 
-In `azul` mode, click on cursors or on `<pgup>`, `<pgdown>` will navigate in
+In `AZUL` mode, click on cursors or on `<pgup>`, `<pgdown>` will navigate in
 the scroll buffer (all the output that you current shell generated).
 
-Also, from `azul` mode you can switch to `visual` mode, that will start a
+Also, from `AZUL` mode you can switch to `VISUAL` mode, that will start a
 selection, that can be extended by using the cursors, or `<pgup>` and `<pgdown>`.
 
-To return from `azul` mode to `terminal` mode, you can click on `i` or
+To return from `AZUL` mode to `TERMINAL` mode, you can click on `i` or
 `<ins>`.
 
-The `terminal` mode is the mode in which you start `azul` by default. In
-`terminal` mode, all your keys are sent to your current shell. 
+The `TERMINAL` mode is the mode in which you start `azul` by default. In
+`TERMINAL` mode, all your keys are sent to your current shell. 
 
 The current mode is indicated in the left bottom side of your status bar.
 
 ### Modifiers
 
-For `tmux` and `azul` modes, there is also a modifier. A modifier is a key
+For `tmux` and `azul` workflows, there is also a modifier. A modifier is a key
 combination that can be set via the `delimiter` option (default `<C-s>`) that
-when pressed in terminal mode has a special meaning, depending on the
+when pressed in `TERMINAL` mode has a special meaning, depending on the
 workflow. This combination will not be sent automatically to your shell, even
-when in `terminal` mode.
+when in `TERMINAL` mode.
 
-With a `tmux` workflow, the modifier will automatically put `azul` in `azul`
+With a `tmux` workflow, the modifier will automatically put `azul` in `AZUL`
 mode. The next key will be sent to azul, instead of your terminal. You can
 click `i` or `<ins>` if you change your mind and you want to get back to
-`terminal` mode, or you can press for example `p` to switch to `pane` mode.
+`TERMINAL` mode, or you can press for example `p` to switch to `PANE SELECT`
+mode.
 
 With an `azul` workflow, the modifier will show you the next possible keys on
-the bottom of the page, but will stay in `terminal` mode. If the next key is
+the bottom of the page, but will stay in `TERMINAL` mode. If the next key is
 an `azul` shortcut, then an `azul` command will be executed. If no, then both
 keys (the modifier and the following key) will be sent to the current shell.
 
@@ -218,11 +219,11 @@ click on `<a-f>`. For a full list of shortcuts for this workflow, check the
 ### Zellij workflow
 
 In this workflow, there are modes, but there is no modifier. You will mostly
-be in `TERMINAL`, `AZUL` or the custom `azul` modes (`PANE`, `RESIZE`,
-`MOVE`, `SPLIT` or `TABS`). To switch in a another mode, you have standard
-shortcuts prefixed by a standard delimiter (`ctrl` or `alt`). For example, to
-change to `tabs` mode, you can click `<C-S-t>`. For a full list of shortcuts
-for this workflow, chek the `examples/zellij-config.ini` file.
+be in `TERMINAL`, `AZUL` or the custom `azul` modes (`PANE SELECT`, `PANE
+RESIZE`, `MOVE`, `SPLIT` or `TABS`). To switch in a another mode, you have
+standard shortcuts prefixed by a standard delimiter (`ctrl` or `alt`). For
+example, to change to `TABS` mode, you can click `<C-S-t>`. For a full list of
+shortcuts for this workflow, chek the `examples/zellij-config.ini` file.
 
 ### Tmux workflow
 
