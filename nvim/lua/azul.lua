@@ -266,7 +266,7 @@ local OnTermClose = function(ev)
 end
 
 --- Enters a custom mode. Use this function for changing custom modes
----@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'
+---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'
 M.enter_mode = function(new_mode)
     L.unmap_all(mode)
     mode = new_mode

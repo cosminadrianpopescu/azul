@@ -53,3 +53,7 @@ f('p', 'h', '', {
 * document the public lua API, so that advanced users can really customize it.
 * create separate doc pages for api.md, config.md and the README.md
 * expose the azul api and the shortcuts as vim commands
+* copy / paste shotrtcuts
+* visual mode shortcuts
+* save session and resurect session shortcuts and commands
+* install vim.ui to ask for files.

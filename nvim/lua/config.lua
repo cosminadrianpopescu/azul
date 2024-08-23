@@ -87,6 +87,7 @@ M.default_config = {
                     s = 's',
                     T = 'T',
                     n = 'n',
+                    v = 'v',
                 },
                 create_float = 'f',
                 disconnect = 'd',
@@ -94,40 +95,40 @@ M.default_config = {
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'j',
+                resize_left = 'h$$$<left>', resize_right = 'l$$$<right>', resize_up = 'k$$$<up>', resize_down = 'j$$$<down>',
             },
             pane = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                select_left = 'h', select_right = 'l', select_up = 'k', select_down = 'j',
-                split_left = 'H', split_right = 'L', split_up = 'K', split_down = 'J',
+                select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
+                split_left = 'H$$$<s-left>', split_right = 'L$$$<s-right>', split_up = 'K$$$<s-up>', split_down = 'J$$$<s-down>',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 move_left = {
-                    ["5"] = 'h',
-                    ["1"] = '<C-h>',
+                    ["5"] = 'h$$$<left>',
+                    ["1"] = '<C-h>$$$<C-left>',
                 },
                 move_right = {
-                    ['5'] = 'l',
-                    ['1'] = '<c-l>',
+                    ['5'] = 'l$$$<right>',
+                    ['1'] = '<c-l>$$$<c-right>',
                 },
                 move_up ={
-                    ['5'] = 'k',
-                    ['1'] = '<C-k>',
+                    ['5'] = 'k$$$<up>',
+                    ['1'] = '<C-k>$$$<C-up>',
                 },
                 move_down = {
-                    ['5'] = 'j',
-                    ['1'] = '<C-j>',
+                    ['5'] = 'j$$$<down>',
+                    ['1'] = '<C-j>$$$<c-down>',
                 },
-                move_top = 'K', move_bottom = 'J', move_start = 'H', move_end = 'L',
+                move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
             },
             split = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                split_left = 'h', split_right = 'l', split_up = 'k', split_down = 'j',
+                split_left = 'h$$$<left>', split_right = 'l$$$<right>', split_up = 'k$$$<up>', split_down = 'j$$$<down>',
             },
             tabs = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                tab_select_first = 'H', tab_select_last = 'L', tab_select_previous = 'h', tab_select_next = 'l', create_tab = 'c',
+                tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
             },
         },
         tmux = {
@@ -151,6 +152,7 @@ M.default_config = {
                     m = 'm',
                     s = 's',
                     T = 'T',
+                    v = 'v',
                 },
                 create_float = 'f',
                 disconnect = 'd',
@@ -158,40 +160,40 @@ M.default_config = {
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'j',
+                resize_left = 'h$$$<left>', resize_right = 'l$$$<right>', resize_up = 'k$$$<up>', resize_down = 'j$$$<down>',
             },
             pane = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                select_left = 'h', select_right = 'l', select_up = 'k', select_down = 'j',
-                split_left = 'H', split_right = 'L', split_up = 'K', split_down = 'J',
+                select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
+                move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 move_left = {
-                    ['5'] = 'h',
-                    ['1'] = '<C-h>',
+                    ["5"] = 'h$$$<left>',
+                    ["1"] = '<C-h>$$$<C-left>',
                 },
                 move_right = {
-                    ['5'] = 'l',
-                    ['1'] = '<c-l>',
+                    ['5'] = 'l$$$<right>',
+                    ['1'] = '<c-l>$$$<c-right>',
                 },
                 move_up ={
-                    ['5'] = 'k',
-                    ['1'] = '<C-k>',
+                    ['5'] = 'k$$$<up>',
+                    ['1'] = '<C-k>$$$<C-up>',
                 },
                 move_down = {
-                    ['5'] = 'j',
-                    ['1'] = '<C-j>',
+                    ['5'] = 'j$$$<down>',
+                    ['1'] = '<C-j>$$$<c-down>',
                 },
-                move_top = 'K', move_bottom = 'J', move_start = 'H', move_end = 'L',
+                move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
             },
             split = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                split_left = 'h', split_right = 'l', split_up = 'k', split_down = 'j',
+                split_left = 'h$$$<left>', split_right = 'l$$$<right>', split_up = 'k$$$<up>', split_down = 'j$$$<down>',
             },
             tabs = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                tab_select_first = 'H', tab_select_last = 'L', tab_select_previous = 'h', tab_select_next = 'l', create_tab = 'c',
+                tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
             },
         },
         zellij = {
@@ -199,53 +201,54 @@ M.default_config = {
                 enter_mode = {
                     p = '<C-p>',
                     r = '<C-r>',
-                    m = '<C-v>',
+                    v = '<C-v>',
                     s = '<C-s>',
                     T = '<C-S-t>',
                     n = '<C-a>',
+                    m = '<C-s-m>',
                 },
                 disconnect = '<C-d>',
                 nested = '<A-n>',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                resize_left = 'h', resize_right = 'l', resize_up = 'k', resize_down = 'j',
+                resize_left = 'h$$$<left>', resize_right = 'l$$$<right>', resize_up = 'k$$$<up>', resize_down = 'j$$$<down>',
             },
             pane = {
                 create_tab = 'c',
                 enter_mode = {t = '<esc>'},
                 toggle_floats = 'w',
                 create_float = 'f',
-                select_left = 'h', select_right = 'l', select_up = 'k', select_down = 'j',
-                split_left = 'H', split_right = 'L', split_up = 'K', split_down = 'J',
+                select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
+                move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
             },
             move = {
                 enter_mode = {t = '<esc>'},
                 move_left = {
-                    ['5'] = 'h',
-                    ['1'] = '<C-h>',
+                    ["5"] = 'h$$$<left>',
+                    ["1"] = '<C-h>$$$<C-left>',
                 },
                 move_right = {
-                    ['5'] = 'l',
-                    ['1'] = '<c-l>',
+                    ['5'] = 'l$$$<right>',
+                    ['1'] = '<c-l>$$$<c-right>',
                 },
                 move_up ={
-                    ['5'] = 'k',
-                    ['1'] = '<C-k>',
+                    ['5'] = 'k$$$<up>',
+                    ['1'] = '<C-k>$$$<C-up>',
                 },
                 move_down = {
-                    ['5'] = 'j',
-                    ['1'] = '<C-j>',
+                    ['5'] = 'j$$$<down>',
+                    ['1'] = '<C-j>$$$<c-down>',
                 },
-                move_top = 'K', move_bottom = 'J', move_start = 'H', move_end = 'L',
+                move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
             },
             split = {
                 enter_mode = {t = '<esc>'},
-                split_left = 'h', split_right = 'l', split_up = 'k', split_down = 'j',
+                split_left = 'h$$$<left>', split_right = 'l$$$<right>', split_up = 'k$$$<up>', split_down = 'j$$$<down>',
             },
             tabs = {
                 enter_mode = {t = '<esc>'},
-                tab_select_first = 'H', tab_select_last = 'L', tab_select_previous = 'h', tab_select_next = 'l', create_tab = 'c',
+                tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
             },
         },
         emacs = {
@@ -265,39 +268,39 @@ M.default_config = {
                 toggle_floats = '<a-w>',
                 disconnect = '<a-d>',
                 create_float = '<a-f>',
-                select_left = '<a-h>',
-                select_right = '<a-l>',
-                select_up = '<a-k>',
-                select_down = '<a-j>',
-                split_left = '<c-h>',
-                split_right = '<c-l>',
-                split_up = '<c-k>',
-                split_down = '<c-j>',
+                select_left = '<a-left>',
+                select_right = '<a-right>',
+                select_up = '<a-up>',
+                select_down = '<a-down>',
+                split_left = '<c-left>',
+                split_right = '<c-right>',
+                split_up = '<c-up>',
+                split_down = '<c-down>',
                 move_left = {
-                    ["5"] = '<c-a-h>',
+                    ["5"] = '<c-a-left>',
                 },
                 move_right = {
-                    ["5"] = '<c-a-l>',
+                    ["5"] = '<c-a-right>',
                 },
                 move_up = {
-                    ["5"] = '<c-a-k>',
+                    ["5"] = '<c-a-up>',
                 },
                 move_down = {
-                    ["5"] = '<c-a-j>',
+                    ["5"] = '<c-a-down>',
                 },
                 move_top = '<c-a-n>',
                 move_bottom = '<c-a-s>',
                 move_start = '<c-a-w>',
                 move_end = '<c-a-e>',
-                resize_left = '<c-left>',
-                resize_right = '<c-right>',
-                resize_up = '<c-up>',
-                resize_down = '<c-down>',
+                resize_left = '<c-s-left>',
+                resize_right = '<c-s-right>',
+                resize_up = '<c-s-up>',
+                resize_down = '<c-s-down>',
                 nested = '<a-n>',
-                tab_select_first = '<c-x>H',
-                tab_select_last = '<c-x>L',
-                tab_select_previous = '<c-x>h',
-                tab_select_next = '<c-x>l',
+                tab_select_first = '<c-x><s-left>',
+                tab_select_last = '<c-x><s-right>',
+                tab_select_previous = '<c-x><left>',
+                tab_select_next = '<c-x><right>',
             },
         }
     }
@@ -377,12 +380,6 @@ local set_shortcut = function(action, shortcut, mode, arg)
             desc = "Toggle floats visibility",
         })
     elseif action == 'enter_mode' then
-        if arg == 'n' then
-            map(mode, shortcut, '<C-\\><C-n>', {
-                desc = 'Enter azul mode',
-            })
-            return
-        end
         local mapping = {
             p = 'pane',
             r = 'resize',
@@ -391,7 +388,15 @@ local set_shortcut = function(action, shortcut, mode, arg)
             T = 'tabs',
             t = 'terminal',
             n = 'azul',
+            v = 'visual',
         }
+        if arg == 'n' or arg == 'v' then
+            local suf = (arg == 'v' and 'v') or ''
+            map(mode, shortcut, '<C-\\><C-n>' .. suf, {
+                desc = 'Enter ' .. mapping[arg] .. ' mode',
+            })
+            return
+        end
         map(mode, shortcut, '', {
             callback = function()
                 azul.enter_mode(arg)
