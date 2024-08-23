@@ -108,10 +108,10 @@ Then, to run it:
 A tab is a currently opened environment. You will see the tabs in the bottom
 left of the status bar when starting the app with the default configuration.
 
-A newly create tab will contain a pane that will occupy all the available
-space. A pane occupying a single tab cannot be resized or moved. The pane is
-actually your shell programs waiting for commands or executting a command at
-any given time.
+A newly created tab will contain a pane that will occupy all the available
+space. A pane occupying all the space in a tab cannot be resized or moved. The
+pane is actually your shell program waiting for commands or executting a
+command at any given time.
 
 A tab can contain one or several embeded panes or floating panes.
 
@@ -121,7 +121,7 @@ The pane is the backbone of `azul`. Each pane contains a running shell (for
 example `/bin/bash` for a `linux` environment). 
 
 You can add another pane in a tab by changing to `SPLIT` mode (for example, for
-`azul` workflow, pressing `<C-s>s`, see [Workflows][#workflows]) and splitting
+`azul` workflow, pressing `<C-s>s`, see [Workflows](#workflows)) and splitting
 to left, right, top or bottom (for `azul`, in `SPLIT` mode, clicking on the
 cursors).
 
