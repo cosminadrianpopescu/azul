@@ -138,8 +138,8 @@ example `/bin/bash` for a `linux` environment).
 
 You can add another pane in a tab by changing to `SPLIT` mode (for example, for
 `azul` workflow, pressing `<C-s>s`, see [Workflows](#workflows)) and splitting
-to left, right, top or bottom (for `azul`, in `SPLIT` mode, clicking on the
-cursors).
+to left, right, top or bottom (for `azul` workflow, in `SPLIT` mode, clicking
+on the cursors).
 
 Other then the embeded tabs, you can also have floating panes.
 
@@ -192,11 +192,19 @@ The possible modes are:
 The `AZUL` mode is a special mode in which you interact automatically with
 `azul`, rather than the currently selected shell.
 
-In `AZUL` mode, click on cursors or on `<pgup>`, `<pgdown>` will navigate in
-the scroll buffer (all the output that you current shell generated).
+In `AZUL` mode, clicking on cursors or on `<pgup>`, `<pgdown>` will navigate
+in the scroll buffer (all the output that your current shell generated).
 
-Also, from `AZUL` mode you can switch to `VISUAL` mode, that will start a
-selection, that can be extended by using the cursors, or `<pgup>` and `<pgdown>`.
+From `AZUL` mode you can switch to `VISUAL` mode (by clicking `v`), that will
+start a selection, that can be extended by using the cursors, or `<pgup>` and
+`<pgdown>`.
+
+In `AZUL` mode you can also communicate with `azul` directly by sending it
+commands. You can click on `:` and a prompt will appear on top of the status
+bar. If you type `Azul` (notice the capital `A`) and then you click `tab`, you
+will see a list of all the possible commands you can send to `azul`. For more
+info and for a description of each command, see the [Commands
+section](#commands).
 
 To return from `AZUL` mode to `TERMINAL` mode, you can click on `i` or
 `<ins>`.
@@ -274,6 +282,53 @@ file in the options section (`mouse = `) or in your `init.lua` file
 (`vim.o.mouse = ""`). The default value is `a`. If you want to see the meaning
 and possible values, you can check
 [here](https://neovim.io/doc/user/options.html#'mouse').
+
+## Commands
+
+You can communicate directly with azul from `AZUL` mode, by clicking `:`
+(while in `AZUL` mode). This will open a prompt on top of the status bar.
+There, you can type one of the possible commands and then click `enter`.
+`Azul` will execute the command and then return in `TERMINAL` mode or stay in
+`AZUL` mode, depending on the command requested. 
+
+Some of the commands can take parameters. For example, `AzulSelectPane` will
+take as a parameter the direction in which to select the next pane (left,
+right, up or down). The parameters are separated by spaces. For example, to
+select the next pane to the left, in `AZUL` mode, you need to click the
+following: `:AzulSelectPane left<cr>` (the `<cr>` represents `enter`).
+
+Possible commands: 
+
+### AzulHideFloats
+
+Hiddens all the floats. 
+**Parameters**: none.
+
+### AzulOpen
+
+Opens a new tab with a new shell. 
+**Parameters**: none.
+
+### AzulEnterMode
+
+Puts `azul` in the requested mode. 
+**Parameters**: the mode (p or r or s or m or T or n or t or v)
+
+### AzulShowFloats
+
+Shows the currently opened floats. If no floats is created yet, then nothing
+will be shown. If the option `link_floats_with_tabs` is true, then it shows
+the currently opened floats on the current tab.
+
+**Parameters**: none.
+
+### AzulOpenFloat
+
+Creates a new float on the current tab. If the option `link_floats_with_tabs`
+is set to `true`, then this float will only be visible on the currently
+selected tab.
+
+**Parameters**: none
 
 ## Configuration
 
