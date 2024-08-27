@@ -39,7 +39,7 @@ return {
             azul.select_next_pane(opts.fargs[1], vim.t.float_group or nil)
         end, {nargs = 1, desc = "Selects the next pane in the given direction"})
 
-        vim.api.nvim_create_user_command('AzulSendToCurrentTerminal', function(opts)
+        vim.api.nvim_create_user_command('AzulSendToCurrentPane', function(opts)
             azul.send_to_current(opts.fargs[1], opts.bang)
         end, {bang = true, nargs = 1, desc = "Sends the text to the currently selected terminal"})
 

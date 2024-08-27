@@ -303,19 +303,21 @@ Possible commands:
 
 Hiddens all the floats. 
 
-**Parameters**: none.
+**Parameters**: none
 
 ### AzulOpen
 
 Opens a new tab with a new shell. 
 
-**Parameters**: none.
+**Parameters**: none
 
 ### AzulEnterMode
 
 Puts `azul` in the requested mode. 
 
-**Parameters**: the mode (p or r or s or m or T or n or t or v)
+**Parameters**:
+
+* the mode (p or r or s or m or T or n or t or v)
 
 ### AzulShowFloats
 
@@ -323,7 +325,7 @@ Shows the currently opened floats. If no floats is created yet, then nothing
 will be shown. If the option `link_floats_with_tabs` is true, then it shows
 the currently opened floats on the current tab.
 
-**Parameters**: none.
+**Parameters**: none
 
 ### AzulOpenFloat
 
@@ -332,6 +334,92 @@ is set to `true`, then this float will only be visible on the currently
 selected tab.
 
 **Parameters**: none
+
+### AzulToggleFloats
+
+Toggles the opened floats visibility. If `link_floats_with_tabs` is true, then
+it toggles the visibility of opened floats for the current tab.
+
+**Parameters**: none
+
+### AzulMoveCurrentFloat
+
+Moves the currently selected float in the given direction with the given
+increment.
+
+**Parameters**:
+
+* direction (left, right, up or down) - mandatory
+* increment (number) - optional. If missing, then the float will be moved by 5
+  pixels
+
+### AzulSelectPane
+
+Selects the next pane in the indicated direction
+
+**Parameters**: 
+
+* direction (left, right, up or down)
+
+### AzulSendToCurrentPane
+
+Sends the indicated text to the currently selected pane. This commands accepts
+after it a `!` symbol. This means that the characters will be escaped. 
+
+For example: 
+
+`:AzulSendToCurrentPane ls -al<cr>` will send to the current pane the literal
+text `ls -al<cr>`. The `<cr>` will not be replaced by an `enter`.
+
+`:AzulSendToCurrentPane! ls -al<cr>` will send to the current pane the text
+`ls -al` followed by an enter (notice the exclamation marc after the command)
+
+**Parameters**:
+
+* the text to send to the currently selected pane
+
+### AzulToggleNestedSession
+
+Toggles the state of the session. If the session is nested, then the control
+is given back to the current session, while if the current session has the
+control, then the controll will be passed to the guest session. For more info
+see the [Nested session section](#nested-section).
+
+**Parameters**:
+
+* the escape control sequence (optional, default `<C-\><C-s>`)
+
+### AzulPositionCurrentFloat
+
+Positions the currently selected floating pane in a region of the screen. 
+
+**Parameters**:
+
+* the screen region where to position the float (top, bottom, start or end)
+
+### AzulRedraw
+
+Redraws the terminal
+
+**Parameters**: none
+
+### AzulSuspend
+
+Suspends all the `azul` events. This is an usefull command for advanced users
+who might want to open something in an underlying `nvim` buffer. Normally,
+that something would be overriten by a new shell. In order to prevent this,
+you can suspend the `azul` events, finish your job and then resume the `azul`
+events.
+
+**Parameters**: none
+
+### AzulResume
+
+Resumes the `azul` events. This is an usefull command for advanced users
+who might want to open something in an underlying `nvim` buffer. Normally,
+that something would be overriten by a new shell. In order to prevent this,
+you can suspend the `azul` events, finish your job and then resume the `azul`
+events.
 
 ## Configuration
 
