@@ -303,4 +303,4 @@ or the action directly, for the `emacs` workflow. For more info see the
 
 ### Options
 
-* workflow - The current workflow (default `azul`)
+* **workflow** - The current workflow (default `azul`)
