@@ -304,4 +304,20 @@ or the action directly, for the `emacs` workflow. For more info see the
 ### Options
 
 * **workflow** - The current workflow (default `azul`)
-* **modified** - The default modified (default `<C-s>`)
+* **modifier** - The default modified (default `<C-s>`)
+* **link_floats_with_tabs** - If true, then the floats opened in a tab, are
+  displayed only in that tab. Otherwise, the floats will be displayed over all
+  the tabs (default `false`)
+* **shell** - The default shell (default is given by your operating system)
+* **mouse** - The mouse support settings (default `a`)
+* **theme** - The status line theme (default `dracula`). You can see a list of
+  all the possible themes
+  [here](https://github.com/nvim-lualine/lualine.nvim/blob/master/THEMES.md)
+* **termguicolors** - If true, then the 24-bit RGB colors are activated
+  (default `true`). For more info, see
+  [here](https://neovim.io/doc/user/options.html#'termguicolors')
+* **scrollback** - The number of lines saved in the scroll history. The more
+  lines, the bigger the memory consumption of `azul` (default 2000)
+* **clipboard** - The clipboard settings (default `unnamedplus`). For more
+  info, see [Copy/pasting section](#copy/pasting)
+* **encoding** - The default encoding of the terminal (default `utf-8`)

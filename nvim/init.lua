@@ -19,7 +19,9 @@ vim.o.cmdheight = cfg.default_config.options.cmdheight
 vim.o.scrollback = cfg.default_config.options.scrollback
 vim.o.termguicolors = cfg.default_config.options.termguicolors
 vim.o.mouse = cfg.default_config.options.mouse
-vim.o.shell = cfg.default_config.options.shell
+if cfg.default_config.options.shell then
+    vim.o.shell = cfg.default_config.options.shell
+end
 vim.o.clipboard = cfg.default_config.options.clipboard
 vim.o.encoding = cfg.default_config.options.encoding
 vim.o.number = false
