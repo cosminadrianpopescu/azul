@@ -302,16 +302,19 @@ Possible commands:
 ### AzulHideFloats
 
 Hiddens all the floats. 
+
 **Parameters**: none.
 
 ### AzulOpen
 
 Opens a new tab with a new shell. 
+
 **Parameters**: none.
 
 ### AzulEnterMode
 
 Puts `azul` in the requested mode. 
+
 **Parameters**: the mode (p or r or s or m or T or n or t or v)
 
 ### AzulShowFloats
