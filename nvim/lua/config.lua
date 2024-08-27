@@ -28,6 +28,19 @@ cmd('TermClose', {
     end
 })
 
+cmd({'TabNew', 'VimEnter'}, {
+    pattern = "*", callback = function()
+        if not M.default_config.options.link_floats_with_tabs then
+            return
+        end
+        local azul = require('azul')
+        vim.fn.timer_start(1, function()
+            azul.set_tab_variable('float_group', 'tab-' .. tabs)
+            tabs = tabs + 1
+        end)
+    end
+})
+
 local actions = {
     'select_terminal',
     'select_session',
@@ -43,11 +56,12 @@ local actions = {
     'move_left', 'move_right', 'move_up', 'move_down',
     'move_top', 'move_bottom', 'move_start', 'move_end',
     'split_left', 'split_right', 'split_up', 'split_down',
-    'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous'
+    'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
+    'copy', 'paste'
 }
 
 local modes = {
-    terminal = 't', azul = 'n', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T'
+    terminal = 't', azul = 'n', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v'
 }
 
 M.default_config = {
@@ -56,11 +70,13 @@ M.default_config = {
         modifier = '<C-s>',
         link_floats_with_tabs = false,
         shell = nil,
-        mouse = "",
+        mouse = "a",
         cmdheight = 0,
         theme = 'dracula',
         termguicolors = true,
         scrollback = 2000,
+        clipboard = "unnamedplus",
+        encoding = "utf-8",
     },
     shortcuts = {
         azul = {
@@ -92,6 +108,7 @@ M.default_config = {
                 create_float = 'f',
                 disconnect = 'd',
                 nested = 'N',
+                paste = 'pp$$$<C-v>',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -130,8 +147,14 @@ M.default_config = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
             },
+            visual = {
+                copy = 'y$$$<C-c>',
+            },
         },
         tmux = {
+            terminal = {
+                paste = '<C-v>',
+            },
             azul = {
                 create_tab = 'c',
                 tab_select = {
@@ -195,13 +218,17 @@ M.default_config = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
             },
+            visual = {
+                copy = 'y$$$<C-c>',
+            },
         },
         zellij = {
             terminal = {
+                paste = '<C-v>',
                 enter_mode = {
                     p = '<C-p>',
                     r = '<C-r>',
-                    v = '<C-v>',
+                    v = '<C-S-v>',
                     s = '<C-s>',
                     T = '<C-S-t>',
                     n = '<C-a>',
@@ -250,6 +277,9 @@ M.default_config = {
                 enter_mode = {t = '<esc>'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
             },
+            visual = {
+                copy = 'y$$$<C-c>',
+            }
         },
         emacs = {
             terminal = {
@@ -301,6 +331,8 @@ M.default_config = {
                 tab_select_last = '<c-x><s-right>',
                 tab_select_previous = '<c-x><left>',
                 tab_select_next = '<c-x><right>',
+                copy = '<C-c>',
+                paste = '<C-v>',
             },
         }
     }
@@ -309,6 +341,7 @@ M.default_config = {
 local set_shortcut = function(action, shortcut, mode, arg)
     local azul = require('azul')
     local map = azul.set_key_map
+    local map2 = vim.api.nvim_set_keymap
     local wf = azul.get_current_workflow()
 
     local t = function(key, callback, what)
@@ -345,12 +378,6 @@ local set_shortcut = function(action, shortcut, mode, arg)
                     azul.enter_mode('t')
                 end
                 azul.open()
-                if M.default_config.options.link_floats_with_tabs then
-                    vim.fn.timer_start(1, function()
-                        azul.set_tab_variable('float_group', 'tab-' .. tabs)
-                        tabs = tabs + 1
-                    end)
-                end
             end,
             desc = 'Creates a new tab',
         })
@@ -391,6 +418,9 @@ local set_shortcut = function(action, shortcut, mode, arg)
             v = 'visual',
         }
         if arg == 'n' or arg == 'v' then
+            if mode == 'n' and arg == 'v' then
+                return
+            end
             local suf = (arg == 'v' and 'v') or ''
             map(mode, shortcut, '<C-\\><C-n>' .. suf, {
                 desc = 'Enter ' .. mapping[arg] .. ' mode',
@@ -445,7 +475,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('select_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.select_next_term(dir, float_group())
+                azul.select_next_pane(dir, float_group())
             end,
             desc = 'Select a pane to the ' .. dir
         })
@@ -481,6 +511,22 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 vim.api.nvim_command(args[action])
             end
+        })
+    elseif action == 'copy' then
+        if wf ~= 'emacs' and mode ~= 'v' then
+            error("You tried to set the copy action shortcut in mode " .. mode .. ". The copy action can only be set for visual mode")
+        end
+        if shortcut == 'y' then
+            return
+        end
+        map2('v', shortcut, 'yi', {
+            desc = 'Copy selected text',
+        })
+    elseif action == 'paste' then
+        local callback = (wf == 'azul' and mode == 't' and shortcut:match('^<.*>$') and map2) or map
+        callback(mode, shortcut, '', {
+            callback = azul.paste_from_clipboard,
+            desc = 'Paste from clipboard',
         })
     end
 end

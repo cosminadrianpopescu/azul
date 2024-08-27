@@ -54,6 +54,7 @@ cat $AZUL_DIR/azul >> $AZUL_PREFIX/bin/azul
 chmod 0755 $AZUL_PREFIX/bin/azul
 cp $AZUL_DIR/nvim/lua/theme.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/split.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/commands.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/files.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/config.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/azul.lua $AZUL_PREFIX/share/azul/nvim/lua

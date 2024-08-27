@@ -13,12 +13,15 @@ end
 azul.set_workflow(cfg.default_config.options.workflow, cfg.default_config.options.modifier)
 cfg.apply_config()
 
+require('commands').setup()
+
 vim.o.cmdheight = cfg.default_config.options.cmdheight
 vim.o.scrollback = cfg.default_config.options.scrollback
 vim.o.termguicolors = cfg.default_config.options.termguicolors
 vim.o.mouse = cfg.default_config.options.mouse
 vim.o.shell = cfg.default_config.options.shell
-vim.o.encoding = "utf-8"
+vim.o.clipboard = cfg.default_config.options.clipboard
+vim.o.encoding = cfg.default_config.options.encoding
 vim.o.number = false
 vim.o.relativenumber = false
 vim.o.belloff = "all"
@@ -26,11 +29,11 @@ vim.o.laststatus = 3
 vim.o.bufhidden = "hide"
 vim.o.hidden = true
 
-vim.o.expandtab = true
-vim.o.smarttab = true
+-- vim.o.expandtab = true
+-- vim.o.smarttab = true
 vim.o.showtabline = 0
-vim.o.completeopt = "menu,menuone,noselect"
-vim.o.wildmode = "longest,list"
+-- vim.o.completeopt = "menu,menuone,noselect"
+-- vim.o.wildmode = "longest,list"
 vim.o.timeout = true
 vim.o.timeoutlen = 300
 

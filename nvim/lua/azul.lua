@@ -272,6 +272,18 @@ M.enter_mode = function(new_mode)
     mode = new_mode
     vim.api.nvim_command('doautocmd User MxModeChanged')
     L.remap_all(new_mode)
+    if L.is_vim_mode(new_mode) then
+        return
+    end
+
+    local real_mode = L.get_real_mode(new_mode)
+    if real_mode ~= new_mode and workflow ~= 'tmux' then
+        M.suspend()
+        vim.api.nvim_command('startinsert')
+        vim.fn.timer_start(1, function()
+            M.resume()
+        end)
+    end
 end
 
 cmd('TermOpen',{
@@ -470,13 +482,17 @@ L.is_vim_mode = function(m)
     return (m:match("^[nvxoitc]") and true) or false
 end
 
+L.get_real_mode = function(m)
+    return (L.is_vim_mode(m) and m) or ((workflow == 'tmux' and 'n') or 't')
+end
+
 local do_set_key_map = function(map_mode, ls, rs, options)
     local pref1 = (workflow == 'azul' and map_mode == 't' and mod) or ''
     -- if L.is_vim_mode(map_mode) then
     --     vim.api.nvim_set_keymap(map_mode, pref1 .. ls .. '', rs .. '', options)
     -- end
     local mappings = vim.tbl_filter(function(m) return m.m == map_mode and m.ls == ls and m.pref == pref1 end, mode_mappings)
-    local _mode = (L.is_vim_mode(map_mode) and map_mode) or ((workflow == 'tmux' and 'n') or 't')
+    local _mode = L.get_real_mode(map_mode)
     if #mappings == 0 then
         table.insert(mode_mappings, {
             m = map_mode, ls = ls, rs = rs, options = options, pref = pref1, real_mode = _mode
@@ -604,7 +620,7 @@ local get_row_or_col = function(t, check)
     return result
 end
 
-M.select_next_term = function(dir, group)
+M.select_next_pane = function(dir, group)
     if M.are_floats_hidden(group) then
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
         vim.fn.timer_start(1, function()
@@ -992,7 +1008,7 @@ end
 --- Restores a saved layout
 ---
 --- @param where string The saved file location
---- @param callback function(t) callback called after each terminal is restores. 
+--- @param callback function(t) callback called after each terminal is restored. 
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
     quit_on_last = false
@@ -1069,6 +1085,10 @@ end
 
 M.get_current_workflow = function()
     return workflow
+end
+
+M.paste_from_clipboard = function()
+    M.send_to_current(vim.fn.getreg("+"))
 end
 
 return M

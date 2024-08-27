@@ -27,6 +27,8 @@ A nvim based terminal multiplexer.
   - [Zellij workflow](#zellij-workflow)
   - [Tmux workflow](#tmux-workflow)
   - [Azul workflow](#azul-workflow)
+* [Mouse support](#mouse-support)
+* [Commands](#commands)
 * [Configuration](#configuration)
   - [Options](#options)
   - [Shortcuts](#shortcuts)
@@ -99,6 +101,20 @@ installed in `c:/User/johndoe/nvim-win64`.
 Then, to run it:
 `c:/Users/johndoe/azul/azul.cmd`
 
+## Launching
+
+By running `~/.local/bin/azul` you will get a list of the current running azul
+sessions. In order to start a new session, you need to run `~/.local/bin/azul
+-a <session-name>`. This will attach to the session with the name
+`<session-name>`, if it exists, or if not it will create a new session and
+attach to it.
+
+You can run `~/.local/bin/azul -a <session-name> -s '<keys>'`. This will send
+the indicated keys to the current selected pane in the session `<session-name>`.
+
+You can run `~/.local/bin/azul -h` to see the options of the `azul`. Once,
+inside, you will notice a status bar and a new terminal will be started. 
+
 ## Terminology
 
 `Azul` uses the following terminology: tabs, panes and floats
@@ -146,7 +162,9 @@ discarded once the job is finished.
 ## Workflows
 
 `Azul` can be used in 4 ways, depending on your preferences: `tmux` way,
-`zellij` way, `emacs` way or `azul` way. 
+`zellij` way, `emacs` way or `azul` way. Each of this way of using `azul` has
+it's own shortcuts, modes and delimiter. The shortcuts, together with the
+delimiter and the modes are called an workflow.
 
 ### Modes
 
@@ -227,19 +245,35 @@ shortcuts for this workflow, chek the `examples/zellij-config.ini` file.
 
 ### Tmux workflow
 
-## Launching
+In this workflow, you have modes and you also have a modifier. This means,
+that by default you are in `TERMINAL` mode and all your keys are sent to your
+`bash` interpreter (or `cmd` for windows). Whenever you want to interact with
+`azul`, you need to press your modifier (by default `<C-s>`). This will put
+`azul` from `TERMINAL` mode in `AZUL` mode. Now, your key presses will be
+sent to `azul`, instead of your `bash` interpreter, just like with `tmux`.
 
-By running `~/.local/bin/azul` you will get a list of the current running azul
-sessions. In order to start a new session, you need to run `~/.local/bin/azul
--a <session-name>`. This will attach to the session with the name
-`<session-name>`, if it exists, or if not it will create a new session and
-attach to it.
+### Azul workflow
 
-You can run `~/.local/bin/azul -a <session-name> -s '<keys>'`. This will send
-the indicated keys to the current selected pane in the session `<session-name>`.
+This is the default workflow. After installation, if you don't modify your
+configuration, when you will start `azul`, you will find yourself in the
+`azul` workflow. This workflow is a combination of all the previous workflows.
+You are all the time in the `TERMINAL` mode, you have a modifier (default
+`<C-s>`) and you have modes. 
 
-You can run `~/.local/bin/azul -h` to see the options of the `azul`. Once,
-inside, you will notice a status bar and a new terminal will be started. 
+Unlike `tmux` workflow, when you click the modifier `azul` will remain in
+`TERMINAL` mode, but will wait for the next key and is going to interpret it
+like an `azul` command. If you wait for 300 ms, then you will also have a help
+indicating what are the possible commands that you can send to `azul`.
+
+## Mouse support
+
+In `azul`, you can also use the mouse. By default, you can select with the
+mouse and you can also move the cursor, which will modify the selection. To
+disable the mouse, set the mouse option to noting. Either in your `config.ini`
+file in the options section (`mouse = `) or in your `init.lua` file
+(`vim.o.mouse = ""`). The default value is `a`. If you want to see the meaning
+and possible values, you can check
+[here](https://neovim.io/doc/user/options.html#'mouse').
 
 ## Configuration
 
@@ -250,7 +284,7 @@ expose the full power and all the configurations of azul. You can check the
 `azul` api [here](./api.md).
 
 You have examples of configuration for each workflow inside the `examples/`
-folder (for examples, `examples/azul.lua`). You can get any of the example
+folder (for example, `examples/azul.lua`). You can get any of the example
 files, corresponding to each of the possible workflows, rename it to
 `init.lua` and copy it to `~/.config/azul` folder.
 
@@ -262,6 +296,11 @@ The ini file format is a classical `ini` format. Each option or shortcut
 should be on one line separated by an equal. The left side will be the option
 and the right side the value. 
 
-In case of shortcuts, the left side should contain the action 
+In case of shortcuts, the left side should contain the mode, followed by a dot
+and then followed by the action (for an workflow other than `emacs` workflow)
+or the action directly, for the `emacs` workflow. For more info see the
+[Shortcuts section](#shortcuts)
 
 ### Options
+
+* workflow - The current workflow (default `azul`)

@@ -133,7 +133,7 @@ local set_tabs_shortcuts = function(key, where)
 end
 
 local set_panel_shortcuts = function(key, dir)
-    set_hjkl_shortcuts(key, dir, 'p', azul.select_next_term)
+    set_hjkl_shortcuts(key, dir, 'p', azul.select_next_pane)
 end
 
 local set_panel_split_shortcuts = function(key, dir)

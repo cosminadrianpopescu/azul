@@ -61,7 +61,7 @@ local set_move_shortcuts = function(key, dir, inc)
 end
 
 local set_panel_shortcuts = function(key, dir)
-    set_hjkl_shortcuts(key, dir, azul.select_next_term)
+    set_hjkl_shortcuts(key, dir, azul.select_next_pane)
 end
 
 local set_split_shortcuts = function(key, dir)
