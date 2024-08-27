@@ -304,3 +304,4 @@ or the action directly, for the `emacs` workflow. For more info see the
 ### Options
 
 * **workflow** - The current workflow (default `azul`)
+* **modified** - The default modified (default `<C-s>`)
