@@ -601,3 +601,322 @@ session
 
 * **enter_mode**: Enter an `azul` mode
   - arguments: The mode to enter (p or r or s or m or T or n or t or v)
+  - defaults: 
+    + `azul`: `terminal.enter_mode.X = X` (where X is one of the p, r, m, s,
+      T, n, v)
+    + `azul`: `resize.enter_mode.t = <cr>`
+    + `azul`: `resize.enter_mode.t = <esc>`
+    + `azul`: `resize.enter_mode.t = i`
+    + `azul`: `pane.enter_mode.t = <cr>`
+    + `azul`: `pane.enter_mode.t = <esc>`
+    + `azul`: `pane.enter_mode.t = i`
+    + `azul`: `move.enter_mode.t = <cr>`
+    + `azul`: `move.enter_mode.t = <esc>`
+    + `azul`: `move.enter_mode.t = i`
+    + `azul`: `split.enter_mode.t = <cr>`
+    + `azul`: `split.enter_mode.t = <esc>`
+    + `azul`: `split.enter_mode.t = i`
+    + `azul`: `tabs.enter_mode.t = <cr>`
+    + `azul`: `tabs.enter_mode.t = <esc>`
+    + `azul`: `tabs.enter_mode.t = i`
+    + `tmux`: `terminal.enter_mode.X = X` (where X is one of the p, r, m, s,
+      T, v)
+    + `tmux`: `resize.enter_mode.t = <cr>`
+    + `tmux`: `resize.enter_mode.t = <esc>`
+    + `tmux`: `resize.enter_mode.t = i`
+    + `tmux`: `pane.enter_mode.t = <cr>`
+    + `tmux`: `pane.enter_mode.t = <esc>`
+    + `tmux`: `pane.enter_mode.t = i`
+    + `tmux`: `move.enter_mode.t = <cr>`
+    + `tmux`: `move.enter_mode.t = <esc>`
+    + `tmux`: `move.enter_mode.t = i`
+    + `tmux`: `split.enter_mode.t = <cr>`
+    + `tmux`: `split.enter_mode.t = <esc>`
+    + `tmux`: `split.enter_mode.t = i`
+    + `tmux`: `tabs.enter_mode.t = <cr>`
+    + `tmux`: `tabs.enter_mode.t = <esc>`
+    + `tmux`: `tabs.enter_mode.t = i`
+    + `zellij`: `terminal.enter_mode.p = <C-p>`
+    + `zellij`: `terminal.enter_mode.r = <C-r>`
+    + `zellij`: `terminal.enter_mode.v = <C-S-v>`
+    + `zellij`: `terminal.enter_mode.s = <C-s>`
+    + `zellij`: `terminal.enter_mode.T = <C-S-t>`
+    + `zellij`: `terminal.enter_mode.n = <C-a>`
+    + `zellij`: `terminal.enter_mode.m = <C-S-m>`
+    + `zellij`: `pane.enter_mode.t = <cr>`
+    + `zellij`: `pane.enter_mode.t = <esc>`
+    + `zellij`: `pane.enter_mode.t = i`
+    + `zellij`: `move.enter_mode.t = <cr>`
+    + `zellij`: `move.enter_mode.t = <esc>`
+    + `zellij`: `move.enter_mode.t = i`
+    + `zellij`: `split.enter_mode.t = <cr>`
+    + `zellij`: `split.enter_mode.t = <esc>`
+    + `zellij`: `split.enter_mode.t = i`
+    + `zellij`: `tabs.enter_mode.t = <cr>`
+    + `zellij`: `tabs.enter_mode.t = <esc>`
+    + `zellij`: `tabs.enter_mode.t = i`
+
+* **create_float**: Creates a new float
+  - defaults: 
+    + `azul`: `terminal.create_float = f`
+    + `tmux`: `azul.create_float = f`
+    + `zellij`: `pane.create_float = f`
+    + `emacs`: `create_float = <A-f>`
+
+* **disconnect**: Disconnects the current session
+  - defaults: 
+    + `azul`: `terminal.disconnect = d`
+    + `tmux`: `azul.disconnect = d`
+    + `zellij`: `terminal.disconnect = <C-d>`
+    + `emacs`: `disconnect = <A-d>`
+
+* **nested**: Toggle the state of the session to nested or not nested
+  - defaults: 
+    + `azul`: `terminal.nested = N`
+    + `tmux`: `azul.nested = N`
+    + `zellij`: `terminal.nested = <A-n>`
+    + `emacs`: `nested = <A-n>`
+
+* **resize_left**: Resizes the currently selected pane towards left direction
+  - defaults: 
+    + `azul`: `resize.resize_left = h`
+    + `azul`: `resize.resize_left = <left>`
+    + `tmux`: `resize.resize_left = h`
+    + `tmux`: `resize.resize_left = <left>`
+    + `zellij`: `resize.resize_left = h`
+    + `zellij`: `resize.resize_left = <left>`
+    + `emacs`: `resize_left = <C-S-left>`
+
+* **resize_right**: Resizes the currently selected pane towards right direction
+  - defaults: 
+    + `azul`: `resize.resize_right = l`
+    + `azul`: `resize.resize_right = <right>`
+    + `tmux`: `resize.resize_right = l`
+    + `tmux`: `resize.resize_right = <right>`
+    + `zellij`: `resize.resize_right = l`
+    + `zellij`: `resize.resize_right = <right>`
+    + `emacs`: `resize_up = <C-S-right>`
+
+* **resize_up**: Resizes the currently selected pane towards up
+  - defaults: 
+    + `azul`: `resize.resize_up = k`
+    + `azul`: `resize.resize_up = <up>`
+    + `tmux`: `resize.resize_up = k`
+    + `tmux`: `resize.resize_up = <up>`
+    + `zellij`: `resize.resize_up = k`
+    + `zellij`: `resize.resize_up = <up>`
+    + `emacs`: `resize_up = <C-S-up>`
+
+* **resize_down**: Resizes the currently selected pane towards down
+  - defaults: 
+    + `azul`: `resize.resize_down = j`
+    + `azul`: `resize.resize_down = <down>`
+    + `tmux`: `resize.resize_down = j`
+    + `tmux`: `resize.resize_down = <down>`
+    + `zellij`: `resize.resize_down = j`
+    + `zellij`: `resize.resize_down = <down>`
+    + `emacs`: `resize_up = <C-S-down>`
+
+* **select_left**: Selects the next panel to the left
+  - defaults:
+    + `azul`: `pane.select_left = h`
+    + `azul`: `pane.select_left = <left>`
+    + `tmux`: `pane.select_left = h`
+    + `tmux`: `pane.select_left = <left>`
+    + `zellij`: `pane.select_left = h`
+    + `zellij`: `pane.select_left = <left>`
+    + `emacs`: `select_left = <A-left>`
+
+* **select_right**: Selects the next panel to the right
+  - defaults:
+    + `azul`: `pane.select_right = l`
+    + `azul`: `pane.select_right = <right>`
+    + `tmux`: `pane.select_right = l`
+    + `tmux`: `pane.select_right = <right>`
+    + `zellij`: `pane.select_right = l`
+    + `zellij`: `pane.select_right = <right>`
+    + `emacs`: `select_right = <A-right>`
+
+* **select_up**: Selects the next above panel
+  - defaults:
+    + `azul`: `pane.select_up = k`
+    + `azul`: `pane.select_up = <up>`
+    + `tmux`: `pane.select_up = k`
+    + `tmux`: `pane.select_up = <up>`
+    + `zellij`: `pane.select_up = k`
+    + `zellij`: `pane.select_up = <up>`
+    + `emacs`: `select_up = <A-up>`
+
+* **select_down**: Selects the next below panel
+  - defaults:
+    + `azul`: `pane.select_down = j`
+    + `azul`: `pane.select_down = <down>`
+    + `tmux`: `pane.select_down = j`
+    + `tmux`: `pane.select_down = <down>`
+    + `zellij`: `pane.select_down = j`
+    + `zellij`: `pane.select_down = <down>`
+    + `emacs`: `select_down = <A-down>`
+
+* **move_left**: Moves the currently selected panel to the left
+  - arguments: The number of columns to move
+  - defaults:
+    + `azul`: `move.move_left.5 = h`
+    + `azul`: `move.move_left.5 = <left>`
+    + `azul`: `move.move_left.1 = <C-h>`
+    + `azul`: `move.move_left.1 = <C-left>`
+    + `tmux`: `move.move_left.5 = h`
+    + `tmux`: `move.move_left.5 = <left>`
+    + `tmux`: `move.move_left.1 = <C-h>`
+    + `tmux`: `move.move_left.1 = <C-left>`
+    + `zellij`: `move.move_left.5 = h`
+    + `zellij`: `move.move_left.5 = <left>`
+    + `zellij`: `move.move_left.1 = <C-h>`
+    + `zellij`: `move.move_left.1 = <C-left>`
+    + `emacs`: `move_left.5 = <C-A-left>`
+
+* **move_right**: Moves the currently selected panel to the right
+  - arguments: The number of columns to move
+  - defaults:
+    + `azul`: `move.move_right.5 = l`
+    + `azul`: `move.move_right.5 = <right>`
+    + `azul`: `move.move_right.1 = <C-l>`
+    + `azul`: `move.move_right.1 = <C-right>`
+    + `tmux`: `move.move_right.5 = l`
+    + `tmux`: `move.move_right.5 = <right>`
+    + `tmux`: `move.move_right.1 = <C-l>`
+    + `tmux`: `move.move_right.1 = <C-right>`
+    + `zellij`: `move.move_right.5 = l`
+    + `zellij`: `move.move_right.5 = <right>`
+    + `zellij`: `move.move_right.1 = <C-l>`
+    + `zellij`: `move.move_right.1 = <C-right>`
+    + `emacs`: `move_right.5 = <C-A-right>`
+
+* **move_up**: Moves the currently selected panel towards up
+  - arguments: The number of columns to move
+  - defaults:
+    + `azul`: `move.move_up.5 = k`
+    + `azul`: `move.move_up.5 = <up>`
+    + `azul`: `move.move_up.1 = <C-k>`
+    + `azul`: `move.move_up.1 = <C-up>`
+    + `tmux`: `move.move_up.5 = k`
+    + `tmux`: `move.move_up.5 = <up>`
+    + `tmux`: `move.move_up.1 = <C-k>`
+    + `tmux`: `move.move_up.1 = <C-up>`
+    + `zellij`: `move.move_up.5 = k`
+    + `zellij`: `move.move_up.5 = <up>`
+    + `zellij`: `move.move_up.1 = <C-k>`
+    + `zellij`: `move.move_up.1 = <C-up>`
+    + `emacs`: `move_up.5 = <C-A-up>`
+
+* **move_down**: Moves the currently selected panel towards down
+  - arguments: The number of columns to move
+  - defaults:
+    + `azul`: `move.move_down.5 = j`
+    + `azul`: `move.move_down.5 = <down>`
+    + `azul`: `move.move_down.1 = <C-j>`
+    + `azul`: `move.move_down.1 = <C-down>`
+    + `tmux`: `move.move_down.5 = j`
+    + `tmux`: `move.move_down.5 = <down>`
+    + `tmux`: `move.move_down.1 = <C-j>`
+    + `tmux`: `move.move_down.1 = <C-down>`
+    + `zellij`: `move.move_down.5 = j`
+    + `zellij`: `move.move_down.5 = <down>`
+    + `zellij`: `move.move_down.1 = <C-j>`
+    + `zellij`: `move.move_down.1 = <C-down>`
+    + `emacs`: `move_down.5 = <C-A-down>`
+
+* **split_left**: Splits the currently selected tab to the left
+  - defaults:
+    + `azul`: `pane.split_left = H`
+    + `azul`: `pane.split_left = <S-left>`
+    + `azul`: `split.split_left = h`
+    + `azul`: `split.split_left = <left>`
+    + `tmux`: `pane.split_left = H`
+    + `tmux`: `pane.split_left = <S-left>`
+    + `tmux`: `split.split_left = h`
+    + `tmux`: `split.split_left = <left>`
+    + `zellij`: `split.split_left = h`
+    + `zellij`: `split.split_left = <left>`
+    + `emacs`: `split_left = <C-left>`
+
+* **split_right**: Splits the currently selected tab to the right
+  - defaults:
+    + `azul`: `pane.split_right = L`
+    + `azul`: `pane.split_right = <S-right>`
+    + `azul`: `split.split_right = l`
+    + `azul`: `split.split_right = <right>`
+    + `tmux`: `pane.split_right = H`
+    + `tmux`: `pane.split_right = <S-right>`
+    + `tmux`: `split.split_right = h`
+    + `tmux`: `split.split_right = <right>`
+    + `zellij`: `split.split_right = h`
+    + `zellij`: `split.split_right = <right>`
+    + `emacs`: `split_right = <C-right>`
+
+* **split_up**: Splits the currently selected tab upwards
+  - defaults:
+    + `azul`: `pane.split_up = K`
+    + `azul`: `pane.split_up = <S-up>`
+    + `azul`: `split.split_up = k`
+    + `azul`: `split.split_up = <up>`
+    + `tmux`: `pane.split_up = K`
+    + `tmux`: `pane.split_up = <S-up>`
+    + `tmux`: `split.split_up = k`
+    + `tmux`: `split.split_up = <up>`
+    + `zellij`: `split.split_up = k`
+    + `zellij`: `split.split_up = <up>`
+    + `emacs`: `split_up = <C-up>`
+
+* **split_down**: Splits the currently selected tab downwards
+  - defaults:
+    + `azul`: `pane.split_down = J`
+    + `azul`: `pane.split_down = <S-down>`
+    + `azul`: `split.split_down = j`
+    + `azul`: `split.split_down = <down>`
+    + `tmux`: `pane.split_down = J`
+    + `tmux`: `pane.split_down = <S-down>`
+    + `tmux`: `split.split_down = j`
+    + `tmux`: `split.split_down = <down>`
+    + `zellij`: `split.split_down = j`
+    + `zellij`: `split.split_down = <down>`
+    + `emacs`: `split_down = <C-down>`
+
+* **move_top**: Moves the currently selected float to the top of the screen
+  - defaults:
+    + `azul`: `move.move_top = K`
+    + `azul`: `move.move_top = <S-up>`
+    + `tmux`: `move.move_top = K`
+    + `tmux`: `move.move_top = <S-up>`
+    + `zellij`: `move.move_top = K`
+    + `zellij`: `move.move_top = <S-up>`
+    + `emacs`: `move_top = <C-A-n>`
+
+* **move_bottom**: Moves the currently selected float to the bottom of the screen
+  - defaults:
+    + `azul`: `move.move_bottom = J`
+    + `azul`: `move.move_bottom = <S-down>`
+    + `tmux`: `move.move_bottom = J`
+    + `tmux`: `move.move_bottom = <S-down>`
+    + `zellij`: `move.move_bottom = J`
+    + `zellij`: `move.move_bottom = <S-down>`
+    + `emacs`: `move_bottom = <C-A-s>`
+
+* **move_start**: Moves the currently selected float to the left of the screen
+  - defaults:
+    + `azul`: `move.move_start = H`
+    + `azul`: `move.move_start = <S-left>`
+    + `tmux`: `move.move_start = H`
+    + `tmux`: `move.move_start = <S-left>`
+    + `zellij`: `move.move_start = H`
+    + `zellij`: `move.move_start = <S-left>`
+    + `emacs`: `move_start = <C-A-w>`
+
+* **move_end**: Moves the currently selected float to the right of the screen
+  - defaults:
+    + `azul`: `move.move_end = L`
+    + `azul`: `move.move_end = <S-right>`
+    + `tmux`: `move.move_end = L`
+    + `tmux`: `move.move_end = <S-right>`
+    + `zellij`: `move.move_end = L`
+    + `zellij`: `move.move_end = <S-right>`
+    + `emacs`: `move_end = <C-A-e>`

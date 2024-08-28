@@ -190,7 +190,7 @@ M.default_config = {
             pane = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
-                move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
+                split_left = 'H$$$<s-left>', split_right = 'L$$$<s-right>', split_up = 'K$$$<s-up>', split_down = 'J$$$<s-down>',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -246,14 +246,13 @@ M.default_config = {
             pane = {
                 select_terminal = 'T',
                 select_session = 'S',
-                enter_mode = {t = '<esc>'},
+                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 toggle_floats = 'w',
                 create_float = 'f',
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
-                move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
             },
             move = {
-                enter_mode = {t = '<esc>'},
+                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 move_left = {
                     ["5"] = 'h$$$<left>',
                     ["1"] = '<C-h>$$$<C-left>',
@@ -273,11 +272,11 @@ M.default_config = {
                 move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
             },
             split = {
-                enter_mode = {t = '<esc>'},
+                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 split_left = 'h$$$<left>', split_right = 'l$$$<right>', split_up = 'k$$$<up>', split_down = 'j$$$<down>',
             },
             tabs = {
-                enter_mode = {t = '<esc>'},
+                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
             },
             visual = {
