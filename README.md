@@ -920,3 +920,104 @@ session
     + `zellij`: `move.move_end = L`
     + `zellij`: `move.move_end = <S-right>`
     + `emacs`: `move_end = <C-A-e>`
+
+* **tab_select_first**: Selects the first tab
+  - defaults:
+    + `azul`: `tabs.tab_select_first = H`
+    + `azul`: `tabs.tab_select_first = <S-left>`
+    + `tmux`: `tabs.tab_select_first = H`
+    + `tmux`: `tabs.tab_select_first = <S-left>`
+    + `zellij`: `tabs.tab_select_first = H`
+    + `zellij`: `tabs.tab_select_first = <S-left>`
+    + `emacs`: `tab_select_first = <C-x><S-left>`
+
+* **tab_select_last**: Selects the last tab
+  - defaults:
+    + `azul`: `tabs.tab_select_last = L`
+    + `azul`: `tabs.tab_select_last = <S-right>`
+    + `tmux`: `tabs.tab_select_last = L`
+    + `tmux`: `tabs.tab_select_last = <S-right>`
+    + `zellij`: `tabs.tab_select_last = L`
+    + `zellij`: `tabs.tab_select_last = <S-right>`
+    + `emacs`: `tab_select_last = <C-x><S-right>`
+
+* **tab_select_previous**: Selects the previous tab
+  - defaults:
+    + `azul`: `tabs.tab_select_previous = h`
+    + `azul`: `tabs.tab_select_previous = <left>`
+    + `tmux`: `tabs.tab_select_previous = h`
+    + `tmux`: `tabs.tab_select_previous = <left>`
+    + `zellij`: `tabs.tab_select_previous = h`
+    + `zellij`: `tabs.tab_select_previous = <left>`
+    + `emacs`: `tab_select_previous = <C-x><left>`
+
+* **tab_select_next**: Selects the next tab
+  - defaults:
+    + `azul`: `tabs.tab_select_next = l`
+    + `azul`: `tabs.tab_select_next = <right>`
+    + `tmux`: `tabs.tab_select_next = l`
+    + `tmux`: `tabs.tab_select_next = <right>`
+    + `zellij`: `tabs.tab_select_next = l`
+    + `zellij`: `tabs.tab_select_next = <right>`
+    + `emacs`: `tab_select_next = <C-x><right>`
+
+* **copy**: Copies the currently selected text into the clipboard.
+  - defaults:
+    + `azul`: `visual.copy = y`
+    + `azul`: `visual.copy = <C-c>`
+    + `tmux`: `visual.copy = y`
+    + `tmux`: `visual.copy = <C-c>`
+    + `zellij`: `visual.copy = y`
+    + `zellij`: `visual.copy = <C-c>`
+    + `emacs`: `copy = <C-c>`
+
+* **paste**: Pastes the content of the clipboard into the currently selected
+  pane
+  - defaults:
+    + `azul`: `terminal.paste = pp`
+    + `azul`: `terminal.paste = <C-v>`
+    + `tmux`: `terminal.paste = <C-v>`
+    + `zellij`: `terminal.paste = <C-v>`
+    + `emacs`: `paste = <C-v>`
+
+### Copy/pasting
+
+In `azul`, you can copy paste by using the expected `<C-c>` and `<C-v>`
+shortcuts. The interaction between your terminal and the system clipboard is
+done via the `clipboard` setting. You can see the meaning of it and also
+possible options for possible operating systems
+[here](https://neovim.io/doc/user/options.html#'clipboard').
+
+For vim users, you also have `<C-s>pp` for example to paste in `TERMINAL` mode
+in `azul` workflow or `y` in `VISUAL` mode for multiple workflows. 
+
+Whenever you select a text with the mouse, you can then click `<C-c>` and
+`<C-v>`. This will paste the currently selected text into the currently
+selected pane. 
+
+Other than the mouse, a selection can be created using the keyboard. You can
+switch to `VISUAL` mode, via the default shortcuts (see the [shortcuts
+section](#shortcuts)) and then using `vim` movements (`h`, `j`, `k`, `l`) or
+the cursors and `<pgup>` or `<pgdown>`.
+
+### Nested session
+
+This solves the issue of running an `azul` session inside another `azul`
+session. Calling the `AzulToggleNestedSession` command (or clicking the
+shortcut for it) will toggle the control between the 2 sessions. So, if for
+example you are in your main host session, you call `AzulToggleNestedSession`
+then all the controls are passed through the first session down to the second
+session. When you call the function again, it will pass the control back to
+the host main session.
+
+In order to escape back to the host main session, by default you have to press
+inside the second session `<C-\><C-s>`. This is the default modifier. This
+will call again `toggle_nested_mode` and it will send the control back to the
+host main session.
+
+If you want to change the escape sequence, you can pass a new escape sequence
+to the initial call of the `toggle_nested_mode` function. So, for example, by
+calling `require('azul').toggle_nested_mode('<C-x>')` will pass the control to
+the second session (the guest `azul` session) and then, in order to pass the
+control back to the host main section, you need to press `<C-x>`. This allows
+you in theory to have as many nested sessions as you want.
