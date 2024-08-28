@@ -156,6 +156,8 @@ M.default_config = {
                 paste = '<C-v>',
             },
             azul = {
+                select_terminal = 'St',
+                select_session = 'Ss',
                 create_tab = 'c',
                 tab_select = {
                     ["1"] = '1',
@@ -242,6 +244,8 @@ M.default_config = {
                 resize_left = 'h$$$<left>', resize_right = 'l$$$<right>', resize_up = 'k$$$<up>', resize_down = 'j$$$<down>',
             },
             pane = {
+                select_terminal = 'T',
+                select_session = 'S',
                 create_tab = 'c',
                 enter_mode = {t = '<esc>'},
                 toggle_floats = 'w',
@@ -283,6 +287,8 @@ M.default_config = {
         },
         emacs = {
             terminal = {
+                select_terminal = '<C-S-t>',
+                select_session = '<C-S-s>',
                 create_tab = '<A-c>',
                 tab_select = {
                     ["1"] = '<A-1>',

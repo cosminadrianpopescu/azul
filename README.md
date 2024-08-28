@@ -552,12 +552,23 @@ For an `emacs` workflow: `tab_select.1 = <C-1>`.
 
 * **select_terminal**: Selects visually one of the existing pane in the current
 session
+  - defaults: 
+    + `azul`: `terminal.select_terminal = St`
+    + `tmux`: `azul.select_terminal = St`
+    + `zellij`: `pane.select_terminal = T`
+    + `emacs`: `select_terminal = <C-S-t>`
+  - default for `azul` workflow: `terminal.select_terminal = St`
 
 * **select_session**: Selects one existing azul session
+  - default for `azul` workflow: `terminal.select_session = Ss`
 
 * **create_tab**: Creates a new tab
+  - default for `azul` workflow: `terminal.create_tab = Ss`
 
 * **tab_select**: Selects an existing tab. 
   - arguments: The number of the tab to select
 
 * **toggle_floats**: Toggle the floats visibility
+
+* **enter_mode**: Enter an `azul` mode
+  - arguments: The mode to enter (p or r or s or m or T or n or t or v)
