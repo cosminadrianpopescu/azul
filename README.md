@@ -142,7 +142,7 @@ You can add another pane in a tab by changing to `SPLIT` mode (for example, for
 to left, right, top or bottom (for `azul` workflow, in `SPLIT` mode, clicking
 on the cursors).
 
-Other then the embeded tabs, you can also have floating panes.
+Other then the embeded panes, you can also have floating panes.
 
 ### Floats
 
