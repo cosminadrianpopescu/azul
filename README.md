@@ -16,6 +16,8 @@ A nvim based terminal multiplexer.
   - [Linux](#linux)
   - [Windows](#windows)
 * [Launching](#launching)
+* [Advantages over tmux or zellij](#advantages-over-tmux-or-zellij)
+* [Disadvantages compared with tmux or zellij](#disadvantages-compared-with-tmux-or-zellij)
 * [Terminology](#terminology)
   - [Tabs](#tabs)
   - [Panes](#panes)
@@ -117,6 +119,68 @@ the indicated keys to the current selected pane in the session `<session-name>`.
 
 You can run `~/.local/bin/azul -h` to see the options of the `azul`. Once,
 inside, you will notice a status bar and a new terminal will be started. 
+
+## Advantages over tmux or zellij
+
+### Status bar or tabline
+
+You are inside neovim. So, you can use any plugin you want to handle the
+status bar or the tabline, you can have both, you can have none, the sky (or
+should I say neovim) is the limit. My status bar that you saw in the demo
+video is using [lualine](https://github.com/nvim-lualine/lualine.nvim) with a
+minimal configuration that you can find in the `examples` folder. But you can
+choose whatever you like.
+
+### Very flexibile shortcuts
+
+Again, you are in neovim. You can have whatever shortcuts neovim supports. You
+can have these shortcuts inside command mode, inside terminal mode (so inside
+the real terminal), in normal mode, in visual mode, you name it...
+
+### Nested mode
+
+As you seen in the video, you can connect to a ssh session, press a shortcut
+(in my case `<C-s>N`) and then all the keys are passed to the nested session.
+To pass the control back, you press the escape shortcut `<C-\><C-s>` (this is
+the default, but you can set your own) and you control again the main session.
+Very neat...
+
+### Native on windows
+
+Check out the `install.ps1` script. You can install neovim on windows, and
+then run the `install.ps1` script like this:
+
+```powershell
+install.ps1 -prefix c:/Users/johndoe/azul -nvimexe c:/Users/johndoe/nvim-qt/nvim-qt.exe
+```
+
+Make sure the folder from the `prefix` parameter exists. Then you can run
+`c:/Users/johndoe/azul/azul.cmd`.
+
+I think that this is the only native windows terminal multiplexer (not
+considering tmux or screen or others running under cygwin).
+
+## Disadvantages compared with tmux or zellij
+
+### Text reflow
+
+At the moment, `neovim` supports limited text reflow of the terminals. See
+[here](https://github.com/neovim/neovim/issues/2514). You can reflow the
+current terminal, but only the current view (not the scrollback buffer). We'll
+have to wait for this issue to be closed and then `azul` will also have proper
+text reflow.
+
+### Cursor support
+
+Cursor in `neovim` in terminal mode is a kind of hack. See
+[here](https://github.com/neovim/neovim/issues/3681) and
+[here](https://github.com/neovim/neovim/issues/3681) for more details. Until
+these issues are being fixed, `azul` will have to live with the block cursor
+inside its terminals. The only thing that we have in `azul` for configuring
+the cursor is `:highlight TermCursor`.
+
+If this is something that you cannot live without (having a proper cursor
+inside your terminal), again, `azul` is probably not for you yet.
 
 ## Terminology
 
@@ -982,7 +1046,7 @@ session
     + `zellij`: `terminal.paste = <C-v>`
     + `emacs`: `paste = <C-v>`
 
-### Copy/pasting
+## Copy/pasting
 
 In `azul`, you can copy paste by using the expected `<C-c>` and `<C-v>`
 shortcuts. The interaction between your terminal and the system clipboard is
@@ -1002,7 +1066,7 @@ switch to `VISUAL` mode, via the default shortcuts (see the [shortcuts
 section](#shortcuts)) and then using `vim` movements (`h`, `j`, `k`, `l`) or
 the cursors and `<pgup>` or `<pgdown>`.
 
-### Nested session
+## Nested session
 
 This solves the issue of running an `azul` session inside another `azul`
 session. Calling the `AzulToggleNestedSession` command (or clicking the
@@ -1023,7 +1087,7 @@ session (the guest `azul` session) and then, in order to pass the control back
 to the host main section, you need to press `<C-x>`. This allows you in theory
 to have as many nested sessions as you want.
 
-### Session restore
+## Session restore
 
 `Azul` has very powerfull options to save and restore a session. By invoking
 azul command `AzulSaveLayout`, your layout will be saved in the selected file.
@@ -1055,3 +1119,46 @@ first argument the file where the layout is saved and as a second a callback
 with 2 parameters: the azul terminal structure and the this id. This gives you
 a much more flexibility to set up your pane upon a layout restore. For more
 details, see the [`azul` api](./api.md)
+
+## Lua API
+
+If you are a `neovim` user and you are familiar with `lua`, you can access the
+full power of `azul` and you can have access to all `neovim` features by
+configuring it via an `init.lua` file instead of a simple ini file. See
+[here](./api.md) on how to do this.
+
+## Why
+
+I've been a [tmux](https://github.com/tmux/tmux/wiki) user for years. Then
+I've discovered [zellij](https://zellij.dev/) and been using for a few months.
+They are both amazing pieces of software.
+
+I've been using `tmux` for the obvious reasons. Then, I've switched to
+`zellij` because of the floating panels and the edit back buffer in the custom
+editor. The floating panels I've been searching it for years and suffered
+without them in `tmux`. And then when discovering them in `zellij`, I've helped
+implementing the edit in back buffer feature and this made me switch without
+looking back. 
+
+However, they both have had some minor issues that were annoying me. For
+both of them, for example, changing the themes is not that straight forward
+(`:colorscheme tokyonight`?). 
+
+Copy / pasting in `tmux` is painful with the tmux buffer. I mean it was the
+best solution at the time, but still... Synchronizing the terminal, vim and X
+clipboard was difficult. Especially when working from tty or over ssh.
+
+In this respect, zellij was a big step forward. Open the terminal content
+inside vim and I was done. But still, it was a shortcut to press to open the
+content, copy whatever was to copy and then close the editor to go back to the
+terminal.
+
+And the most annoying issue was the nested session. Open a multiplexer
+session, `ssh` to a server and there connect to another session. I've always
+fixed this by changing the modifier in the ssh session. But this raised issues
+when keeping the dotfiles under git, since I have to treat this modifier in
+some way to keep it under git.
+
+`Azul` solves all this issues. It allows me to have the modal zellij workflow,
+combined with the tmux modifier approach. And it solves the nested sessions
+issue.
