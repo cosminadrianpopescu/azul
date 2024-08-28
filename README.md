@@ -34,7 +34,7 @@ A nvim based terminal multiplexer.
   - [Options](#options)
   - [Shortcuts](#shortcuts)
     + [Possible actions](#possible-actions)
-  - [Copy/Pasting](#copy/pasting)
+  - [Copy/Pasting](#copy-pasting)
 * [Nested session](#nested-session)
 * [Session restore](#session-restore)
 * [Lua Api](#lua-api)
@@ -515,7 +515,7 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **scrollback** - The number of lines saved in the scroll history. The more
   lines, the bigger the memory consumption of `azul` (default 2000)
 * **clipboard** - The clipboard settings (default `unnamedplus`). For more
-  info, see [Copy/pasting section](#copy/pasting)
+  info, see [Copy/pasting section](#copy-pasting)
 * **encoding** - The default encoding of the terminal (default `utf-8`)
 
 ### Shortcuts
