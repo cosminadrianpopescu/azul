@@ -1012,12 +1012,13 @@ the host main session.
 
 In order to escape back to the host main session, by default you have to press
 inside the second session `<C-\><C-s>`. This is the default modifier. This
-will call again `toggle_nested_mode` and it will send the control back to the
-host main session.
+will send the control back to the host main session.
 
 If you want to change the escape sequence, you can pass a new escape sequence
-to the initial call of the `toggle_nested_mode` function. So, for example, by
-calling `require('azul').toggle_nested_mode('<C-x>')` will pass the control to
-the second session (the guest `azul` session) and then, in order to pass the
-control back to the host main section, you need to press `<C-x>`. This allows
-you in theory to have as many nested sessions as you want.
+to the initial call of the `AzulToggleNestedSession` command. So, for example,
+by doing `:AzulToggleNestedSession <C-x>` will pass the control to the second
+session (the guest `azul` session) and then, in order to pass the control back
+to the host main section, you need to press `<C-x>`. This allows you in theory
+to have as many nested sessions as you want.
+
+### Session restore
