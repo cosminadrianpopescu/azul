@@ -74,7 +74,7 @@ return {
                 return
             end
             azul.restore_layout(vim.fn.fnamemodify(where, ':p'))
-        end, {desc = "Saves the layout"})
+        end, {desc = "Restores a layout"})
         vim.api.nvim_create_user_command('AzulSetWinId', function(opts)
             azul.set_win_id(opts.fargs[1])
         end, {desc = "Sets a win id for the currently selected terminal", nargs = 1})

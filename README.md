@@ -29,6 +29,7 @@ A nvim based terminal multiplexer.
   - [Azul workflow](#azul-workflow)
 * [Mouse support](#mouse-support)
 * [Commands](#commands)
+  - [Possible commands](#possible-commands)
 * [Configuration](#configuration)
   - [Options](#options)
   - [Shortcuts](#shortcuts)
@@ -297,21 +298,21 @@ right, up or down). The parameters are separated by spaces. For example, to
 select the next pane to the left, in `AZUL` mode, you need to click the
 following: `:AzulSelectPane left<cr>` (the `<cr>` represents `enter`).
 
-Possible commands: 
+### Possible commands
 
-### AzulHideFloats
+#### AzulHideFloats
 
 Hiddens all the floats. 
 
 **Parameters**: none
 
-### AzulOpen
+#### AzulOpen
 
 Opens a new tab with a new shell. 
 
 **Parameters**: none
 
-### AzulEnterMode
+#### AzulEnterMode
 
 Puts `azul` in the requested mode. 
 
@@ -319,7 +320,7 @@ Puts `azul` in the requested mode.
 
 * the mode (p or r or s or m or T or n or t or v)
 
-### AzulShowFloats
+#### AzulShowFloats
 
 Shows the currently opened floats. If no floats is created yet, then nothing
 will be shown. If the option `link_floats_with_tabs` is true, then it shows
@@ -327,7 +328,7 @@ the currently opened floats on the current tab.
 
 **Parameters**: none
 
-### AzulOpenFloat
+#### AzulOpenFloat
 
 Creates a new float on the current tab. If the option `link_floats_with_tabs`
 is set to `true`, then this float will only be visible on the currently
@@ -335,14 +336,14 @@ selected tab.
 
 **Parameters**: none
 
-### AzulToggleFloats
+#### AzulToggleFloats
 
 Toggles the opened floats visibility. If `link_floats_with_tabs` is true, then
 it toggles the visibility of opened floats for the current tab.
 
 **Parameters**: none
 
-### AzulMoveCurrentFloat
+#### AzulMoveCurrentFloat
 
 Moves the currently selected float in the given direction with the given
 increment.
@@ -353,7 +354,7 @@ increment.
 * increment (number) - optional. If missing, then the float will be moved by 5
   pixels
 
-### AzulSelectPane
+#### AzulSelectPane
 
 Selects the next pane in the indicated direction
 
@@ -361,7 +362,7 @@ Selects the next pane in the indicated direction
 
 * direction (left, right, up or down)
 
-### AzulSendToCurrentPane
+#### AzulSendToCurrentPane
 
 Sends the indicated text to the currently selected pane. This commands accepts
 after it a `!` symbol. This means that the characters will be escaped. 
@@ -378,7 +379,7 @@ text `ls -al<cr>`. The `<cr>` will not be replaced by an `enter`.
 
 * the text to send to the currently selected pane
 
-### AzulToggleNestedSession
+#### AzulToggleNestedSession
 
 Toggles the state of the session. If the session is nested, then the control
 is given back to the current session, while if the current session has the
@@ -389,7 +390,7 @@ see the [Nested session section](#nested-section).
 
 * the escape control sequence (optional, default `<C-\><C-s>`)
 
-### AzulPositionCurrentFloat
+#### AzulPositionCurrentFloat
 
 Positions the currently selected floating pane in a region of the screen. 
 
@@ -397,13 +398,13 @@ Positions the currently selected floating pane in a region of the screen.
 
 * the screen region where to position the float (top, bottom, start or end)
 
-### AzulRedraw
+#### AzulRedraw
 
 Redraws the terminal
 
 **Parameters**: none
 
-### AzulSuspend
+#### AzulSuspend
 
 Suspends all the `azul` events. This is an usefull command for advanced users
 who might want to open something in an underlying `nvim` buffer. Normally,
@@ -413,7 +414,7 @@ events.
 
 **Parameters**: none
 
-### AzulResume
+#### AzulResume
 
 Resumes the `azul` events. This is an usefull command for advanced users
 who might want to open something in an underlying `nvim` buffer. Normally,
@@ -421,11 +422,60 @@ that something would be overriten by a new shell. In order to prevent this,
 you can suspend the `azul` events, finish your job and then resume the `azul`
 events.
 
+**Parameters**: none
+
+#### AzulDisconnect
+
+Disconnects the current session
+
+**Parameters**: none
+
+#### AzulSaveLayout
+
+Saves the current layout. Uppon invoking this command, you will be met with a
+prompt at the bottom of the screen, on top of the status bar, to indicate a
+file name where you wish to save your layout. You can type a full path to a
+file, using `tab` for autocompletion.
+
+`Azul` has very powerfull features for saving and restoring saved sessions.
+See the [Session restore section](#session-restore)
+
+**Parameters**: none
+
+#### AzulRestoreLayout
+
+Restores a saved layout. Uppon invoking this command, you will be met with a
+prompt at the bottom of the screen, on top of the status bar, to indicate a
+file name where you wish to save your layout. You can type a full path to a
+file, using `tab` for autocompletion.
+
+`Azul` has very powerfull features for saving and restoring saved sessions.
+See the [Session restore section](#session-restore)
+
+#### AzulSetWinId
+
+Sets an azul windows id for the currently selected pane. See the [Session
+restore section](#session-restore) for why you would set and how you would use
+this id
+
+**Parameters**:
+
+* the id of the pane
+
+#### AzulSetCmd
+
+Sets a command to be launched uppon a restore. For more info, see the [Session
+restore section](#session-restore).
+
+**Parameters**:
+
+* the command to be launched uppon a restore
+
 ## Configuration
 
 Azul can be configured in several ways. For
 [neovim](https://github.com/neovim/neovim) users, you can configure azul
-directly via an init file places in `~/.config/azul/init.lua`. This will
+directly via an init file placed in `~/.config/azul/init.lua`. This will
 expose the full power and all the configurations of azul. You can check the
 `azul` api [here](./api.md).
 
@@ -467,3 +517,35 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **clipboard** - The clipboard settings (default `unnamedplus`). For more
   info, see [Copy/pasting section](#copy/pasting)
 * **encoding** - The default encoding of the terminal (default `utf-8`)
+
+### Shortcuts
+
+`Azul` can use any shortcuts that `vim` can use. As a notation, to set up a
+`ctrl`, `alt` of `shift` shortcut, you need to enclose the shortcut between
+`<` and `>`. So, for example, to set a `ctrl` + `s` shortcut, you would
+define it as `<C-s>`. You can see the example files inside the `examples`
+folder.
+
+In the `ini` file, each shortcut will be defined on a row. For `azul`, `tmux`
+or `zellij` workflows, the shortcuts are defined starting with the mode,
+followed by a dot and then followed by a possible action.
+
+For example, to set the `create_tab` action in `TABS` mode to the letter `c`,
+you need to add this to your ini file in the `Shortcuts` section:
+`tabs.create_tab = c`.
+
+If you want for example for `emacs` workflow to set up the same action to
+`alt` + `w`, you need to add this in your ini file: `create_tab = <a-w>`.
+
+Some of the actions, will expect a parameter (for example `tab_select`). For
+such actions (that expect a parameter), after the action, you need to add
+another dot and then the value of the parameter. 
+
+For example, for `tab_select` action, which expects the number of tab that you
+want to select, you need to add the following in your init file. 
+
+For an workflow other than `emacs`: `terminal.tab_select.1 = 1`.
+
+For an `emacs` workflow: `tab_select.1 = <C-1>`.
+
+#### Possible actions
