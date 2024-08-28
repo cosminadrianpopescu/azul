@@ -1159,6 +1159,6 @@ fixed this by changing the modifier in the ssh session. But this raised issues
 when keeping the dotfiles under git, since I have to treat this modifier in
 some way to keep it under git.
 
-`Azul` solves all this issues. It allows me to have the modal zellij workflow,
+`Azul` solves all these issues. It allows me to have the modal zellij workflow,
 combined with the tmux modifier approach. And it solves the nested sessions
 issue.
