@@ -549,3 +549,15 @@ For an workflow other than `emacs`: `terminal.tab_select.1 = 1`.
 For an `emacs` workflow: `tab_select.1 = <C-1>`.
 
 #### Possible actions
+
+* **select_terminal**: Selects visually one of the existing pane in the current
+session
+
+* **select_session**: Selects one existing azul session
+
+* **create_tab**: Creates a new tab
+
+* **tab_select**: Selects an existing tab. 
+  - arguments: The number of the tab to select
+
+* **toggle_floats**: Toggle the floats visibility
