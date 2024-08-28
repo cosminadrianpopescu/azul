@@ -278,7 +278,7 @@ indicating what are the possible commands that you can send to `azul`.
 
 In `azul`, you can also use the mouse. By default, you can select with the
 mouse and you can also move the cursor, which will modify the selection. To
-disable the mouse, set the mouse option to noting. Either in your `config.ini`
+disable the mouse, set the mouse option to nothing. Either in your `config.ini`
 file in the options section (`mouse = `) or in your `init.lua` file
 (`vim.o.mouse = ""`). The default value is `a`. If you want to see the meaning
 and possible values, you can check
@@ -384,7 +384,7 @@ text `ls -al<cr>`. The `<cr>` will not be replaced by an `enter`.
 Toggles the state of the session. If the session is nested, then the control
 is given back to the current session, while if the current session has the
 control, then the controll will be passed to the guest session. For more info
-see the [Nested session section](#nested-section).
+see the [Nested session section](#nested-session).
 
 **Parameters**:
 
