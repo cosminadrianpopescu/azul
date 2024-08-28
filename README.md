@@ -541,6 +541,14 @@ Some of the actions, will expect a parameter (for example `tab_select`). For
 such actions (that expect a parameter), after the action, you need to add
 another dot and then the value of the parameter. 
 
+An action, could have more than one shortcut, even for the same mode. In this
+case, just put each shortcut on an ini line. For example: 
+
+```ini
+terminal.create_tab = c
+terminal.create_tab = C
+```
+
 For example, for `tab_select` action, which expects the number of tab that you
 want to select, you need to add the following in your init file. 
 
@@ -557,18 +565,39 @@ session
     + `tmux`: `azul.select_terminal = St`
     + `zellij`: `pane.select_terminal = T`
     + `emacs`: `select_terminal = <C-S-t>`
-  - default for `azul` workflow: `terminal.select_terminal = St`
 
 * **select_session**: Selects one existing azul session
-  - default for `azul` workflow: `terminal.select_session = Ss`
+  - defaults: 
+    + `azul`: `terminal.select_session = Ss`
+    + `tmux`: `azul.select_session = Ss`
+    + `zellij`: `pane.select_session = S`
+    + `emacs`: `select_session = <C-S-s>`
 
 * **create_tab**: Creates a new tab
-  - default for `azul` workflow: `terminal.create_tab = Ss`
+  - defaults: 
+    + `azul`: `terminal.create_tab = c`
+    + `azul`: `tabs.create_tab = c`
+    + `tmux`: `azul.create_tab = c`
+    + `tmux`: `tabs.create_tab = c`
+    + `zellij`: `tabs.create_tab = c`
+    + `emacs`: `create_tab = <A-c>`
 
 * **tab_select**: Selects an existing tab. 
   - arguments: The number of the tab to select
+  - defaults: 
+    + `azul`: `terminal.tab_select.n = n` (where n represents the number of
+      the tab to select)
+    + `tmux`: `azul.tab_select.n = n` (where n represents the number of the
+      tab to select)
+    + `emacs`: `tab_select.n = <A-n>` (where n represents the number of the
+      tab to select)
 
 * **toggle_floats**: Toggle the floats visibility
+  - defaults: 
+    + `azul`: `terminal.toggle_floats = w`
+    + `tmux`: `azul.toggle_floats = w`
+    + `zellij`: `pane.toggle_floats = w`
+    + `emacs`: `toggle_floats = <A-w>`
 
 * **enter_mode**: Enter an `azul` mode
   - arguments: The mode to enter (p or r or s or m or T or n or t or v)

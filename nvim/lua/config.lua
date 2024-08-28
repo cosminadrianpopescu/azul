@@ -246,7 +246,6 @@ M.default_config = {
             pane = {
                 select_terminal = 'T',
                 select_session = 'S',
-                create_tab = 'c',
                 enter_mode = {t = '<esc>'},
                 toggle_floats = 'w',
                 create_float = 'f',
