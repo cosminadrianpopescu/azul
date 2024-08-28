@@ -4,7 +4,7 @@
 
 * [How it works](#how-it-works)
 * [API](#api)
-* [Configuring via init.lua](#configuring-via-init-lua)
+* [Configuring via init.lua](#configuring-via-initlua)
 * [Further configuration](#further-configuration)
 
 ### How it works
