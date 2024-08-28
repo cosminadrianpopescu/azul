@@ -9,12 +9,13 @@ local M = {
 }
 
 --- @class terminals
---- @field is_current boolean
---- @field buf number
---- @field win_id number
---- @field term_id number
---- @field title string
---- @field group string
+--- @field is_current boolean If true, it means that this is the current terminal
+--- @field cwd string The current working dir
+--- @field buf number The corresponding nvim buffer number
+--- @field tab_page number The corresponding neovim tab
+--- @field win_id number The current neovim window id
+--- @field term_id number The current neovim channel id
+--- @field win_config table The current neovim window config
 local terminals = {}
 local original_size = nil
 local chan_buffers = {}
@@ -518,7 +519,6 @@ L.unmap_all = function(mode)
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
     for _, m in ipairs(collection) do
         local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
-        -- print(cmd)
         if vim.tbl_contains(cmds, cmd) == false then
             vim.api.nvim_command(cmd)
             table.insert(cmds, cmd)
@@ -1001,7 +1001,10 @@ local call_with_last_term = function(callback)
         callback(last_t, vim.w.azul_win_id)
     end
     if vim.w.azul_cmd ~= nil then
-        M.send_to_buf(last_t.buf, vim.w.azul_cmd .. '<cr>', true)
+        local _cmd = vim.w.azul_cmd .. '<cr>'
+        vim.fn.timer_start(100, function()
+            M.send_to_buf(last_t.buf, _cmd, true)
+        end)
     end
 end
 

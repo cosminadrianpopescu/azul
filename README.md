@@ -37,6 +37,8 @@ A nvim based terminal multiplexer.
   - [Copy/Pasting](#copypasting)
 * [Nested session](#nested-session)
 * [Session restore](#session-restore)
+  - [AzulSetCmd](#azulsetcmd)
+  - [AzulSetWinId](#azulsetwinid)
 * [Lua Api](#lua-api)
 * [Why](#why)
 
@@ -500,7 +502,7 @@ or the action directly, for the `emacs` workflow. For more info see the
 ### Options
 
 * **workflow** - The current workflow (default `azul`)
-* **modifier** - The default modified (default `<C-s>`)
+* **modifier** - The default modifier (default `<C-s>`)
 * **link_floats_with_tabs** - If true, then the floats opened in a tab, are
   displayed only in that tab. Otherwise, the floats will be displayed over all
   the tabs (default `false`)
@@ -1022,3 +1024,34 @@ to the host main section, you need to press `<C-x>`. This allows you in theory
 to have as many nested sessions as you want.
 
 ### Session restore
+
+`Azul` has very powerfull options to save and restore a session. By invoking
+azul command `AzulSaveLayout`, your layout will be saved in the selected file.
+This means all the floats and the splits and the tabs. 
+
+By calling `AzulRestoreLayout`, the current layout will be overriten by the
+layout saved in the file. This means all your current tabs, splits and floats
+will be closed and the tabs, splits and floats inside the layout file will be
+re-created.
+
+If you also want to save the commands running in a pane, you have two options. 
+
+#### AzulSetCmd
+
+You can call the function `AzulSetCmd`. This variable will be saved together
+with the layout. When `AzulRestoreLayout` is called, then the command saved in
+the `AzulSetCmd` will be sent to the same pane (float or not, in a split or
+not)
+
+#### AzulSetWinId
+
+If you are used to the way `neovim` works and with `lua`, then you can use
+instead `AzulSetWinId`. This will set a variable identifier on the currently
+selected pane that will be saved together with the layout. 
+
+To restore the layout, instead of calling the `AzulRestoreLayout` command, you
+can call in a lua file the `azul.restore_layout` function, which take as a
+first argument the file where the layout is saved and as a second a callback
+with 2 parameters: the azul terminal structure and the this id. This gives you
+a much more flexibility to set up your pane upon a layout restore. For more
+details, see the [`azul` api](./api.md)

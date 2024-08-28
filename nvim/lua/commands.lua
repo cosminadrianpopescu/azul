@@ -77,10 +77,16 @@ return {
         end, {desc = "Restores a layout"})
         vim.api.nvim_create_user_command('AzulSetWinId', function(opts)
             azul.set_win_id(opts.fargs[1])
+            vim.fn.timer_start(1, function()
+                vim.api.nvim_command('startinsert')
+            end)
         end, {desc = "Sets a win id for the currently selected terminal", nargs = 1})
 
         vim.api.nvim_create_user_command('AzulSetCmd', function(opts)
             azul.set_cmd(opts.fargs[1])
+            vim.fn.timer_start(1, function()
+                vim.api.nvim_command('startinsert')
+            end)
         end, {desc = "Sets a command to be run in the current terminal uppon a restore", nargs = 1})
     end
 }

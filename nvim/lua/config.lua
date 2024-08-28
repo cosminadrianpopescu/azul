@@ -30,10 +30,11 @@ cmd('TermClose', {
 
 cmd({'TabNew', 'VimEnter'}, {
     pattern = "*", callback = function()
+        local azul = require('azul')
         if not M.default_config.options.link_floats_with_tabs then
+            azul.set_tab_variable('float_group', 'default')
             return
         end
-        local azul = require('azul')
         vim.fn.timer_start(1, function()
             azul.set_tab_variable('float_group', 'tab-' .. tabs)
             tabs = tabs + 1
