@@ -297,10 +297,10 @@ Resumes all `azul` events.
 
 **Parameters**:
 
-* width The new width
-* height The new height
+* direction The direction in which to resize
 
-Resizes the `azul` window.
+Resizes an azul pane in the indicated direction. The resize is done
+automatically by 5 rows or cols.
 
 #### disconnect
 

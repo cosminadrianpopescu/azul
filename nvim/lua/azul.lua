@@ -15,10 +15,14 @@ local M = {
 --- @field tab_page number The corresponding neovim tab
 --- @field win_id number The current neovim window id
 --- @field term_id number The current neovim channel id
+--- @field history_id number The history assigned number (to be used for session restore)
 --- @field win_config table The current neovim window config
 local terminals = {}
 local original_size = nil
 local chan_buffers = {}
+local history_id = 0
+
+local history = {}
 
 local splits = {}
 local mode = nil
@@ -34,6 +38,19 @@ local global_last_modifier = nil
 local quit_on_last = true
 
 local L = {}
+
+local add_to_history = function(buf, operation, params)
+    local t = L.term_by_buf_id(buf)
+    if t == nil or M.is_float(t) then
+        return
+    end
+    table.insert(history, {
+        operation = operation,
+        params = params,
+        from = t.history_id,
+        to = (operation == "split" and -1) or nil,
+    })
+end
 
 local find = function(callback, table)
     local result = vim.tbl_filter(callback, table)
@@ -60,13 +77,14 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    print("EV IS " .. vim.inspect(ev))
-    print("WIN IS " .. vim.fn.winnr())
-    print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
-    print("TITLE IS ALREADY" .. vim.b.term_title)
-    print("JOB ID IS " .. vim.b.terminal_job_id)
-    print("LATEST FLOATS ARE " .. vim.inspect(latest_float))
-    print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    print("HISTORY IS " .. vim.inspect(history))
+    -- print("EV IS " .. vim.inspect(ev))
+    -- print("WIN IS " .. vim.fn.winnr())
+    -- print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
+    -- print("TITLE IS ALREADY" .. vim.b.term_title)
+    -- print("JOB ID IS " .. vim.b.terminal_job_id)
+    -- print("LATEST FLOATS ARE " .. vim.inspect(latest_float))
+    -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MODE IS" .. mode)
 end
 
@@ -248,6 +266,7 @@ local OnTermClose = function(ev)
         return
     end
     local t = find(function(t) return t.buf == ev.buf end, terminals)
+    add_to_history(ev.buf, "close", nil)
     remove_term_buf(ev.buf)
     if #terminals == 0 then
         return
@@ -298,8 +317,13 @@ cmd('TermOpen',{
             win_id = vim.fn.win_getid(vim.fn.winnr()),
             term_id = vim.b.terminal_job_id,
             group = L.current_group,
+            history_id = history_id,
             cwd = vim.fn.getcwd(),
         })
+        if #history > 0 and history[#history].to == -1 then
+            history[#history].to = history_id
+        end
+        history_id = history_id + 1
         L.current_group = nil
         OnEnter(ev)
     end
@@ -705,6 +729,7 @@ M.get_tab_terminal = function(n)
 end
 
 M.split = function(dir)
+    add_to_history(vim.fn.bufnr("%"), "split", {dir})
     local cmd = 'new'
     if dir == 'left' or dir == 'right' then
         cmd = 'v' .. cmd
@@ -828,60 +853,72 @@ local get_visible_splits = function()
     end, terminals)
 end
 
-M.resize = function(w, h)
-    M.suspend()
-    local is_restore = (original_size ~= nil and ((original_size.w == w and original_size.h == h) or (h == 0 and w == 0)))
-    if is_restore and h == 0 and w == 0 then
-        h = original_size.h
-        w = original_size.w
-    end
-    if not is_restore and original_size ~= nil then
-        M.resize(original_size.w, original_size.h)
-    end
-    local ws = w / vim.o.columns
-    local hs = h / vim.o.lines
-    local collection = get_visible_splits()
-    local buf = nil
-    for _, t in ipairs(collection) do
-        if buf == nil then
-            vim.api.nvim_command("e ./tmp")
-            buf = vim.fn.bufnr()
-        else
-            vim.api.nvim_win_set_buf(t.win_id, buf)
-        end
-        if not is_restore then
-            t._w = vim.api.nvim_win_get_width(t.win_id)
-            t._h = vim.api.nvim_win_get_height(t.win_id)
-        end
-    end
-
-    local lines = vim.o.lines
-    local cols = vim.o.columns
-    vim.o.lines = h
-    vim.o.columns = w
-
-    for _, t in ipairs(collection) do
-        if not is_restore then
-            vim.api.nvim_win_set_height(t.win_id, math.ceil(t._h * hs) + 1)
-            vim.api.nvim_win_set_width(t.win_id, math.ceil(t._w * ws) + 1)
-        elseif t._h ~= nil and t._w ~= nil then
-            vim.api.nvim_win_set_height(t.win_id, t._h)
-            vim.api.nvim_win_set_width(t.win_id, t._w)
-        end
-    end
-
-    for _, t in ipairs(collection) do
-        vim.api.nvim_win_set_buf(t.win_id, t.buf)
-    end
-
-    if buf ~=nil and vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) then
-        vim.api.nvim_command('bwipeout ' .. buf)
-    end
-    if not is_restore then
-        original_size = {w = cols, h = lines}
-    end
-    M.resume()
+M.resize = function(direction)
+    add_to_history(vim.fn.bufnr('%'), "resize", {direction})
+    local args = {
+        left = 'vert res -5',
+        right = 'vert res +5',
+        up = 'res -5',
+        down = 'res +5',
+    }
+    vim.api.nvim_command(args[direction])
 end
+
+-- M.resize = function(w, h)
+--     add_to_history(vim.fn.bufnr("%"), "resize", {h, w})
+--     M.suspend()
+--     local is_restore = (original_size ~= nil and ((original_size.w == w and original_size.h == h) or (h == 0 and w == 0)))
+--     if is_restore and h == 0 and w == 0 then
+--         h = original_size.h
+--         w = original_size.w
+--     end
+--     if not is_restore and original_size ~= nil then
+--         M.resize(original_size.w, original_size.h)
+--     end
+--     local ws = w / vim.o.columns
+--     local hs = h / vim.o.lines
+--     local collection = get_visible_splits()
+--     local buf = nil
+--     for _, t in ipairs(collection) do
+--         if buf == nil then
+--             vim.api.nvim_command("e ./tmp")
+--             buf = vim.fn.bufnr()
+--         else
+--             vim.api.nvim_win_set_buf(t.win_id, buf)
+--         end
+--         if not is_restore then
+--             t._w = vim.api.nvim_win_get_width(t.win_id)
+--             t._h = vim.api.nvim_win_get_height(t.win_id)
+--         end
+--     end
+-- 
+--     local lines = vim.o.lines
+--     local cols = vim.o.columns
+--     vim.o.lines = h
+--     vim.o.columns = w
+-- 
+--     for _, t in ipairs(collection) do
+--         if not is_restore then
+--             vim.api.nvim_win_set_height(t.win_id, math.ceil(t._h * hs) + 1)
+--             vim.api.nvim_win_set_width(t.win_id, math.ceil(t._w * ws) + 1)
+--         elseif t._h ~= nil and t._w ~= nil then
+--             vim.api.nvim_win_set_height(t.win_id, t._h)
+--             vim.api.nvim_win_set_width(t.win_id, t._w)
+--         end
+--     end
+-- 
+--     for _, t in ipairs(collection) do
+--         vim.api.nvim_win_set_buf(t.win_id, t.buf)
+--     end
+-- 
+--     if buf ~=nil and vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) then
+--         vim.api.nvim_command('bwipeout ' .. buf)
+--     end
+--     if not is_restore then
+--         original_size = {w = cols, h = lines}
+--     end
+--     M.resume()
+-- end
 
 --- Disconnects the current session.
 M.disconnect = function()

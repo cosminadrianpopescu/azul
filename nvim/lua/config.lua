@@ -11,11 +11,6 @@ local float_group = function()
                                           -- will be assigned to the t:float_group group
 end
 
-local feedkeys = function(keys)
-    local codes = vim.api.nvim_replace_termcodes('<C-\\><c-n>' .. keys, true, false, true)
-    vim.api.nvim_feedkeys(codes, 't', false)
-end
-
 cmd('TermClose', {
     pattern = "*", callback = function()
         local azul = require('azul')
@@ -461,19 +456,9 @@ local set_shortcut = function(action, shortcut, mode, arg)
             desc = 'Toggle nested session'
         })
     elseif action == 'resize_left' or action == 'resize_right' or action == 'resize_down' or action == 'resize_up' then
-        local args = {
-            resize_left = 'vert res -5',
-            resize_right = 'vert res +5',
-            resize_up = 'res -5',
-            resize_down = 'res +5',
-        }
         map(mode, shortcut, '', {
             callback = function()
-                if wf ~= 'emacs' then
-                    vim.api.nvim_command(args[action])
-                else
-                    feedkeys(':' .. args[action] .. '<cr>i')
-                end
+                azul.resize(action:gsub('resize_', ''))
             end,
         })
     elseif action == 'select_left' or action == 'select_right' or action == 'select_down' or action == 'select_up' then
