@@ -187,14 +187,14 @@ Returns a table containing all the opened terminals.
 
 Moves a floating pane in the specified direction by the specified increment.
 
-#### select_float
+#### select_pane
 
 **Parameters**:
 
 * buf The vim buffer number of the pane we want to select
 
-Changed the currently selected floating pane to the one which contains the
-buffer identified by the `buf` parameter.
+Changed the currently selected pane to the one which contains the buffer
+identified by the `buf` parameter.
 
 #### select_next_pane
 

@@ -15,12 +15,15 @@ local M = {
 --- @field tab_page number The corresponding neovim tab
 --- @field win_id number The current neovim window id
 --- @field term_id number The current neovim channel id
---- @field history_id number The history assigned number (to be used for session restore)
+--- @field panel_id number The panel assigned number (to be used for session restore)
+--- @field tab_id number The tab assigned number (to be used for session restore)
 --- @field win_config table The current neovim window config
 local terminals = {}
 local original_size = nil
+local tab_id = 0
+local azul_win_id = 0
 local chan_buffers = {}
-local history_id = 0
+local panel_id = 0
 
 local history = {}
 
@@ -39,17 +42,23 @@ local quit_on_last = true
 
 local L = {}
 
-local add_to_history = function(buf, operation, params)
+local add_to_history = function(buf, operation, params, tab_id)
     local t = L.term_by_buf_id(buf)
     if t == nil or M.is_float(t) then
         return
     end
-    table.insert(history, {
+    local el = {
         operation = operation,
         params = params,
-        from = t.history_id,
         to = (operation == "split" and -1) or nil,
-    })
+        tab_id = tab_id,
+    }
+    if operation == "create" then
+        el.to = t.panel_id
+    else
+        el.from = t.panel_id
+    end
+    table.insert(history, el)
 end
 
 local find = function(callback, table)
@@ -130,14 +139,6 @@ end
 
 local close_float = function(float)
     refresh_win_config(float)
-    local azul_win_id = get_win_var_safe(float.win_id, 'azul_win_id')
-    if azul_win_id ~= nil then
-        float.azul_win_id = azul_win_id
-    end
-    local azul_cmd = get_win_var_safe(float.win_id, 'azul_cmd')
-    if azul_cmd ~= nil then
-        float.azul_cmd = azul_cmd
-    end
     vim.api.nvim_win_close(float.win_id, true)
     float.win_id = nil
 end
@@ -252,9 +253,6 @@ M.open = function(start_edit, force, callback)
         end
     end
     vim.fn.termopen(vim.o.shell, opts)
-    if not vim.fn.exists('w:azul_win_id') then
-        vim.api.nvim_win_set_var(0, 'azul_win_id', os.time())
-    end
     if type(start_edit) == 'boolean' and start_edit == false then
         return
     end
@@ -266,7 +264,7 @@ local OnTermClose = function(ev)
         return
     end
     local t = find(function(t) return t.buf == ev.buf end, terminals)
-    add_to_history(ev.buf, "close", nil)
+    add_to_history(ev.buf, "close", nil, t.tab_id)
     remove_term_buf(ev.buf)
     if #terminals == 0 then
         return
@@ -306,6 +304,13 @@ M.enter_mode = function(new_mode)
     end
 end
 
+cmd({'TabNew', 'VimEnter'}, {
+    pattern = "*", callback = function()
+        vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', tab_id)
+        tab_id = tab_id + 1
+    end
+})
+
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
         if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
@@ -317,15 +322,23 @@ cmd('TermOpen',{
             win_id = vim.fn.win_getid(vim.fn.winnr()),
             term_id = vim.b.terminal_job_id,
             group = L.current_group,
-            history_id = history_id,
+            tab_id = vim.api.nvim_tabpage_get_var(0, 'azul_tab_id'),
+            panel_id = panel_id,
             cwd = vim.fn.getcwd(),
+            azul_win_id = azul_win_id,
         })
-        if #history > 0 and history[#history].to == -1 then
-            history[#history].to = history_id
-        end
-        history_id = history_id + 1
         L.current_group = nil
         OnEnter(ev)
+        if #history > 0 and history[#history].to == -1 then
+            history[#history].to = panel_id
+        else
+            local t = L.term_by_buf_id(ev.buf)
+            if t and not M.is_float(t) then
+                add_to_history(ev.buf, "create", {}, t.tab_id)
+            end
+        end
+        panel_id = panel_id + 1
+        azul_win_id = azul_win_id + 1
     end
 })
 
@@ -413,12 +426,6 @@ local restore_float = function(t)
     end
     vim.api.nvim_open_win(t.buf, true, t.win_config)
     refresh_buf(t.buf)
-    if t.azul_win_id ~= nil then
-        vim.w.azul_win_id = t.azul_win_id
-    end
-    if t.azul_cmd ~= nil then
-        vim.w.azul_cmd = t.azul_cmd
-    end
 end
 
 L.do_show_floats = function(floatings, idx, after_callback)
@@ -628,7 +635,7 @@ M.move_current_float = function(dir, inc)
     end
 end
 
-M.select_float = function(buf)
+M.select_pane = function(buf)
     vim.api.nvim_command(vim.fn.bufwinnr(buf) .. "wincmd w")
 end
 
@@ -683,7 +690,7 @@ M.select_next_pane = function(dir, group)
     end
 
     vim.fn.timer_start(1, function()
-        M.select_float(found.buf)
+        M.select_pane(found.buf)
     end)
 end
 
@@ -729,7 +736,8 @@ M.get_tab_terminal = function(n)
 end
 
 M.split = function(dir)
-    add_to_history(vim.fn.bufnr("%"), "split", {dir})
+    local t = M.get_current_terminal()
+    add_to_history(vim.fn.bufnr("%"), "split", {dir}, t.tab_id)
     local cmd = 'new'
     if dir == 'left' or dir == 'right' then
         cmd = 'v' .. cmd
@@ -854,7 +862,8 @@ local get_visible_splits = function()
 end
 
 M.resize = function(direction)
-    add_to_history(vim.fn.bufnr('%'), "resize", {direction})
+    local t = M.get_current_terminal()
+    add_to_history(vim.fn.bufnr('%'), "resize", {direction}, t.tab_id)
     local args = {
         left = 'vert res -5',
         right = 'vert res +5',
@@ -955,6 +964,10 @@ local term_by_job_pid = function(pid)
     return find(function(t) return vim.api.nvim_buf_get_var(t.buf, 'terminal_job_pid') == 1 * pid end, terminals)
 end
 
+L.term_by_panel_id = function(id)
+    return find(function(t) return t.panel_id == id end, terminals)
+end
+
 L.term_by_buf_id = function(id)
     return find(function(t) return t.buf == 1 * id end, terminals)
 end
@@ -976,57 +989,84 @@ local select_dir = function(t, which)
     end
 end
 
+local get_custom_values = function()
+    local result = {}
+    for _, t in ipairs(terminals) do
+        result[t.panel_id .. ""] = {
+            azul_win_id = t.azul_win_id,
+            azul_cmd = t.azul_cmd or nil,
+        }
+    end
+
+    return result
+end
+
 M.save_layout = function(where)
+    M.hide_floats()
     for _, t in ipairs(terminals) do
         refresh_tab_page(t)
     end
-
-    M.hide_floats()
-    M.suspend()
-    vim.api.nvim_command('tabrewind')
-    for _, t in ipairs(vim.api.nvim_list_tabpages()) do
-        select_dir(t, 'h')
-        select_dir(t, 'k')
-        vim.api.nvim_command('tabnext')
+    local history_to_save = {}
+    for _, id in ipairs(vim.api.nvim_list_tabpages()) do
+        table.insert(history_to_save, L.histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), history))
     end
-    M.resume()
-
-    local opts = vim.o.sessionoptions
-    vim.o.sessionoptions = 'tabpages,terminal,winsize'
-    vim.api.nvim_command('mksession! ' .. where)
-
-    local f = io.open(where, "r")
-    local sess = ''
-    local line = f:read('*L')
-    local processed = {}
-    while line do
-        if vim.fn.match(line, '\\v^badd') == 0 then
-            goto continuewhile
-        end
-        if vim.fn.match(line, 'term:\\/\\/') == -1 then
-            sess = sess .. line
-        else
-            local pid = vim.fn.substitute(line, '\\v^.*term:\\/\\/[^:]+\\/([0-9]+):.*$', '\\1', 'gi')
-            local t = term_by_job_pid(pid)
-            if find(function(x) return x == pid end, processed) == nil and t ~= nil and t.win_id ~= nil then
-                if get_win_var_safe(t.win_id, 'azul_win_id') then
-                    sess = sess .. "let w:azul_win_id = '" .. string.gsub(vim.api.nvim_win_get_var(t.win_id, 'azul_win_id'), "'", "\\'") .. "'\n"
-                end
-                if get_win_var_safe(t.win_id, 'azul_cmd') ~= nil then
-                    sess = sess .. "let w:azul_cmd = '" .. string.gsub(get_win_var_safe(t.win_id, 'azul_cmd'), "'", "\\'") .. "'\n"
-                end
-                table.insert(processed, pid)
-            end
-        end
-        ::continuewhile::
-        line = f:read('*L')
-    end
-    sess = sess .. "let g:azul_floats = '" .. serialize(vim.tbl_filter(function(x) return M.is_float(x) end, terminals)) .. "'"
+    local f = io.open(where, "w")
+    f:write(vim.inspect({
+        floats = vim.tbl_filter(function(x) return M.is_float(x) end, terminals),
+        history = history_to_save,
+        customs = get_custom_values(),
+    }))
     f:close()
-    f = io.open(where, "w")
-    f:write(sess)
-    f:close()
-    vim.o.sessionoptions = opts
+    -- for _, t in ipairs(terminals) do
+    --     refresh_tab_page(t)
+    -- end
+
+    -- M.hide_floats()
+    -- M.suspend()
+    -- vim.api.nvim_command('tabrewind')
+    -- for _, t in ipairs(vim.api.nvim_list_tabpages()) do
+    --     select_dir(t, 'h')
+    --     select_dir(t, 'k')
+    --     vim.api.nvim_command('tabnext')
+    -- end
+    -- M.resume()
+
+    -- local opts = vim.o.sessionoptions
+    -- vim.o.sessionoptions = 'tabpages,terminal,winsize'
+    -- vim.api.nvim_command('mksession! ' .. where)
+
+    -- local f = io.open(where, "r")
+    -- local sess = ''
+    -- local line = f:read('*L')
+    -- local processed = {}
+    -- while line do
+    --     if vim.fn.match(line, '\\v^badd') == 0 then
+    --         goto continuewhile
+    --     end
+    --     if vim.fn.match(line, 'term:\\/\\/') == -1 then
+    --         sess = sess .. line
+    --     else
+    --         local pid = vim.fn.substitute(line, '\\v^.*term:\\/\\/[^:]+\\/([0-9]+):.*$', '\\1', 'gi')
+    --         local t = term_by_job_pid(pid)
+    --         if find(function(x) return x == pid end, processed) == nil and t ~= nil and t.win_id ~= nil then
+    --             if get_win_var_safe(t.win_id, 'azul_win_id') then
+    --                 sess = sess .. "let w:azul_win_id = '" .. string.gsub(vim.api.nvim_win_get_var(t.win_id, 'azul_win_id'), "'", "\\'") .. "'\n"
+    --             end
+    --             if get_win_var_safe(t.win_id, 'azul_cmd') ~= nil then
+    --                 sess = sess .. "let w:azul_cmd = '" .. string.gsub(get_win_var_safe(t.win_id, 'azul_cmd'), "'", "\\'") .. "'\n"
+    --             end
+    --             table.insert(processed, pid)
+    --         end
+    --     end
+    --     ::continuewhile::
+    --     line = f:read('*L')
+    -- end
+    -- sess = sess .. "let g:azul_floats = '" .. serialize(vim.tbl_filter(function(x) return M.is_float(x) end, terminals)) .. "'"
+    -- f:close()
+    -- f = io.open(where, "w")
+    -- f:write(sess)
+    -- f:close()
+    -- vim.o.sessionoptions = opts
 end
 
 local call_with_last_term = function(callback)
@@ -1035,14 +1075,185 @@ local call_with_last_term = function(callback)
         return
     end
     if last_t ~= nil and callback ~= nil then
-        callback(last_t, vim.w.azul_win_id)
+        callback(last_t, last_t.azul_win_id)
     end
-    if vim.w.azul_cmd ~= nil then
-        local _cmd = vim.w.azul_cmd .. '<cr>'
+    if last_t.azul_cmd ~= nil then
+        local _cmd = last_t.azul_cmd .. '<cr>'
         vim.fn.timer_start(100, function()
             M.send_to_buf(last_t.buf, _cmd, true)
         end)
     end
+end
+
+L.log = function(msg)
+    local f = io.open("/tmp/history.log", "a+")
+    if f == nil then
+        return
+    end
+    f:write(msg)
+    f:write("\n")
+    f:close()
+end
+
+L.error = function(msg, h)
+    error(msg .. " at " .. vim.inspect(h))
+end
+
+local post_restored = function(t, customs, callback)
+    local c = customs[t.panel_id .. ""]
+    if c == nil then
+        return
+    end
+    t.azul_win_id = c.azul_win_id
+    if c.azul_cmd ~= nil then
+        t.azul_cmd = c.azul_cmd
+    end
+
+    if callback ~= nil then
+        callback(t, t.azul_win_id)
+    end
+
+    if t.azul_cmd ~= nil then
+        local _cmd = t.azul_cmd .. '<cr>'
+        vim.fn.timer_start(1000, function()
+            M.send_to_buf(t.buf, _cmd, true)
+        end)
+    end
+end
+
+L.restore_floats = function(histories, idx, panel_id_wait, timeout)
+    if timeout > 100 then
+        L.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
+    end
+
+    if panel_id_wait ~= nil then
+        local t = L.term_by_panel_id(panel_id_wait)
+        if t == nil then
+            vim.fn.timer_start(10, function()
+                L.restore_floats(histories, idx, panel_id_wait, timeout + 1)
+            end)
+            return
+        end
+        post_restored(t, histories.customs, histories.callback)
+    end
+
+    if idx > #histories.floats then
+        L.restore_ids()
+        return
+    end
+
+    local f = histories.floats[idx]
+
+    panel_id = f.panel_id
+    M.open_float(f.group, f.win_config)
+
+    L.restore_floats(histories, idx + 1, f.panel_id, 0)
+end
+
+L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
+    if timeout > 100 then
+        L.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j, h)
+    end
+
+    if panel_id_wait ~= nil then
+        local t = L.term_by_panel_id(panel_id_wait)
+        if t == nil then
+            vim.fn.timer_start(10, function()
+                L.restore_tab_history(histories, i, j, panel_id_wait, timeout + 1)
+            end)
+            return
+        end
+        post_restored(t, histories.customs, histories.callback)
+    end
+
+    if (i > #histories.history) then
+        L.restore_floats(histories, 1, nil, 0)
+        return
+    end
+
+    if (j > #histories.history[i]) then
+        L.restore_tab_history(histories, i + 1, 1, nil, 0)
+        return
+    end
+
+    local h = histories.history[i][j]
+
+    if h.operation == "create" and j == 1 and i == 1 then
+        history = {}
+        terminals[1].panel_id = h.to
+        terminals[1].tab_id = h.tab_id
+        post_restored(terminals[1], histories.customs, histories.callback)
+        vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', h.tab_id)
+        add_to_history(terminals[1].buf, "create", {}, h.tab_id)
+        L.restore_tab_history(histories, i, j + 1, nil, 0)
+        return
+    end
+
+    if h.operation == "create" then
+        panel_id = h.to
+        tab_id = h.tab_id
+        M.open()
+        vim.fn.timer_start(10, function()
+            L.restore_tab_history(histories, i, j + 1, h.to, 0)
+        end)
+        return
+    end
+
+    if h.operation == "split" then
+        panel_id = h.to
+        local t = L.term_by_panel_id(h.from)
+        if t == nil then
+            L.error("Error found loading the layout file", h)
+        end
+        M.select_pane(t.buf)
+        M.split(h.params[1])
+        vim.fn.timer_start(10, function()
+            L.restore_tab_history(histories, i, j + 1, h.to, 0)
+        end)
+        return
+    end
+
+    if h.operation == "close" then
+        local t = L.term_by_panel_id(h.from)
+        if t == nil then
+            L.error("Error found loading the layout file", h)
+        end
+        vim.fn.chanclose(t.term_id)
+        vim.fn.timer_start(10, function()
+            L.restore_tab_history(histories, i, j + 1, nil, 0)
+        end)
+        return
+    end
+
+    if h.operation == "resize" then
+        local t = L.term_by_panel_id(h.from)
+        if t == nil then
+            L.error("Error found loading the layout file", h)
+        end
+        M.resize(h.params[1])
+        vim.fn.timer_start(10, function()
+            L.restore_tab_history(histories, i, j + 1, nil, 0)
+        end)
+    end
+end
+
+L.restore_ids = function()
+    panel_id = 0
+    tab_id = 0
+    for _, t in ipairs(terminals) do
+        if t.panel_id > panel_id then
+            panel_id = t.panel_id
+        end
+        if t.tab_id > tab_id then
+            tab_id = t.tab_id
+        end
+    end
+    panel_id = panel_id + 1
+    tab_id = tab_id + 1
+end
+
+L.histories_by_tab_id = function(tab_id, history)
+    return vim.tbl_filter(function(h) return h.tab_id == tab_id end, history)
 end
 
 --- Restores a saved layout
@@ -1051,68 +1262,58 @@ end
 --- @param callback function(t) callback called after each terminal is restored. 
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
-    quit_on_last = false
-    local floats = get_all_floats()
-    if #floats > 0 then
-        M.hide_floats()
-        M.suspend()
-        for _, f in ipairs(floats) do
-            vim.fn.chanclose(f.term_id)
-        end
-        terminals = vim.tbl_filter(function(t) return not M.is_float(t) end, terminals)
-        M.resume()
+    if #terminals > 1 then
+        error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened")
     end
-    for _, t in ipairs(terminals) do
-        vim.fn.chanclose(t.term_id)
+    local f = io.open(where, "r")
+    if f == nil then
+        error("Could not open " .. where)
     end
-    -- Wait that all the terminals are closed.
-    while #terminals > 0 do
-        vim.fn.timer_start(50, function()
-            M.restore_layout(where, callback)
-        end)
-        return
-    end
-    M.feedkeys("i<cr>", "t")
-    vim.fn.timer_start(1, function()
-        M.suspend()
-        vim.api.nvim_command('source ' .. where)
-        vim.api.nvim_command('tabrewind')
-        M.resume()
-        for _, t in ipairs(vim.api.nvim_list_tabpages()) do
-            local wins = get_tab_windows(t)
-            for _, w in ipairs(wins) do
-                while vim.fn.win_getid() ~= w do
-                    vim.api.nvim_command('wincmd w')
-                end
-                -- vim.api.nvim_command('terminal')
-                vim.api.nvim_command('enew')
-                M.open(true)
-                OnEnter({buf = vim.fn.bufnr()})
-                call_with_last_term(callback)
-            end
-            vim.api.nvim_command("tabnext")
-        end
-        quit_on_last = true
-        local floats = deserialize(vim.g.azul_floats)
-        for _, f in ipairs(floats) do
-            -- M.open_float(f.group, f.win_config)
-            local buf = vim.api.nvim_create_buf(true, false)
-            local w = vim.api.nvim_open_win(buf, true, f.win_config)
-            L.current_group = f.group or 'default'
-            M.open(false)
-            if f.azul_cmd then
-                vim.api.nvim_win_set_var(w, 'azul_cmd', f.azul_cmd)
-            end
-            if f.azul_win_id then
-                vim.api.nvim_win_set_var(w, 'azul_win_id', f.azul_win_id)
-            end
-            call_with_last_term(callback)
-        end
-    end)
+    local h = deserialize(f:read("*a"))
+    h.callback = callback
+    L.restore_tab_history(h, 1, 1, nil, 0)
+    f:close()
+    -- vim.fn.timer_start(1, function()
+    --     M.suspend()
+    --     vim.api.nvim_command('source ' .. where)
+    --     vim.api.nvim_command('tabrewind')
+    --     M.resume()
+    --     for _, t in ipairs(vim.api.nvim_list_tabpages()) do
+    --         local wins = get_tab_windows(t)
+    --         for _, w in ipairs(wins) do
+    --             while vim.fn.win_getid() ~= w do
+    --                 vim.api.nvim_command('wincmd w')
+    --             end
+    --             -- vim.api.nvim_command('terminal')
+    --             vim.api.nvim_command('enew')
+    --             M.open(true)
+    --             OnEnter({buf = vim.fn.bufnr()})
+    --             call_with_last_term(callback)
+    --         end
+    --         vim.api.nvim_command("tabnext")
+    --     end
+    --     quit_on_last = true
+    --     local floats = deserialize(vim.g.azul_floats)
+    --     for _, f in ipairs(floats) do
+    --         -- M.open_float(f.group, f.win_config)
+    --         local buf = vim.api.nvim_create_buf(true, false)
+    --         local w = vim.api.nvim_open_win(buf, true, f.win_config)
+    --         L.current_group = f.group or 'default'
+    --         M.open(false)
+    --         if f.azul_cmd then
+    --             vim.api.nvim_win_set_var(w, 'azul_cmd', f.azul_cmd)
+    --         end
+    --         if f.azul_win_id then
+    --             vim.api.nvim_win_set_var(w, 'azul_win_id', f.azul_win_id)
+    --         end
+    --         call_with_last_term(callback)
+    --     end
+    -- end)
 end
 
 M.set_win_id = function(id)
-    vim.api.nvim_win_set_var(0, 'azul_win_id', id)
+    local t = L.term_by_buf_id(vim.fn.bufnr('%'))
+    t.azul_win_id = id
 end
 
 M.set_tab_variable = function(key, value)
@@ -1120,7 +1321,8 @@ M.set_tab_variable = function(key, value)
 end
 
 M.set_cmd = function(cmd)
-    vim.api.nvim_win_set_var(0, 'azul_cmd', cmd)
+    local t = L.term_by_buf_id(vim.fn.bufnr('%'))
+    t.azul_cmd = cmd
 end
 
 M.get_current_workflow = function()
