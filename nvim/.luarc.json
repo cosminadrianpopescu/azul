@@ -1,0 +1,7 @@
+{
+    "diagnostics.disable": [
+        "redefined-local",
+        "need-check-nil",
+        "missing-parameter"
+    ]
+}
