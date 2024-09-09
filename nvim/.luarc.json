@@ -3,5 +3,8 @@
         "redefined-local",
         "need-check-nil",
         "missing-parameter"
+    ],
+    "diagnostics.globals": [
+        "vim"
     ]
 }

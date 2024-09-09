@@ -88,5 +88,18 @@ return {
                 vim.api.nvim_command('startinsert')
             end)
         end, {desc = "Sets a command to be run in the current terminal uppon a restore", nargs = 1})
+        vim.api.nvim_create_user_command('AzulStartLogging', function()
+            local where = vim.fn.input({prompt = "Select a file: ", completion = "file"})
+            azul.start_logging(where)
+            vim.fn.timer_start(1, function()
+                vim.api.nvim_command('startinsert')
+            end)
+        end, {desc = "Starts logging the current terminal scrollback buffer"})
+        vim.api.nvim_create_user_command('AzulStopLogging', function()
+            azul.stop_logging()
+            vim.fn.timer_start(1, function()
+                vim.api.nvim_command('startinsert')
+            end)
+        end, {desc = "Stops the logging of the current terminal scrollback buffer"})
     end
 }

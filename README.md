@@ -537,6 +537,21 @@ restore section](#session-restore).
 
 * the command to be launched uppon a restore
 
+#### AzulStartLogging
+
+Starts logging the current terminal scrollback buffer. 
+
+**Note**: this commands does not log what is visibile on the screen. Only what
+is in the scroll buffer.
+
+**Parameters**: none
+
+#### AzulStopLogging
+
+If started, stops the current terminal logging of the scroll buffer.
+
+**Parameters**: none
+
 ## Configuration
 
 Azul can be configured in several ways. For

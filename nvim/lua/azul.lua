@@ -24,6 +24,8 @@ local azul_win_id = 0
 local chan_buffers = {}
 local panel_id = 0
 
+local loggers = {}
+
 local history = {}
 
 local splits = {}
@@ -81,7 +83,7 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    print("HISTORY IS " .. vim.inspect(history))
+    print("LOGGERS ARE " .. vim.inspect(loggers))
     -- print("EV IS " .. vim.inspect(ev))
     -- print("WIN IS " .. vim.fn.winnr())
     -- print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
@@ -1106,6 +1108,106 @@ end
 
 M.paste_from_clipboard = function()
     M.send_to_current(vim.fn.getreg("+"))
+end
+
+local snapshot = function(buf)
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    if #lines <= vim.o.lines - 1 then
+        return {}
+    end
+    local length = #lines - vim.o.lines + 1
+
+    while #lines > length do
+        table.remove(lines, #lines)
+    end
+
+    return lines
+end
+
+local snapshotEquals = function(s1, s2)
+    local i = 1;
+    while i <= #s1 do
+        if s1[i] ~= s2[i] then
+            return false
+        end
+        i = i + 1
+    end
+
+    return true
+end
+
+local function diff(s1, s2)
+    if snapshotEquals(s1, s2) then
+        local result = {}
+        local j = #s1 + 1
+        while j <= #s2 do
+            table.insert(result, s2[j])
+            j = j + 1
+        end
+
+        return result
+    end
+
+    if #s1 == 0 then
+        return s2
+    end
+
+    table.remove(s1, 0)
+    return diff(s1, s2)
+end
+
+local append_log = function(buf)
+    local logger = loggers[buf .. '']
+    if logger == nil then
+        return
+    end
+    local lines = snapshot(buf)
+    if #lines == 0 then
+        return
+    end
+    local to_write = diff(logger.lines, lines)
+    logger.lines = lines
+    if #to_write == 0 then
+        return
+    end
+    local where = logger.location
+    local f = io.open(where, 'a+')
+    if f == nil then
+        return
+    end
+    for _, line in ipairs(to_write) do
+        f:write(line .. "\n")
+    end
+    f:close()
+
+end
+
+M.start_logging = function(where)
+    local t = M.get_current_terminal()
+    if t == nil then
+        return
+    end
+    local id = cmd({'TextChangedT'}, {
+        buffer = t.buf, callback = function(ev)
+            append_log(ev.buf)
+        end
+    })
+    loggers[t.buf .. ''] = {
+        location = where,
+        buffer = t.buf,
+        lines = snapshot(t.buf),
+        autocmd = id,
+    }
+end
+
+M.stop_logging = function()
+    local t = M.get_current_terminal()
+    if t == nil or loggers[t.buf .. ''] == nil then
+        return
+    end
+
+    vim.api.nvim_del_autocmd(loggers[t.buf .. ''].autocmd)
+    loggers[t.buf .. ''] = nil
 end
 
 return M

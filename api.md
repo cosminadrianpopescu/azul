@@ -388,6 +388,19 @@ Returns the current workflow
 
 Pastes the content of the `+` register.
 
+#### start_logging
+
+**Parameters**:
+
+* where The file location where to log the current terminal scrollback output
+
+Starts logging the scrollback output of the current terminal to the indicated
+file
+
+#### stop_logging
+
+If started, the logging of the current terminal is stopped.
+
 ### Configuring via init.lua
 
 You'll find inside the `examples` folder 4 lua files, corresponding to each of
