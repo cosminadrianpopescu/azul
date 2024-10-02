@@ -7,7 +7,7 @@ A nvim based terminal multiplexer.
 * [Azul workflow](https://cloud.taid.be/s/rkLsbJpG8kNHPXq)
 * [Tmux workflow](https://cloud.taid.be/s/6nsSz6bzmcaxnoz)
 * [Zellij workflow](https://cloud.taid.be/s/rCTyPcFWnn3aNCS)
-* [Nested session](https://cloud.taid.be/s/76i6pKnQzperH9r)
+* [Passthorough mode](https://cloud.taid.be/s/76i6pKnQzperH9r)
 
 ## Table of contents
 
@@ -37,7 +37,7 @@ A nvim based terminal multiplexer.
   - [Shortcuts](#shortcuts)
     + [Possible actions](#possible-actions)
   - [Copy/Pasting](#copypasting)
-* [Nested session](#nested-session)
+* [Passthrough mode](#passthrough-mode)
 * [Session restore](#session-restore)
   - [AzulSetCmd](#azulsetcmd)
   - [AzulSetWinId](#azulsetwinid)
@@ -137,7 +137,7 @@ Again, you are in neovim. You can have whatever shortcuts neovim supports. You
 can have these shortcuts inside command mode, inside terminal mode (so inside
 the real terminal), in normal mode, in visual mode, you name it...
 
-### Nested mode
+### Passthrough mode
 
 As you seen in the video, you can connect to a ssh session, press a shortcut
 (in my case `<C-s>N`) and then all the keys are passed to the nested session.
@@ -445,17 +445,6 @@ text `ls -al<cr>`. The `<cr>` will not be replaced by an `enter`.
 
 * the text to send to the currently selected pane
 
-#### AzulToggleNestedSession
-
-Toggles the state of the session. If the session is nested, then the control
-is given back to the current session, while if the current session has the
-control, then the controll will be passed to the guest session. For more info
-see the [Nested session section](#nested-session).
-
-**Parameters**:
-
-* the escape control sequence (optional, default `<C-\><C-s>`)
-
 #### AzulPositionCurrentFloat
 
 Positions the currently selected floating pane in a region of the screen. 
@@ -598,6 +587,10 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **clipboard** - The clipboard settings (default `unnamedplus`). For more
   info, see [Copy/pasting section](#copypasting)
 * **encoding** - The default encoding of the terminal (default `utf-8`)
+* **passthrough_escape** - The default escape sequence from the passthrough
+  mode (default `<C-\><C-s>`)
+* **hide_in_passthrough** If true, then when in passthrough mode, hide the
+  status line of the passed through session (default false)
 
 ### Shortcuts
 
@@ -681,7 +674,7 @@ session
     + `emacs`: `toggle_floats = <A-w>`
 
 * **enter_mode**: Enter an `azul` mode
-  - arguments: The mode to enter (p or r or s or m or T or n or t or v)
+  - arguments: The mode to enter (p or r or s or m or T or n or t or v or P)
   - defaults: 
     + `azul`: `terminal.enter_mode.X = X` (where X is one of the p, r, m, s,
       T, n, v)
@@ -750,13 +743,6 @@ session
     + `tmux`: `azul.disconnect = d`
     + `zellij`: `terminal.disconnect = <C-d>`
     + `emacs`: `disconnect = <A-d>`
-
-* **nested**: Toggle the state of the session to nested or not nested
-  - defaults: 
-    + `azul`: `terminal.nested = N`
-    + `tmux`: `azul.nested = N`
-    + `zellij`: `terminal.nested = <A-n>`
-    + `emacs`: `nested = <A-n>`
 
 * **resize_left**: Resizes the currently selected pane towards left direction
   - defaults: 
@@ -1081,26 +1067,20 @@ switch to `VISUAL` mode, via the default shortcuts (see the [shortcuts
 section](#shortcuts)) and then using `vim` movements (`h`, `j`, `k`, `l`) or
 the cursors and `<pgup>` or `<pgdown>`.
 
-## Nested session
+## Passthrough mode
+
+Passthrough mode is a special mode. When you enter passthrough mode, no
+shortcut is valid anymore. In order to leave this mode, you need to press the
+`passthrough_escape` (default `<C-\><C-s>`)
 
 This solves the issue of running an `azul` session inside another `azul`
-session. Calling the `AzulToggleNestedSession` command (or clicking the
-shortcut for it) will toggle the control between the 2 sessions. So, if for
-example you are in your main host session, you call `AzulToggleNestedSession`
-then all the controls are passed through the first session down to the second
-session. When you call the function again, it will pass the control back to
-the host main session.
+session. Clicking `<C-s>P` will put you in passthrough mode. So, if for
+example you are in your main host session, you click `<C-s>P` then all the
+controls are passed through the first session down to the second session.
 
 In order to escape back to the host main session, by default you have to press
 inside the second session `<C-\><C-s>`. This is the default modifier. This
 will send the control back to the host main session.
-
-If you want to change the escape sequence, you can pass a new escape sequence
-to the initial call of the `AzulToggleNestedSession` command. So, for example,
-by doing `:AzulToggleNestedSession <C-x>` will pass the control to the second
-session (the guest `azul` session) and then, in order to pass the control back
-to the host main section, you need to press `<C-x>`. This allows you in theory
-to have as many nested sessions as you want.
 
 ## Session restore
 

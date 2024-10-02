@@ -56,6 +56,8 @@ cp $AZUL_DIR/nvim/lua/theme.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/split.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/commands.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/files.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/cheatsheet.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/disabled-theme.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/config.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/azul.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/sessions.lua $AZUL_PREFIX/share/azul/nvim/lua

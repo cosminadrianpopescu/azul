@@ -6,6 +6,7 @@ local is_suspended = false
 local M = {
     --- If set to true, then list all buffers
     list_buffers = false,
+    options = nil,
 }
 
 --- @class terminals
@@ -38,7 +39,6 @@ local mod = nil
 local latest_float = {}
 local is_reloading = false
 local global_last_status = nil
-local global_last_modifier = nil
 local quit_on_last = true
 
 local L = {}
@@ -273,10 +273,28 @@ local OnTermClose = function(ev)
 end
 
 --- Enters a custom mode. Use this function for changing custom modes
----@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'
+---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'
 M.enter_mode = function(new_mode)
     L.unmap_all(mode)
+    if mode == 'P' and workflow == 'azul' then
+        if M.options.hide_in_passthrough then
+            vim.o.laststatus = global_last_status
+        end
+        vim.api.nvim_command('tunmap ' .. M.options.passthrough_escape)
+        require('cheatsheet').reload(vim.fn.bufnr(), mod)
+    end
     mode = new_mode
+    if mode == 'P' then
+        if M.options.hide_in_passthrough then
+            global_last_status = vim.o.laststatus
+            vim.o.laststatus = 0
+        end
+        map('t', M.options.passthrough_escape, '', {
+            callback = function()
+                M.enter_mode('t')
+            end
+        })
+    end
     vim.api.nvim_command('doautocmd User MxModeChanged')
     L.remap_all(new_mode)
     if L.is_vim_mode(new_mode) then
@@ -740,31 +758,6 @@ M.split = function(dir)
         vim.o.splitright = splitright
         vim.o.splitbelow = splitbelow
     end)
-end
-
-M.toggle_nested_mode = function(delim)
-    local _delim = delim or '<C-\\><C-s>'
-    is_nested_session = not is_nested_session
-    vim.api.nvim_command('doautocmd User MxToggleNestedMode')
-    if is_nested_session then
-        global_last_status = vim.o.laststatus
-        global_last_modifier = mod
-        vim.o.laststatus = 0
-        M.set_workflow(workflow, '')
-        map('t', _delim, '', {
-            callback = function()
-                M.toggle_nested_mode(delim)
-            end
-        })
-        L.unmap_all(mode)
-        vim.api.nvim_command('startinsert')
-        return
-    end
-
-    vim.o.laststatus = global_last_status
-    vim.api.nvim_command('tunmap ' .. _delim)
-    M.set_workflow(workflow, global_last_modifier)
-    L.remap_all(mode)
 end
 
 M.position_current_float = function(where)

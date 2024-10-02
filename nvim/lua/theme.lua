@@ -1,6 +1,11 @@
 local mx = require('azul')
 local cfg = require('config')
 local theme = cfg.default_config.options.theme
+local disabled = require('disabled-theme')
+
+local is_disabled = false
+
+local M = {}
 
 local colors = require('lualine.themes.' .. theme)
 if colors.terminal == nil then
@@ -49,6 +54,10 @@ local MOD_MAP = {
     T = {
         text = '    TABS   ',
         color = colors.insert.a.bg,
+    },
+    P = {
+        text = 'PASSTHROUGH',
+        color = colors.inactive.a.bg,
     },
 }
 
@@ -187,6 +196,20 @@ vim.api.nvim_create_autocmd('User', {
         if ev.match ~= 'MxModeChanged' then
             return
         end
+
+        if is_disabled and mx.current_mode() ~= 'P' then
+            require('lualine').setup({options = {theme = theme}})
+            is_disabled = false
+        end
+
+        if mx.current_mode() == 'P' then
+            is_disabled = true
+            require('lualine').setup({options = {theme = disabled}})
+        end
+
+
         require('lualine').refresh()
     end
 })
+
+return M

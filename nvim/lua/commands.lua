@@ -43,16 +43,6 @@ return {
             azul.send_to_current(opts.fargs[1], opts.bang)
         end, {bang = true, nargs = 1, desc = "Sends the text to the currently selected terminal"})
 
-        vim.api.nvim_create_user_command('AzulToggleNestedSession', function(opts)
-            local delim = (#opts.fargs and opts.fargs[1]) or nil
-            if azul.get_current_workflow() ~= '' then
-                azul.enter_mode('t')
-            end
-            vim.fn.timer_start(1, function()
-                azul.toggle_nested_mode()
-            end)
-        end, {desc = "Toggle the nesting of the current session"})
-
         vim.api.nvim_create_user_command('AzulPositionCurrentFloat', function(opts)
             azul.position_current_float(opts.fargs[1])
         end, {desc = "Positions the currently selected float", nargs = 1})

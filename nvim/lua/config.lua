@@ -57,7 +57,7 @@ local actions = {
 }
 
 local modes = {
-    terminal = 't', azul = 'n', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v'
+    terminal = 't', azul = 'n', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v', passthrough = 'P',
 }
 
 M.default_config = {
@@ -73,6 +73,8 @@ M.default_config = {
         scrollback = 2000,
         clipboard = "unnamedplus",
         encoding = "utf-8",
+        hide_in_passthrough = false,
+        passthrough_escape = '<C-\\><C-s>'
     },
     shortcuts = {
         azul = {
@@ -100,6 +102,7 @@ M.default_config = {
                     T = 'T',
                     n = 'n',
                     v = 'v',
+                    P = 'P',
                 },
                 create_float = 'f',
                 disconnect = 'd',
@@ -174,6 +177,7 @@ M.default_config = {
                     s = 's',
                     T = 'T',
                     v = 'v',
+                    P = 'P',
                 },
                 create_float = 'f',
                 disconnect = 'd',
@@ -231,6 +235,7 @@ M.default_config = {
                     T = '<C-S-t>',
                     n = '<C-a>',
                     m = '<C-s-m>',
+                    P = '<C-s-p>',
                 },
                 disconnect = '<C-d>',
                 nested = '<A-n>',
@@ -326,7 +331,7 @@ M.default_config = {
                 resize_right = '<c-s-right>',
                 resize_up = '<c-s-up>',
                 resize_down = '<c-s-down>',
-                nested = '<a-n>',
+                passthrough = '<a-n>',
                 tab_select_first = '<c-x><s-left>',
                 tab_select_last = '<c-x><s-right>',
                 tab_select_previous = '<c-x><left>',
@@ -416,6 +421,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             t = 'terminal',
             n = 'azul',
             v = 'visual',
+            P = 'passthrough',
         }
         if arg == 'n' or arg == 'v' then
             if mode == 'n' and arg == 'v' then
@@ -560,40 +566,11 @@ M.load_config = function(where)
     end
 end
 
-local set_wk = function(wf)
-    local wk = require('which-key')
-    if wf ~= 'azul' then
-        wk.setup({
-            triggers = {},
-        })
-
-        return
-    end
-    wk.setup({
-        -- triggers = {'<c-s>'}
-        triggers_no_wait = {
-            M.default_config.options.modifier,
-        },
-        win = {
-            height = { min = 8, max = 25 },
-            no_overlap = false,
-        }
-    })
-
-    wk.register({
-        [M.default_config.options.modifier] = {
-            ['<cr>'] = {'', 'Cancel'},
-            i = {'', 'Cancel'},
-        }
-    }, {
-            mode = "t",
-        })
-end
-
 M.apply_config = function(_config)
     local config = _config or M.default_config
     local wf = config.options.workflow
-    set_wk(wf)
+    local c = require('cheatsheet')
+    c.set_wk(wf, M.default_config.options.modifier)
     local do_setshortcut = function(shortcuts, mode)
         for action, keys in pairs(shortcuts) do
             if type(keys) ~= 'table' then
@@ -613,6 +590,7 @@ M.apply_config = function(_config)
     for mode, collection in pairs(config.shortcuts[wf]) do
         do_setshortcut(collection, modes[mode])
     end
+    require('azul').options = M.default_config.options
 end
 
 return M
