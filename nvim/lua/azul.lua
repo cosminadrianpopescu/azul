@@ -275,18 +275,29 @@ end
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'
 M.enter_mode = function(new_mode)
     L.unmap_all(mode)
-    if mode == 'P' and workflow == 'azul' then
+    if mode == 'P' then
         if M.options.hide_in_passthrough then
             vim.o.laststatus = global_last_status
         end
         vim.api.nvim_command('tunmap ' .. (L.passthrough_escape or M.options.passthrough_escape))
         L.passthrough_escape = nil
-        require('cheatsheet').reload(vim.fn.bufnr(), mod)
+        if workflow == 'azul' then
+            require('cheatsheet').reload(vim.fn.bufnr(), mod)
+        end
+        if workflow == 'tmux' then
+            map('t', mod, '<C-\\><C-n>', {})
+        end
     end
     mode = new_mode
     if mode == 'P' then
         vim.fn.timer_start(1, function()
-            require('cheatsheet').stop(vim.fn.bufnr(), mod)
+            if workflow == 'azul' then
+                require('cheatsheet').stop(vim.fn.bufnr(), mod)
+            end
+            if workflow == 'tmux' then
+                vim.api.nvim_command('tunmap ' .. mod)
+                vim.api.nvim_command('startinsert')
+            end
             if M.options.hide_in_passthrough then
                 global_last_status = vim.o.laststatus
                 vim.o.laststatus = 0
@@ -414,7 +425,7 @@ cmd({'ModeChanged'}, {
         end
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
-        if to ~= from then
+        if to ~= from and mode ~= 'P' then
             M.enter_mode(to)
         end
     end
