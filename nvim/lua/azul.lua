@@ -31,7 +31,6 @@ local history = {}
 
 local splits = {}
 local mode = nil
-local is_nested_session = false
 local mode_mappings = {
 }
 local workflow = 'azul'
@@ -410,7 +409,7 @@ cmd({'WinNew'}, {
 
 cmd({'ModeChanged'}, {
     pattern = {'*'}, callback = function(ev)
-        if is_suspended or is_nested_session then
+        if is_suspended then
             return
         end
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
@@ -785,10 +784,6 @@ M.redraw = function()
     vim.fn.timer_start(100, function()
         vim.api.nvim_command('set lines=' .. lines)
     end)
-end
-
-M.is_nested_session = function()
-    return is_nested_session
 end
 
 M.set_workflow = function(w, m)

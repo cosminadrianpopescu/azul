@@ -266,11 +266,6 @@ the screen.
 
 Redraws the screen
 
-#### is_nested_session
-
-Returns true if the current session is nested (that is, the keys are passed
-down through `azul`).
-
 #### set_workflow
 
 **Parameters**:
@@ -400,6 +395,19 @@ file
 #### stop_logging
 
 If started, the logging of the current terminal is stopped.
+
+#### toggle_passthrough
+
+**Parameters**:
+
+* escape The escape sequence
+
+Toggles the passthrough mode. The escape sequence can be used to override the
+default escape sequence. Can be usefull if you want to pass through to more
+than one nested session. If you have 2 passed through sessions with the same
+escape sequence, one inside the other, the escape sequence only applies to the
+first passthrough session, not to the second. To solve this issue, you can
+passthrough the second session with a different escape sequence.
 
 ### Configuring via init.lua
 
