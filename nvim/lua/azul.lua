@@ -286,11 +286,13 @@ M.enter_mode = function(new_mode)
     end
     mode = new_mode
     if mode == 'P' then
-        require('cheatsheet').stop(vim.fn.bufnr(), mod)
-        if M.options.hide_in_passthrough then
-            global_last_status = vim.o.laststatus
-            vim.o.laststatus = 0
-        end
+        vim.fn.timer_start(1, function()
+            require('cheatsheet').stop(vim.fn.bufnr(), mod)
+            if M.options.hide_in_passthrough then
+                global_last_status = vim.o.laststatus
+                vim.o.laststatus = 0
+            end
+        end)
         map('t', (L.passthrough_escape or M.options.passthrough_escape), '', {
             callback = function()
                 M.enter_mode('t')
