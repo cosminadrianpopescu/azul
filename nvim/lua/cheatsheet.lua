@@ -34,4 +34,8 @@ M.reload = function(buf, delimiter)
     require('which-key/triggers').add({buf = buf, keys = delimiter, mode = "t"})
 end
 
+M.stop = function(buf, delimiter)
+    require('which-key/triggers').del({buf = buf, keys = delimiter, mode = "t"})
+end
+
 return M

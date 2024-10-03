@@ -541,6 +541,22 @@ If started, stops the current terminal logging of the scroll buffer.
 
 **Parameters**: none
 
+#### AzulSetWinId
+
+Sets an azul windows id for the currently selected pane. See the [Session
+restore section](#session-restore) for why you would set and how you would use
+this id
+
+**Parameters**:
+
+* the id of the pane
+
+#### AzulTogglePassthrough
+
+Toggles the passthrough mode.
+
+**Parameters**: the escape sequence
+
 ## Configuration
 
 Azul can be configured in several ways. For
@@ -1046,6 +1062,12 @@ session
     + `tmux`: `terminal.paste = <C-v>`
     + `zellij`: `terminal.paste = <C-v>`
     + `emacs`: `paste = <C-v>`
+
+* **passthrough**: Toggles the passthrough mode.
+  - defaults:
+    + `azul`: `terminal.passthrough = N`
+    + `tmux`: `terminal.passthrough = N`
+    + `emacs`: `passthrough = <A-n>`
 
 ## Copy/pasting
 

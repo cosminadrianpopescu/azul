@@ -123,6 +123,10 @@ obj.update_status = function(self)
     return line_utils.stl_escape(result) or ''
 end
 local other_colors = function()
+    local m = mx.current_mode()
+    if m == 'P' then
+        return {bg = disabled.inactive.a.fg, fg = disabled.inactive.a.bg}
+    end
     return {bg = colors.normal.a.fg, fg = colors.normal.a.bg}
 end
 

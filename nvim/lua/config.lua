@@ -46,7 +46,7 @@ local actions = {
     'enter_mode',
     'create_float',
     'disconnect',
-    'nested',
+    'passthrough',
     'resize_left', 'resize_right', 'resize_up', 'resize_down',
     'select_left', 'select_right', 'select_up', 'select_down',
     'move_left', 'move_right', 'move_up', 'move_down',
@@ -81,6 +81,7 @@ M.default_config = {
             terminal = {
                 select_terminal = 'St',
                 select_session = 'Ss',
+                passthrough = 'N',
                 create_tab = 'c',
                 tab_select = {
                     ["1"] = '1',
@@ -106,7 +107,6 @@ M.default_config = {
                 },
                 create_float = 'f',
                 disconnect = 'd',
-                nested = 'N',
                 paste = 'pp$$$<C-v>',
             },
             resize = {
@@ -157,6 +157,7 @@ M.default_config = {
             azul = {
                 select_terminal = 'St',
                 select_session = 'Ss',
+                passthrough = 'N',
                 create_tab = 'c',
                 tab_select = {
                     ["1"] = '1',
@@ -181,7 +182,6 @@ M.default_config = {
                 },
                 create_float = 'f',
                 disconnect = 'd',
-                nested = 'N',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -238,7 +238,6 @@ M.default_config = {
                     P = '<C-s-p>',
                 },
                 disconnect = '<C-d>',
-                nested = '<A-n>',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -456,11 +455,6 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = azul.disconnect,
             desc = "Disconnect",
         })
-    elseif action == 'nested' then
-        map(mode, shortcut, '', {
-            callback = azul.toggle_nested_mode,
-            desc = 'Toggle nested session'
-        })
     elseif action == 'resize_left' or action == 'resize_right' or action == 'resize_down' or action == 'resize_up' then
         map(mode, shortcut, '', {
             callback = function()
@@ -523,6 +517,13 @@ local set_shortcut = function(action, shortcut, mode, arg)
         callback(mode, shortcut, '', {
             callback = azul.paste_from_clipboard,
             desc = 'Paste from clipboard',
+        })
+    elseif action == 'passthrough' then
+        map(mode, shortcut, '', {
+            callback = function()
+                azul.toggle_passthrough()
+            end,
+            desc = 'Toggle passthrough mode'
         })
     end
 end

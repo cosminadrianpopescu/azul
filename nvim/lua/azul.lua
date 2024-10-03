@@ -280,16 +280,18 @@ M.enter_mode = function(new_mode)
         if M.options.hide_in_passthrough then
             vim.o.laststatus = global_last_status
         end
-        vim.api.nvim_command('tunmap ' .. M.options.passthrough_escape)
+        vim.api.nvim_command('tunmap ' .. (L.passthrough_escape or M.options.passthrough_escape))
+        L.passthrough_escape = nil
         require('cheatsheet').reload(vim.fn.bufnr(), mod)
     end
     mode = new_mode
     if mode == 'P' then
+        require('cheatsheet').stop(vim.fn.bufnr(), mod)
         if M.options.hide_in_passthrough then
             global_last_status = vim.o.laststatus
             vim.o.laststatus = 0
         end
-        map('t', M.options.passthrough_escape, '', {
+        map('t', (L.passthrough_escape or M.options.passthrough_escape), '', {
             callback = function()
                 M.enter_mode('t')
             end
@@ -1201,6 +1203,18 @@ M.stop_logging = function()
 
     vim.api.nvim_del_autocmd(loggers[t.buf .. ''].autocmd)
     loggers[t.buf .. ''] = nil
+end
+
+M.toggle_passthrough = function(escape)
+    if M.current_mode() ~= 'P' then
+        print("PASStHROUGH")
+        if escape ~= nil then
+            L.passthrough_escape = escape
+        end
+        M.enter_mode('P')
+    else
+        M.enter_mode('t')
+    end
 end
 
 return M
