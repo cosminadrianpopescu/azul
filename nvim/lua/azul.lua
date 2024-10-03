@@ -1207,7 +1207,6 @@ end
 
 M.toggle_passthrough = function(escape)
     if M.current_mode() ~= 'P' then
-        print("PASStHROUGH")
         if escape ~= nil then
             L.passthrough_escape = escape
         end
