@@ -426,7 +426,6 @@ plugins:
 * [which-key](https://github.com/folke/which-key.nvim)
 * [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
 * [nvim-telescope](https://github.com/nvim-telescope/telescope.nvim)
-* [bufresize](https://github.com/folke/bufresize.nvim)
 
 ### Further configuration
 
