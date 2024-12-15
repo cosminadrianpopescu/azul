@@ -9,8 +9,6 @@ local float_group = function()
                                           -- will be assigned to the t:float_group group
 end
 
-require('bufresize').setup()
-
 local t = function(key, callback, what)
     map('t', key, '', {
         callback = function()

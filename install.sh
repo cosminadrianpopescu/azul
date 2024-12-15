@@ -85,6 +85,5 @@ install_from_github "nvim-lualine" "lualine.nvim"
 install_from_github "folke" "which-key.nvim"
 install_from_github "nvim-lua" "plenary.nvim"
 install_from_github "nvim-telescope" "telescope.nvim"
-install_from_github "kwkarlwang" "bufresize.nvim"
 
 echo "Installation done in $AZUL_PREFIX. Run azul"

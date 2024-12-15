@@ -51,7 +51,4 @@ else {
     if (-not (Test-Path "$prefix\.config\azul\pack\start\telescope.nvim")) {
         git clone https://github.com/nvim-telescope/telescope.nvim $prefix\.config\azul\pack\start\telescope.nvim
     }
-    if (-not (Test-Path "$prefix\.config\azul\pack\start\bufresize.nvim")) {
-        git clone https://github.com/kwkarlwang/bufresize.nvim $prefix\.config\azul\pack\start\bufresize.nvim
-    }
 }

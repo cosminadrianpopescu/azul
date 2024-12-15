@@ -5,8 +5,6 @@ local cmd = vim.api.nvim_create_autocmd
 
 azul.set_workflow('tmux')
 
-require('bufresize').setup()
-
 local float_group = function()
     return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
                                           -- then all the floats on that tab
