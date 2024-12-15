@@ -15,7 +15,7 @@ cfg.apply_config()
 
 require('commands').setup()
 
-vim.o.cmdheight = cfg.default_config.options.cmdheight
+vim.o.cmdheight = tonumber(cfg.default_config.options.cmdheight)
 vim.o.scrollback = cfg.default_config.options.scrollback
 vim.o.termguicolors = cfg.default_config.options.termguicolors
 vim.o.mouse = cfg.default_config.options.mouse
