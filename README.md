@@ -43,6 +43,7 @@ A nvim based terminal multiplexer.
   - [AzulSetWinId](#azulsetwinid)
 * [Lua Api](#lua-api)
 * [Why](#why)
+* [Azul workflow cheatsheet](#cheatsheet)
 
 ## Installation
 
@@ -1179,3 +1180,63 @@ some way to keep it under git.
 `Azul` solves all these issues. It allows me to have the modal zellij workflow,
 combined with the tmux modifier approach. And it solves the nested sessions
 issue.
+
+## Cheatsheet
+for azul workflow only.
+
+__Modifier M__: `<C-s>`
+
+### Session
+
+- List all sessions from outside of azul: `azul`  
+- Create or attach to an existing session: `azul -a <session-name>`
+- Detach from a session (from inside an azul session): M `d`
+- List all sessions and select from inside azul: M `Ss`
+
+### Scrolling and copying
+
+- Visual: M `v`, then one of `h i j k` to move into a certain direction  
+- Copy: select text and then `y`
+- paste: `<C-v>`
+
+### Pass-through mode
+
+When for example in an SSH session also running azul, all shortcuts are
+passed through to the remote azul.
+
+- M `<C-N>` to activate,
+- `<C-\>` M to deactivate  
+
+### Panes
+
+- Create new pane (split): M `s`, then one of `h i j k` to split into a certain
+direction  
+- select pane: M `p`, then one of `h i j k` to select a certain pane  
+- resize pane: M `r`, then one of `h i j k` to resize a pane into a certain
+ direction  
+
+### Tabs
+
+- Create new tab: M `c`
+- Switch to tab: M `1`, ..., i.e. the tab number.
+- Switch to first tab: M `H`
+- Switch to last tab: M `L`
+- Switch to previous tab: M `h`
+- Switch to next tab: M `l`
+
+### Floats
+
+- Create new float: M `f`
+- Toggle float: M `w`
+- move float: M `m`, then one of `h i j k` to move into a certain direction.
+`ESC` to exit.  
+
+### Azul mode
+
+- M `n` to activate  
+  - you interact automatically with azul.  
+  - You can click on : and a prompt will appear on top of the status bar.  
+  - From Azul mode hit `i` for Terminal mode or `v` for visual mode
+  - If you type Azul (notice the capital A) and then you click tab, you will
+  see a list of all the possible commands you can send to azul.
+  [Command reference](https://github.com/cosminadrianpopescu/azul?tab=readme-ov-file#commands)  
