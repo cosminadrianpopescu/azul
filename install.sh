@@ -4,6 +4,9 @@ install_from_github() {
     if [ ! -d $AZUL_CONFIG/pack/start/$2 ]
     then
         git clone https://github.com/$1/$2 $AZUL_CONFIG/pack/start/$2
+        # Fix the plugins versions
+        cd $AZUL_CONFIG/pack/start/$2
+        git checkout $3
     fi
 }
 
@@ -81,9 +84,9 @@ then
     cp $AZUL_DIR/examples/azul.ini $AZUL_CONFIG/config.ini
 fi
 
-install_from_github "nvim-lualine" "lualine.nvim"
-install_from_github "folke" "which-key.nvim"
-install_from_github "nvim-lua" "plenary.nvim"
-install_from_github "nvim-telescope" "telescope.nvim"
+install_from_github "nvim-lualine" "lualine.nvim" "b431d228b7bbcdaea818bdc3e25b8cdbe861f056"
+install_from_github "folke" "which-key.nvim" "6c1584eb76b55629702716995cca4ae2798a9cca"
+install_from_github "nvim-lua" "plenary.nvim" "2d9b06177a975543726ce5c73fca176cedbffe9d"
+install_from_github "nvim-telescope" "telescope.nvim" "eae0d8fbde590b0eaa2f9481948cd6fd7dd21656"
 
 echo "Installation done in $AZUL_PREFIX. Run azul"
