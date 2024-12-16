@@ -36,7 +36,7 @@ else {
 
     if (-not (Test-Path "$prefix\.config\azul")) {
         copy .\examples\lua\*.* $prefix\.config\azul\lua\
-        copy .\examples\azul.lua $prefix\.config\azul\init.lua
+        copy .\examples\azul.init $prefix\.config\azul\config.ini
     }
 
     if (-not (Test-Path "$prefix\.config\azul\pack\start\lualine.nvim")) {

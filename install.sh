@@ -78,7 +78,7 @@ then
     fi
 
     cp $AZUL_DIR/examples/lua/* $AZUL_CONFIG/lua/
-    cp $AZUL_DIR/examples/azul.lua $AZUL_CONFIG/init.lua
+    cp $AZUL_DIR/examples/azul.ini $AZUL_CONFIG/config.ini
 fi
 
 install_from_github "nvim-lualine" "lualine.nvim"
