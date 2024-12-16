@@ -6,7 +6,7 @@ install_from_github() {
         git clone https://github.com/$1/$2 $AZUL_CONFIG/pack/start/$2
         # Fix the plugins versions
         cd $AZUL_CONFIG/pack/start/$2
-        git checkout $3
+        git checkout $3 &> /dev/null
     fi
 }
 
