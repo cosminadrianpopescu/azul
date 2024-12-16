@@ -82,7 +82,9 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    print("LOGGERS ARE " .. vim.inspect(loggers))
+    print("MAPPINGS ARE ")
+    vim.print(vim.inspect(vim.tbl_filter(function(x) return x.m == ev end, mode_mappings)))
+    -- print("LOGGERS ARE " .. vim.inspect(loggers))
     -- print("EV IS " .. vim.inspect(ev))
     -- print("WIN IS " .. vim.fn.winnr())
     -- print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
@@ -531,12 +533,27 @@ L.get_real_mode = function(m)
     return (L.is_vim_mode(m) and m) or ((workflow == 'tmux' and 'n') or 't')
 end
 
+local get_sensitive_ls = function(ls)
+    if ls == nil then
+        return ls
+    end
+    print("LS " .. ls)
+    local p = '^(<[amsc])(.*)$'
+    local p1, p2 = (ls .. ""):lower():match(p)
+    if p1 == nil then
+        return ls
+    end
+    return p1:lower() .. p2
+end
+
 local do_set_key_map = function(map_mode, ls, rs, options)
     local pref1 = (workflow == 'azul' and map_mode == 't' and mod) or ''
     -- if L.is_vim_mode(map_mode) then
     --     vim.api.nvim_set_keymap(map_mode, pref1 .. ls .. '', rs .. '', options)
     -- end
-    local mappings = vim.tbl_filter(function(m) return m.m == map_mode and m.ls == ls and m.pref == pref1 end, mode_mappings)
+    local mappings = vim.tbl_filter(function(m)
+        return m.m == map_mode and get_sensitive_ls(m.ls) == get_sensitive_ls(ls) and m.pref == pref1
+    end, mode_mappings)
     local _mode = L.get_real_mode(map_mode)
     if #mappings == 0 then
         table.insert(mode_mappings, {
