@@ -1195,7 +1195,8 @@ __Modifier M__: `<C-s>`
 
 ### Scrolling and copying
 
-- Visual: M `v`, then one of `h i j k` to move into a certain direction  
+- Azul mode: M `n` in order to move the curser arround freely and scroll
+- Visual: M `v`, then one of `h i j k` to move into a certain direction to select  
 - Copy: select text and then `y`
 - paste: `<C-v>`
 
