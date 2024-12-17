@@ -793,6 +793,10 @@ end
 
 M.position_current_float = function(where)
     local conf = vim.api.nvim_win_get_config(0)
+    local t = M.get_current_terminal()
+    if not M.is_float(t) then
+        L.error("You can only position a floating window", nil)
+    end
 
     if where == "top" then
         conf.row = 0
