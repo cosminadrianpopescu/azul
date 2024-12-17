@@ -1195,7 +1195,8 @@ __Modifier M__: `<C-s>`
 
 ### Scrolling and copying
 
-- Visual: M `v`, then one of `h i j k` to move into a certain direction  
+- Azul mode: M `n` in order to move the curser arround freely and scroll
+- Visual: M `v`, then one of `h i j k` to move into a certain direction to select  
 - Copy: select text and then `y`
 - paste: `<C-v>`
 
@@ -1209,7 +1210,7 @@ passed through to the remote azul.
 
 ### Panes
 
-- Create new pane (split): M `s`, then one of `h i j k` to split into a certain
+- Create new pane (split): M `p`, then one of `H J K L` to split into a certain
 direction  
 - select pane: M `p`, then one of `h i j k` to select a certain pane  
 - resize pane: M `r`, then one of `h i j k` to resize a pane into a certain
