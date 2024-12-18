@@ -228,3 +228,9 @@ vim.o.smarttab = true
 vim.o.showtabline = 0
 vim.o.completeopt = "menu,menuone,noselect"
 vim.o.wildmode = "longest,list"
+
+map('p', 'x', '', {
+    callback = function()
+        azul.rotate_panel()
+    end
+})

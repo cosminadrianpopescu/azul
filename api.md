@@ -409,6 +409,12 @@ escape sequence, one inside the other, the escape sequence only applies to the
 first passthrough session, not to the second. To solve this issue, you can
 passthrough the second session with a different escape sequence.
 
+#### rotate_panel
+
+* Rotates the current panel (equivalent of `<C-w>x` or `wincmd x` in `nvim`)
+
+Pastes the content of the `+` register.
+
 ### Configuring via init.lua
 
 You'll find inside the `examples` folder 4 lua files, corresponding to each of

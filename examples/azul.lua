@@ -230,25 +230,9 @@ vim.o.completeopt = "menu,menuone,noselect"
 vim.o.wildmode = "longest,list"
 vim.o.timeout = true
 vim.o.timeoutlen = 300
-local wk = require('which-key')
-wk.setup({
-    -- triggers = {'<c-s>'}
-    triggers_no_wait = {
-        '<C-s>'
-    },
-    win = {
-        height = { min = 8, max = 25 },
-        no_overlap = false,
-    }
-})
-map('t', 'n', '<C-\\><C-n>', {
-    desc = 'Enter normal mode',
-})
-wk.register({
-    ["<C-s>"] = {
-        ['<cr>'] = {'', 'Cancel'},
-        i = {'', 'Cancel'},
-    }
-}, {
-    mode = "t",
+
+map('p', 'x', '', {
+    callback = function()
+        azul.rotate_panel()
+    end
 })

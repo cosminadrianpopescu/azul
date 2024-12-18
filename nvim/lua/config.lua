@@ -53,7 +53,7 @@ local actions = {
     'move_top', 'move_bottom', 'move_start', 'move_end',
     'split_left', 'split_right', 'split_up', 'split_down',
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
-    'copy', 'paste'
+    'copy', 'paste', 'rotate_panel',
 }
 
 local modes = {
@@ -117,6 +117,7 @@ M.default_config = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 split_left = 'H$$$<s-left>', split_right = 'L$$$<s-right>', split_up = 'K$$$<s-up>', split_down = 'J$$$<s-down>',
+                rotate_panel = 'x',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -191,6 +192,7 @@ M.default_config = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 split_left = 'H$$$<s-left>', split_right = 'L$$$<s-right>', split_up = 'K$$$<s-up>', split_down = 'J$$$<s-down>',
+                rotate_panel = 'x',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -250,6 +252,7 @@ M.default_config = {
                 toggle_floats = 'w',
                 create_float = 'f',
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
+                rotate_panel = 'x',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -337,6 +340,7 @@ M.default_config = {
                 tab_select_next = '<c-x><right>',
                 copy = '<C-c>',
                 paste = '<C-v>',
+                rotate_panel = '<C-x>x',
             },
         }
     }
@@ -524,6 +528,13 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 azul.toggle_passthrough()
             end,
             desc = 'Toggle passthrough mode'
+        })
+    elseif action == 'rotate_panel' then
+        map(mode, shortcut, '', {
+            callback = function()
+                azul.rotate_panel()
+            end,
+            desc = 'Rotates the current panel'
         })
     end
 end

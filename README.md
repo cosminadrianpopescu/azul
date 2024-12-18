@@ -1070,6 +1070,13 @@ session
     + `tmux`: `terminal.passthrough = N`
     + `emacs`: `passthrough = <A-n>`
 
+* **rotate_panel**: Rotates the current panel (by doing `wincmd x`)
+  - defaults:
+    + `azul`: `pane.rotate_panel = x`
+    + `tmux`: `pane.rotate_panel = x`
+    + `zellij`: `pane.rotate_panel = x`
+    + `emacs`: `rotate_panel = <C-x>x`
+
 ## Copy/pasting
 
 In `azul`, you can copy paste by using the expected `<C-c>` and `<C-v>`
