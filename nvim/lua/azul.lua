@@ -537,7 +537,6 @@ local get_sensitive_ls = function(ls)
     if ls == nil then
         return ls
     end
-    print("LS " .. ls)
     local p = '^(<[amsc])(.*)$'
     local p1, p2 = (ls .. ""):lower():match(p)
     if p1 == nil then
@@ -922,8 +921,8 @@ M.save_layout = function(where)
     f:close()
 end
 
-L.log = function(msg)
-    local f = io.open("/tmp/history.log", "a+")
+L.log = function(msg, file)
+    local f = io.open(file, "a+")
     if f == nil then
         return
     end
@@ -1071,6 +1070,20 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, nil, 0)
         end)
+        return
+    end
+
+    if h.operation == "rotate_panel" then
+        local t = L.term_by_panel_id(h.from)
+        if t == nil then
+            L.error("Error found loading the layout file", h)
+        end
+        M.select_pane(t.buf)
+        M.rotate_panel()
+        vim.fn.timer_start(10, function()
+            L.restore_tab_history(histories, i, j + 1, nil, 0)
+        end)
+        return
     end
 end
 
@@ -1243,6 +1256,12 @@ M.toggle_passthrough = function(escape)
     else
         M.enter_mode('t')
     end
+end
+
+M.rotate_panel = function()
+    local t = M.get_current_terminal()
+    add_to_history(vim.fn.bufnr("%"), "rotate_panel", nil, t.tab_id)
+    vim.api.nvim_command('wincmd x')
 end
 
 return M
