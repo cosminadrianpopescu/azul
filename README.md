@@ -93,6 +93,22 @@ cd azul
 AZUL_NVIM_EXE=/opt/nvim.appimage ./install.sh
 ```
 
+By setting the `AZUL_CONFIG` variable during the install folder, you can
+indicate where you want the config to be installed for the first time.
+However, not that then `azul` will not be ran with that config. It will still
+search in `~/.config/azul` folder. In order to consider the new folder, you'll
+need to use the `-c` start option when running `azul`.
+
+```bash
+AZUL_CONFIG=/home/.azul ./install.sh
+```
+
+After this, in order to run it with the new config, you need to do:
+
+```bash
+~/.local/bin/azul -c /home/.azul -a my-session
+```
+
 ### Windows
 
 To install azul in Windows:

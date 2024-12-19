@@ -50,10 +50,14 @@ then
     mkdir -p $AZUL_PREFIX/share/azul/nvim/lua
 fi
 
-export AZUL_CONFIG="${XDG_CONFIG_HOME:-$HOME}/.config/azul"
+if [ "$AZUL_CONFIG" == "" ]
+then
+    export AZUL_CONFIG="${XDG_CONFIG_HOME:-$HOME}/.config/azul"
+fi
 
 printf "#!/bin/bash\n\nexport AZUL_PREFIX=$AZUL_PREFIX\nexport AZUL_ABDUCO_EXE=$AZUL_ABDUCO_EXE\nexport AZUL_NVIM_EXE=$AZUL_NVIM_EXE\n\n" > $AZUL_PREFIX/bin/azul
 cat $AZUL_DIR/azul >> $AZUL_PREFIX/bin/azul
+
 chmod 0755 $AZUL_PREFIX/bin/azul
 cp $AZUL_DIR/nvim/lua/theme.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/split.lua $AZUL_PREFIX/share/azul/nvim/lua
