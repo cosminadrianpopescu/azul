@@ -647,6 +647,14 @@ For an workflow other than `emacs`: `terminal.tab_select.1 = 1`.
 
 For an `emacs` workflow: `tab_select.1 = <C-1>`.
 
+If you want to override an action shortcut set via the `config.ini` file via
+the `init.lua`, you need to call the `config.ovewrite_default_action`
+function:
+
+```lua
+require('config').overwrite_default_action('toggle_floats', 'azul', 'terminal', 'r')   
+```
+
 #### Possible actions
 
 * **select_terminal**: Selects visually one of the existing pane in the current

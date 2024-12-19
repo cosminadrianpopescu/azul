@@ -605,4 +605,17 @@ M.apply_config = function(_config)
     require('azul').options = M.default_config.options
 end
 
+M.overwrite_default_action = function(action, wf, mode, shortcut)
+    if not vim.tbl_contains(actions, action) then
+        error("There is no action " .. action)
+    end
+    if not vim.tbl_contains({'azul', 'tmux', 'zellij', 'emacs'}, wf) then
+        error("There is no workflow " .. wf)
+    end
+    if not vim.tbl_contains(vim.tbl_keys(modes), mode) then
+        error("There is no mode " .. mode)
+    end
+    M.default_config.shortcuts[wf][mode][action] = shortcut
+end
+
 return M
