@@ -40,6 +40,12 @@ local is_reloading = false
 local global_last_status = nil
 local quit_on_last = true
 
+local events = {
+    FloatClosed = {},
+    ModeChanged = {},
+    FloatsVisible = {},
+}
+
 local L = {}
 
 local add_to_history = function(buf, operation, params, tab_id)
@@ -59,6 +65,16 @@ local add_to_history = function(buf, operation, params, tab_id)
         el.from = t.panel_id
     end
     table.insert(history, el)
+end
+
+local trigger_event = function(ev, args)
+    if not vim.tbl_contains(vim.tbl_keys(events), ev) then
+        return
+    end
+
+    for _, callback in ipairs(events[ev]) do
+        callback(args)
+    end
 end
 
 local find = function(callback, table)
@@ -150,6 +166,7 @@ M.hide_floats = function()
     for _, float in ipairs(get_visible_floatings()) do
         close_float(float)
     end
+    trigger_event('FloatClosed')
 end
 
 local OnEnter = function(ev)
@@ -276,6 +293,7 @@ end
 --- Enters a custom mode. Use this function for changing custom modes
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'
 M.enter_mode = function(new_mode)
+    local old_mode = mode
     L.unmap_all(mode)
     if mode == 'P' then
         if M.options.hide_in_passthrough then
@@ -311,7 +329,7 @@ M.enter_mode = function(new_mode)
             end
         })
     end
-    vim.api.nvim_command('doautocmd User MxModeChanged')
+    trigger_event('ModeChanged', {old_mode, new_mode})
     L.remap_all(new_mode)
     if L.is_vim_mode(new_mode) then
         return
@@ -456,6 +474,7 @@ L.do_show_floats = function(floatings, idx, after_callback)
         if after_callback ~= nil then
             after_callback()
         end
+        trigger_event('FloatsVisible')
         return
     end
     restore_float(floatings[idx])
@@ -502,6 +521,7 @@ M.open_float = function(group, opts)
             width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
             focusable = true, zindex = 1, border = 'rounded', title = vim.b.term_title, relative = 'editor', style = 'minimal'
         })
+        trigger_event('FloatOpened', {L.term_by_buf_id(buf)})
     end
     L.current_group = group or 'default'
     if #get_all_floats(group) > 0 and M.are_floats_hidden(group) then
@@ -1262,6 +1282,14 @@ M.rotate_panel = function()
     local t = M.get_current_terminal()
     add_to_history(vim.fn.bufnr("%"), "rotate_panel", nil, t.tab_id)
     vim.api.nvim_command('wincmd x')
+end
+
+M.on = function(ev, callback)
+    if not vim.tbl_contains(vim.tbl_keys(events), ev) then
+        error(ev .. " event does not exists")
+    end
+
+    table.insert(events[ev], callback)
 end
 
 return M
