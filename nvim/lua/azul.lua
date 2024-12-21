@@ -44,6 +44,7 @@ local events = {
     FloatClosed = {},
     ModeChanged = {},
     FloatsVisible = {},
+    FloatOpened = {},
 }
 
 local L = {}
@@ -99,7 +100,7 @@ end
 
 M.debug = function(ev)
     print("MAPPINGS ARE ")
-    vim.print(vim.inspect(vim.tbl_filter(function(x) return x.m == ev end, mode_mappings)))
+    vim.print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
     -- print("EV IS " .. vim.inspect(ev))
     -- print("WIN IS " .. vim.fn.winnr())
@@ -1285,11 +1286,15 @@ M.rotate_panel = function()
 end
 
 M.on = function(ev, callback)
-    if not vim.tbl_contains(vim.tbl_keys(events), ev) then
-        error(ev .. " event does not exists")
-    end
+    local to_add = (type(ev) == 'string' and {ev}) or ev
 
-    table.insert(events[ev], callback)
+    for _, e in ipairs(to_add) do
+        if not vim.tbl_contains(vim.tbl_keys(events), e) then
+            error(e .. " event does not exists")
+        end
+
+        table.insert(events[ev], callback)
+    end
 end
 
 return M
