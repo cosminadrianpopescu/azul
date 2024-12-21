@@ -2,16 +2,11 @@ local t = require('test-env')
 local azul = require('azul')
 
 local floats = 0
+local events = {'FloatOpened', 'FloatsVisible', 'FloatClosed'}
 
-vim.api.nvim_create_autocmd('User', {
-    pattern = "", callback = function(ev)
-        local list = {'MxFloatOpened', 'MxFloatsVisible', 'MxFloatClosed'}
-        if not vim.tbl_contains(list, ev.match) then
-            return
-        end
-        floats = floats + 1
-    end
-})
+azul.on(events, function()
+    floats = floats + 1
+end)
 
 local by_state = function(state)
     return (state and 'floating') or 'embedded'
