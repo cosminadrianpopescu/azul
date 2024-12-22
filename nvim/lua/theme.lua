@@ -210,25 +210,4 @@ mx.on('ModeChanged', function(args)
     require('lualine').refresh()
 end)
 
-vim.api.nvim_create_autocmd('User', {
-    pattern = "", callback = function(ev)
-        if ev.match ~= 'MxModeChanged' then
-            return
-        end
-
-        if is_disabled and mx.current_mode() ~= 'P' then
-            require('lualine').setup({options = {theme = theme}})
-            is_disabled = false
-        end
-
-        if mx.current_mode() == 'P' then
-            is_disabled = true
-            require('lualine').setup({options = {theme = disabled}})
-        end
-
-
-        require('lualine').refresh()
-    end
-})
-
 return M

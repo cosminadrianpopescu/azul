@@ -601,7 +601,10 @@ L.unmap_all = function(mode)
     for _, m in ipairs(collection) do
         local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
         if vim.tbl_contains(cmds, cmd) == false then
-            vim.api.nvim_command(cmd)
+            local result = pcall(function() vim.api.nvim_command(cmd) end)
+            if not result then
+                print(cmd .. " failed")
+            end
             table.insert(cmds, cmd)
         end
     end
