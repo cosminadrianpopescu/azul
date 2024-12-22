@@ -11,6 +11,7 @@ if files.exists(files.config_dir .. '/config.ini') then
     cfg.load_config(files.config_dir .. '/config.ini')
 end
 azul.set_workflow(cfg.default_config.options.workflow, cfg.default_config.options.modifier)
+cfg.apply_config()
 
 require('commands').setup()
 
@@ -43,8 +44,6 @@ if not files.try_load_config(config_file) then
     files.try_load_config(files.config_dir .. '/init.vim')
 end
 vim.o.shadafile = files.config_dir .. '/nvim/shada'
-
-cfg.apply_config()
 
 vim.fn.timer_start(1, function()
     require('theme')
