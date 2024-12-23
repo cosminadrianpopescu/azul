@@ -1,3 +1,4 @@
 tests-deprecated/node_modules
 tests/test-runner/node_modules
 tests-deprecated
+tests/**/*.js

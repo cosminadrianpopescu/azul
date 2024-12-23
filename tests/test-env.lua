@@ -1,6 +1,8 @@
 local uuid = require('uuid').uuid;
 local base_path = '/tmp/azul-' .. uuid
 local job = require('plenary.job')
+local test_running = nil
+local azul = require('azul')
 
 local file_copy = function(src, dest)
     local fin = io.open(src, "r")
@@ -18,10 +20,12 @@ local file_copy = function(src, dest)
 end
 
 local quit = function(msg)
-    local f = io.open(base_path .. "/last-result", "w")
+    local f = io.open(base_path .. "/last-result-" .. test_running, "w")
     f:write(msg)
     f:close()
-    vim.api.nvim_command('qa!')
+    vim.fn.timer_start(100, function()
+        vim.api.nvim_command('qa!')
+    end)
 end
 
 local feedkeys = function(data, mode, escape)
@@ -47,6 +51,16 @@ local remote_send = function(what)
     }):sync()
 end
 
+local log = function(msg, file)
+    local f = io.open(file, "a+")
+    if f == nil then
+        return
+    end
+    f:write(msg)
+    f:write("\n")
+    f:close()
+end
+
 return {
     set_env = function(uid, test)
         file_copy("./" .. test .. ".spec.lua", "/tmp/" .. uid .. "/nvim/" .. test .. "lua")
@@ -60,5 +74,15 @@ return {
         quit('passed')
     end,
     feedkeys = feedkeys,
-    simulate_keys = remote_send
+    simulate_keys = remote_send,
+    log = log,
+    single_shot = function(ev, callback)
+        azul.on(ev, function(args)
+            azul.clear_event(ev, callback)
+            callback(args)
+        end)
+    end,
+    set_test_running = function(which)
+        test_running = which
+    end
 }

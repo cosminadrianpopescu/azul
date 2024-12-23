@@ -17,7 +17,9 @@ process.on('exit', () => {
     rmSync(base_path, {recursive: true});
 });
 
-const last_result = () => `${base_path}/last-result`;
+const last_result = `${base_path}/last-result`;
+
+const running_last_result = (t: TestCaseDesc) => `${last_result}-${t.luaFile}`;
 
 function run(cmd: string): ChildProcessWithoutNullStreams {
     return spawn(cmd);
@@ -39,6 +41,7 @@ async function wait_proc(cmd: string, args: Array<string> = [], options: Object 
 
 async function run_azul() {
     const [code, result, err] = await wait_proc(`${base_path}/bin/azul`, ['-a', UUID, '-c', `${base_path}/config`]);
+    // console.log(`AZUL RAN ${code}, ${result}, ${err}`)
 }
 
 async function new_install() {
@@ -52,25 +55,30 @@ return {
 `);
 }
 
-function run_test(t: TestCaseDesc) {
+async function run_test(t: TestCaseDesc) {
     console.log(`Running ${t.desc || t.luaFile}`);
-    return new Promise<void>(async resolve => {
-        t.init && await t.init();
-        if (existsSync(last_result())) {
-            rmSync(last_result());
-        }
-        const file = `${t.luaFile}.lua`;
-        copyFileSync(`../specs/${file}`, `${base_path}/config/lua/spec.lua`);
-        run_azul().then(() => resolve());
-    })
+    t.init && await t.init();
+    if (existsSync(running_last_result(t))) {
+        rmSync(running_last_result(t));
+    }
+    const file = `${t.luaFile}.lua`;
+    let content = readFileSync(`../specs/${file}`).toString();
+    content = `-- Auto generated code, don't modify it
+require('test-env').set_test_running('${t.luaFile}')
+-- End auto generated code
+
+${content}
+`;
+    writeFileSync(`${base_path}/config/lua/spec.lua`, content);
+    await run_azul();
 }
 
-function assert_test_passed() {
-    if (!existsSync(last_result())) {
+function assert_test_passed(t: TestCaseDesc) {
+    if (!existsSync(running_last_result(t))) {
         console.error("Did not finished properly. It's considered failed")
         throw 'NOT_FINISHED';
     }
-    const data = readFileSync(last_result()).toString();
+    const data = readFileSync(running_last_result(t)).toString();
     if (data != 'passed') {
         console.error(data);
         throw 'failed';
@@ -84,7 +92,8 @@ async function loop_tests(idx: number) {
     }
 
     await run_test(TESTS[idx]);
-    assert_test_passed();
+    assert_test_passed(TESTS[idx]);
+    await new Promise(resolve => setTimeout(resolve, 500));
     return loop_tests(idx + 1);
 }
 

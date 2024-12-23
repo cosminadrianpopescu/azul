@@ -1,4 +1,5 @@
 import { test } from "./test";
 
-test('test-started');
+test('splits');
 test('floats');
+test('test-started');

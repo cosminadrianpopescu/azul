@@ -29,7 +29,6 @@ local loggers = {}
 
 local history = {}
 
-local splits = {}
 local mode = nil
 local mode_mappings = {
 }
@@ -45,6 +44,8 @@ local events = {
     ModeChanged = {},
     FloatsVisible = {},
     FloatOpened = {},
+    PaneChanged = {},
+    Error = {},
 }
 
 local L = {}
@@ -184,11 +185,16 @@ local OnEnter = function(ev)
     end
     crt.last_access = os.time(os.date("!*t"))
 
+    local is_current_terminal = (M.get_current_terminal() and M.get_current_terminal().buf) or nil
+
     for _, t in ipairs(terminals) do
         if not M.list_buffers then
             vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
         end
         t.is_current = t.buf == ev.buf
+        if t.is_current and t.buf ~= is_current_terminal then
+            trigger_event('PaneChanged', {t})
+        end
         if t.win_id ~= nil and vim.api.nvim_win_is_valid(t.win_id) then
             vim.api.nvim_win_set_option(t.win_id, 'winhl', 'FloatBorder:')
         end
@@ -340,9 +346,7 @@ M.enter_mode = function(new_mode)
     if real_mode ~= new_mode and workflow ~= 'tmux' then
         M.suspend()
         vim.api.nvim_command('startinsert')
-        vim.fn.timer_start(1, function()
-            M.resume()
-        end)
+        M.resume()
     end
 end
 
@@ -790,6 +794,9 @@ end
 
 M.split = function(dir)
     local t = M.get_current_terminal()
+    if M.is_float(t) then
+        L.error("You can only split an embeded pane", nil)
+    end
     add_to_history(vim.fn.bufnr("%"), "split", {dir}, t.tab_id)
     local cmd = 'new'
     if dir == 'left' or dir == 'right' then
@@ -807,11 +814,10 @@ M.split = function(dir)
         vim.o.splitbelow = true
     end
 
-    vim.fn.timer_start(1, function()
-        vim.api.nvim_command(cmd)
-        vim.o.splitright = splitright
-        vim.o.splitbelow = splitbelow
-    end)
+    vim.api.nvim_command(cmd)
+    M.open(false)
+    vim.o.splitright = splitright
+    vim.o.splitbelow = splitbelow
 end
 
 M.position_current_float = function(where)
@@ -831,6 +837,7 @@ M.position_current_float = function(where)
         conf.col = 0
     end
     vim.api.nvim_win_set_config(0, conf)
+    refresh_win_config(t)
 end
 
 M.redraw = function()
@@ -858,26 +865,6 @@ end
 
 M.resume = function()
     is_suspended = false
-end
-
-M.save_splits = function()
-    splits = {}
-    for _, t in ipairs(vim.tbl_filter(function(x) return not M.is_float(x) end, terminals)) do
-        table.insert(splits, {
-            win_id = t.win_id,
-            height = vim.api.nvim_win_get_height(t.win_id),
-            width = vim.api.nvim_win_get_width(t.win_id),
-        })
-    end
-end
-
-M.restore_splits = function()
-    for _, s in ipairs(splits) do
-        if vim.api.nvim_win_is_valid(s.win_id) then
-            vim.api.nvim_win_set_height(s.win_id, s.height)
-            vim.api.nvim_win_set_width(s.win_id, s.width)
-        end
-    end
 end
 
 M.resize = function(direction)
@@ -956,7 +943,12 @@ L.log = function(msg, file)
 end
 
 L.error = function(msg, h)
-    error(msg .. " at " .. vim.inspect(h))
+    local _m = msg
+    if h ~= nil then
+        _m = _m .. " at " .. vim.inspect(h)
+    end
+    trigger_event("Error", {_m})
+    error(_m)
 end
 
 local post_restored = function(t, customs, callback)
@@ -1137,11 +1129,11 @@ end
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
     if #terminals > 1 then
-        error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened")
+        L.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
     end
     local f = io.open(where, "r")
     if f == nil then
-        error("Could not open " .. where)
+        L.error("Could not open " .. where, nil)
     end
     local h = deserialize(f:read("*a"))
     h.callback = callback
@@ -1293,11 +1285,23 @@ M.on = function(ev, callback)
 
     for _, e in ipairs(to_add) do
         if not vim.tbl_contains(vim.tbl_keys(events), e) then
-            error(e .. " event does not exists")
+            L.error(e .. " event does not exists", nil)
         end
 
-        table.insert(events[ev], callback)
+        table.insert(events[e], callback)
     end
+end
+
+M.clear_event = function(ev, callback)
+    if not vim.tbl_contains(vim.tbl_keys(events), ev) then
+        L.error(ev .. " event does not exists", nil)
+    end
+    if callback == nil then
+        events[ev] = {}
+        return
+    end
+
+    events[ev] = vim.tbl_filter(function(c) return c == callback end, events[ev])
 end
 
 return M
