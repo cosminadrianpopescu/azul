@@ -1,3 +1,5 @@
-vim.fn.timer_start(10, function()
+local t = require('test-env')
+
+t.single_shot('PaneChanged', function()
     require('spec')
 end)

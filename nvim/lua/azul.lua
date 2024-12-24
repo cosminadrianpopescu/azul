@@ -46,6 +46,9 @@ local events = {
     FloatOpened = {},
     PaneChanged = {},
     Error = {},
+    PaneClosed = {},
+    LayoutSaved = {},
+    LayoutRestored = {},
 }
 
 local L = {}
@@ -291,6 +294,7 @@ local OnTermClose = function(ev)
         end
     end
     vim.api.nvim_buf_delete(ev.buf, {force = true})
+    trigger_event("PaneClosed", {t})
     vim.fn.timer_start(1, function()
         ev.buf = vim.fn.bufnr()
         OnEnter(ev)
@@ -930,6 +934,7 @@ M.save_layout = function(where)
         customs = get_custom_values(),
     }))
     f:close()
+    trigger_event("LayoutSaved")
 end
 
 L.log = function(msg, file)
@@ -1116,6 +1121,7 @@ L.restore_ids = function()
     end
     panel_id = panel_id + 1
     tab_id = tab_id + 1
+    trigger_event("LayoutRestored")
 end
 
 L.histories_by_tab_id = function(tab_id, history)

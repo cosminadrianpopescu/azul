@@ -1,5 +1,8 @@
 import { test } from "./test";
 
-test('splits');
-test('floats');
 test('test-started');
+test('floats');
+test('splits');
+test('modes');
+test('tabs');
+test('layout');

@@ -2,7 +2,6 @@ local t = require('test-env')
 local azul = require('azul')
 
 local main_t = azul.get_current_terminal()
-print(vim.inspect(main_t.buf))
 t.simulate_keys('<C-s>sljjj<cr>')
 vim.fn.timer_start(1, function()
     local n = #azul.get_terminals()
@@ -11,7 +10,7 @@ vim.fn.timer_start(1, function()
         t.assert(args[1] == main_t, "The current selected terminal should be " .. main_t.buf .. ", not " .. args[1].buf)
         t.single_shot('PaneChanged', function()
             t.single_shot('Error', function()
-                -- There is an error message that should be clicked
+                -- There is an error message that should be acknowledged
                 t.simulate_keys('<cr>')
                 n = #azul.get_terminals()
                 t.assert(n == 6, "There should be 6 terminals, not " .. vim.inspect(n))

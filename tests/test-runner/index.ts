@@ -4,6 +4,8 @@ import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from "f
 import './list';
 import { TestCaseDesc, TESTS } from "./test";
 
+let TO_RUN: Array<TestCaseDesc> = [];
+
 const UUID = process.env['AZUL_UUID'] || randomUUID();
 const base_path = `/tmp/azul-${UUID}`;
 process.env['AZUL_PREFIX'] = base_path;
@@ -87,12 +89,12 @@ function assert_test_passed(t: TestCaseDesc) {
 }
 
 async function loop_tests(idx: number) {
-    if (idx >= TESTS.length) {
+    if (idx >= TO_RUN.length) {
         return ;
     }
 
-    await run_test(TESTS[idx]);
-    assert_test_passed(TESTS[idx]);
+    await run_test(TO_RUN[idx]);
+    assert_test_passed(TO_RUN[idx]);
     await new Promise(resolve => setTimeout(resolve, 500));
     return loop_tests(idx + 1);
 }
@@ -104,5 +106,8 @@ async function loop_tests(idx: number) {
     if (TESTS.length == 0) {
         console.log("There are no defined tests. Exiting");
     }
+    const arr = TESTS.filter(t => t.single);
+    TO_RUN = arr.length > 0 ? arr : TESTS;
     await loop_tests(0);
+    console.log('All tests passed successfully');
 })();
