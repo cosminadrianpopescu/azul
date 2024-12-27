@@ -1,14 +1,6 @@
 local t = require('test-env')
 local azul = require('azul')
-
-local find = function(callback, table)
-    local result = vim.tbl_filter(callback, table)
-    if #result == 0 then
-        return nil
-    end
-
-    return result[1]
-end
+local funcs = require('functions')
 
 local L = {}
 
@@ -32,7 +24,7 @@ t.single_shot("FloatOpened", function()
         t.single_shot("PaneChanged", function()
             vim.fn.timer_start(1, function()
                 local terminals = azul.get_terminals()
-                local term = find(function(tt) return tt.azul_win_id == 4 end, terminals)
+                local term = funcs.find(function(tt) return tt.azul_win_id == 4 end, terminals)
                 t.assert(term ~= nil, "Could not find the terminal with the id 4")
                 term.azul_cmd = "ls"
                 term.azul_win_id = "with-ls"
@@ -48,11 +40,11 @@ t.single_shot("FloatOpened", function()
                                 vim.fn.timer_start(1100, function()
                                     terminals = azul.get_terminals()
                                     t.assert(#terminals == 8, "There should be in total 8 restored terminals")
-                                    term = find(function(tt) return tt.azul_win_id == "with-ls" end, terminals)
+                                    term = funcs.find(function(tt) return tt.azul_win_id == "with-ls" end, terminals)
                                     t.assert(term ~= nil, "Cannot find the terminal with the id with-ls")
                                     local lines = t.reverse(vim.api.nvim_buf_get_lines(term.buf, 0, -1, false))
                                     t.assert(#lines > 1, "There should be more than one line in the with-ls terminal")
-                                    local ls_line = find(function(l) return l:match('ls$') end, lines)
+                                    local ls_line = funcs.find(function(l) return l:match('ls$') end, lines)
                                     t.assert(ls_line ~= nil, "There should be a line ending in ls")
                                     azul.hide_floats()
                                     t.single_shot("PaneChanged", function(args)

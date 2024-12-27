@@ -1,5 +1,6 @@
 local cmd = vim.api.nvim_create_autocmd
 local map = vim.api.nvim_set_keymap
+local funcs = require('functions')
 
 local is_suspended = false
 
@@ -49,6 +50,8 @@ local events = {
     PaneClosed = {},
     LayoutSaved = {},
     LayoutRestored = {},
+    ModifierTrigger = {},
+    AboutToBeBlocked = {},
 }
 
 local L = {}
@@ -80,15 +83,6 @@ local trigger_event = function(ev, args)
     for _, callback in ipairs(events[ev]) do
         callback(args)
     end
-end
-
-local find = function(callback, table)
-    local result = vim.tbl_filter(callback, table)
-    if #result == 0 then
-        return nil
-    end
-
-    return result[1]
 end
 
 M.is_float = function(t)
@@ -135,7 +129,7 @@ local refresh_win_config = function(t)
 end
 
 local refresh_buf = function(buf)
-    local t = find(function(t) return t.buf == buf end, terminals)
+    local t = funcs.find(function(t) return t.buf == buf end, terminals)
     if t == nil then
         return nil
     end
@@ -158,7 +152,7 @@ end
 ---
 ---@return terminals|nil
 M.get_current_terminal = function()
-    return find(function(t) return t.is_current end, terminals)
+    return funcs.find(function(t) return t.is_current end, terminals)
 end
 
 --- Hides all the floats
@@ -210,7 +204,7 @@ local OnEnter = function(ev)
 end
 
 local on_chan_input = function(callback, which, chan_id, data)
-    local t = find(function(x) return x.term_id == chan_id end, terminals)
+    local t = funcs.find(function(x) return x.term_id == chan_id end, terminals)
     if t == nil then
         return
     end
@@ -280,14 +274,14 @@ local OnTermClose = function(ev)
     if is_suspended then
         return
     end
-    local t = find(function(t) return t.buf == ev.buf end, terminals)
+    local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
     add_to_history(ev.buf, "close", nil, t.tab_id)
     remove_term_buf(ev.buf)
     if #terminals == 0 then
         return
     end
     if t ~= nil then
-        if find(function(t2) return t2.win_id == t.win_id end, terminals) == nil then
+        if funcs.find(function(t2) return t2.win_id == t.win_id end, terminals) == nil then
             vim.api.nvim_win_close(t.win_id, true)
         else
             vim.api.nvim_command('bnext')
@@ -312,21 +306,11 @@ M.enter_mode = function(new_mode)
         end
         vim.api.nvim_command('tunmap ' .. (L.passthrough_escape or M.options.passthrough_escape))
         L.passthrough_escape = nil
-        if workflow == 'azul' then
-            require('cheatsheet').reload(vim.fn.bufnr(), mod)
-        end
-        if workflow == 'tmux' then
-            map('t', mod, '<C-\\><C-n>', {})
-        end
     end
     mode = new_mode
     if mode == 'P' then
         vim.fn.timer_start(1, function()
-            if workflow == 'azul' then
-                require('cheatsheet').stop(vim.fn.bufnr(), mod)
-            end
             if workflow == 'tmux' then
-                vim.api.nvim_command('tunmap ' .. mod)
                 vim.api.nvim_command('startinsert')
             end
             if M.options.hide_in_passthrough then
@@ -562,52 +546,36 @@ L.get_real_mode = function(m)
     return (L.is_vim_mode(m) and m) or ((workflow == 'tmux' and 'n') or 't')
 end
 
-local get_sensitive_ls = function(ls)
-    if ls == nil then
-        return ls
-    end
-    local p = '^(<[amsc])(.*)$'
-    local p1, p2 = (ls .. ""):lower():match(p)
-    if p1 == nil then
-        return ls
-    end
-    return p1:lower() .. p2
-end
-
 local do_set_key_map = function(map_mode, ls, rs, options)
-    local pref1 = (workflow == 'azul' and map_mode == 't' and mod) or ''
-    -- if L.is_vim_mode(map_mode) then
-    --     vim.api.nvim_set_keymap(map_mode, pref1 .. ls .. '', rs .. '', options)
-    -- end
-    local mappings = vim.tbl_filter(function(m)
-        return m.m == map_mode and get_sensitive_ls(m.ls) == get_sensitive_ls(ls) and m.pref == pref1
+    local map = funcs.find(function(m)
+        return m.m == map_mode and funcs.get_sensitive_ls(m.ls) == funcs.get_sensitive_ls(ls)
     end, mode_mappings)
     local _mode = L.get_real_mode(map_mode)
-    if #mappings == 0 then
+    if map == nil then
         table.insert(mode_mappings, {
-            m = map_mode, ls = ls, rs = rs, options = options, pref = pref1, real_mode = _mode
+            m = map_mode, ls = ls, rs = rs, options = options, real_mode = _mode
         })
     else
-        local x = mappings[1]
-        x.m = map_mode
-        x.ls = ls
-        x.rs = rs
-        x.options = options
-        x.pref = pref1
-        x.real_mode = _mode
+        map.m = map_mode
+        map.ls = ls
+        map.rs = rs
+        map.options = options
+        map.real_mode = _mode
     end
 end
 
 M.remove_key_map = function(m, ls)
-    local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
-    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls or m.pref ~= pref1 end, mode_mappings)
+    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls end, mode_mappings)
 end
 
 L.unmap_all = function(mode)
+    if (workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n') then
+        return
+    end
     local cmds = {}
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
     for _, m in ipairs(collection) do
-        local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
+        local cmd = m.real_mode .. 'unmap ' .. m.ls
         if vim.tbl_contains(cmds, cmd) == false then
             local result = pcall(function() vim.api.nvim_command(cmd) end)
             if not result then
@@ -619,9 +587,12 @@ L.unmap_all = function(mode)
 end
 
 L.remap_all = function(mode)
+    if (workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n') then
+        return
+    end
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
     for _, m in ipairs(collection) do
-        vim.api.nvim_set_keymap(m.real_mode, m.pref .. m.ls, m.rs, m.options)
+        vim.api.nvim_set_keymap(m.real_mode, m.ls, m.rs, m.options)
     end
 end
 
@@ -664,7 +635,7 @@ end
 
 M.move_current_float = function(dir, inc)
     local buf = vim.fn.bufnr()
-    local t = find(function(t) return t.buf == buf end, terminals)
+    local t = funcs.find(function(t) return t.buf == buf end, terminals)
     local conf = vim.api.nvim_win_get_config(0)
     if conf.relative == "" then return end
     local row, col = conf["row"], conf["col"]
@@ -772,7 +743,7 @@ M.reload_config = function()
 end
 
 M.send_to_buf = function(buf, data, escape)
-    local t = find(function(t) return t.buf == buf end, terminals)
+    local t = funcs.find(function(t) return t.buf == buf end, terminals)
     if t == nil then
         return
     end
@@ -793,7 +764,7 @@ M.get_tab_terminal = function(n)
         return M.get_current_terminal()
     end
 
-    return find(function(t) return t.buf == vim.api.nvim_tabpage_get_var(n, 'current_buffer') end, terminals)
+    return funcs.find(function(t) return t.buf == vim.api.nvim_tabpage_get_var(n, 'current_buffer') end, terminals)
 end
 
 M.split = function(dir)
@@ -853,13 +824,26 @@ M.redraw = function()
 end
 
 M.set_workflow = function(w, m)
-    if mod ~= nil and mod ~= '' and workflow == 'tmux' then
-        vim.api.nvim_command('tunmap ' .. mod)
-    end
     mod = m or '<C-s>'
     workflow = w
-    if m ~= '' and workflow == 'tmux' then
-        map('t', mod, '<C-\\><C-n>', {})
+    if workflow == 'azul' or workflow == 'tmux' then
+        vim.api.nvim_set_keymap('t', mod, '', {
+            callback = function()
+                if mode == 'P' then
+                    M.send_to_current(mod, true)
+                    return
+                end
+                if mode ~= 't' then
+                    return
+                end
+                trigger_event('ModifierTrigger', {(workflow == 'azul' and 't') or 'n'})
+                if workflow == 'tmux' then
+                    M.enter_mode('n')
+                    M.feedkeys('<C-\\><C-n>', 't')
+                end
+            end,
+            desc = '',
+        })
     end
 end
 
@@ -899,11 +883,11 @@ local deserialize = function(var)
 end
 
 L.term_by_panel_id = function(id)
-    return find(function(t) return t.panel_id == id end, terminals)
+    return funcs.find(function(t) return t.panel_id == id end, terminals)
 end
 
 L.term_by_buf_id = function(id)
-    return find(function(t) return t.buf == 1 * id end, terminals)
+    return funcs.find(function(t) return t.buf == 1 * id end, terminals)
 end
 
 local get_custom_values = function()
@@ -935,16 +919,6 @@ M.save_layout = function(where)
     }))
     f:close()
     trigger_event("LayoutSaved")
-end
-
-L.log = function(msg, file)
-    local f = io.open(file, "a+")
-    if f == nil then
-        return
-    end
-    f:write(msg)
-    f:write("\n")
-    f:close()
 end
 
 L.error = function(msg, h)
@@ -1308,6 +1282,15 @@ M.clear_event = function(ev, callback)
     end
 
     events[ev] = vim.tbl_filter(function(c) return c == callback end, events[ev])
+end
+
+M.get_mode_mappings = function()
+    return mode_mappings
+end
+
+M.block_input = function()
+    trigger_event('AboutToBeBlocked')
+    return vim.fn.keytrans(vim.fn.getcharstr())
 end
 
 return M

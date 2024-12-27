@@ -419,7 +419,7 @@ Pastes the content of the `+` register.
 
 **Parameters**:
 
-* ev The event name (`ModeChanged | FloatClosed | FloatsVisible`)
+* ev The event name
 * callback The callback to be executed 
 
 It adds an event listener. Azul triggers some events. You can listen to these
@@ -427,6 +427,20 @@ events by registering a callback to be called every time one of the events is
 triggered. Some events can have an array of arguments. For example, the
 `ModeChanged` event taks an array with 2 arguments. First one is the old mode
 and the second one is the new mode.
+
+#### clear_event
+
+**Parameters**:
+
+* ev The event name
+* callback The callback to be cleared (optional) 
+
+It clears an event listener. If the callback is missing, then all the
+associated with the event will be cleared.
+
+#### get_mode_mappings
+
+Returns all the azul mappings
 
 ### Configuring via init.lua
 

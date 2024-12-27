@@ -624,6 +624,15 @@ or the action directly, for the `emacs` workflow. For more info see the
   mode (default `<C-\><C-s>`)
 * **hide_in_passthrough** If true, then when in passthrough mode, hide the
   status line of the passed through session (default false)
+* **cheatsheet** If this is set to true, for `azul` and `tmux` workflows, a
+  cheatsheet will be displayed after you click the modified key (default true)
+* **modifer_timeout** The milliseconds to wait for a key sequence after the
+  modifier has been clicked (for `azul` or `tmux` worklows and only if
+  `cheatsheet` option is set to true). In `azul` or `tmux` workflows, after
+  you click the modifier, if the `cheatsheet` option is true, then the list of
+  the possible keys will be displayed. If you have combination of multiple
+  keys, this timeout is the time that `azul` will wait for the combination to
+  be finished (default 500)
 
 ### Shortcuts
 

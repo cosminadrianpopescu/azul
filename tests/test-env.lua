@@ -42,16 +42,6 @@ local remote_send = function(what)
     }):sync()
 end
 
-local log = function(msg, file)
-    local f = io.open(file, "a+")
-    if f == nil then
-        return
-    end
-    f:write(msg)
-    f:write("\n")
-    f:close()
-end
-
 local quit = function(msg)
     local file = base_path .. "/last-result-" .. test_running
     if require('files').exists(file) then
@@ -100,7 +90,6 @@ return {
     end,
     feedkeys = feedkeys,
     simulate_keys = remote_send,
-    log = log,
     single_shot = function(ev, callback)
         azul.on(ev, function(args)
             azul.clear_event(ev, callback)
