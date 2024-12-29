@@ -46,8 +46,8 @@ async function run_azul() {
     // console.log(`AZUL RAN ${code}, ${result}, ${err}`)
 }
 
-async function new_install() {
-    const [code, result, err] = await wait_proc(`../../install.sh`);
+function init_test_env() {
+    console.log('Initializing the test environment');
     copyFileSync('../test-env.lua', `${base_path}/config/lua/test-env.lua`)
     copyFileSync('../init.lua', `${base_path}/config/init.lua`)
     writeFileSync(`${base_path}/config/lua/uuid.lua`, `
@@ -57,8 +57,16 @@ return {
 `);
 }
 
+async function new_install() {
+    console.log('Preparing the test environment');
+    const [code, result, err] = await wait_proc(`../../install.sh`);
+    console.log('The test environment has been set up to ', base_path);
+}
+
 async function run_test(t: TestCaseDesc) {
-    console.log(`Running ${t.desc || t.luaFile}`);
+    console.log(`${t.desc || t.luaFile} test case`);
+    init_test_env();
+    console.log('Running...')
     t.init && await t.init();
     if (existsSync(running_last_result(t))) {
         rmSync(running_last_result(t));
@@ -100,9 +108,7 @@ async function loop_tests(idx: number) {
 }
 
 (async function() {
-    console.log('Preparing the test environment');
     await new_install();
-    console.log('The test environment has been set up to ', base_path);
     if (TESTS.length == 0) {
         console.log("There are no defined tests. Exiting");
     }
