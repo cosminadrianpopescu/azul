@@ -137,7 +137,7 @@ local cheatsheet_content = function(mode, lines_no)
 
     table.insert(result, "")
     local footer = "<esc> <C-c> " .. ARROW .. " Cancel"
-    local spaces = math.ceil((vim.o.columns - math.ceil(footer:len() / 2)) / 2)
+    local spaces = math.ceil((vim.o.columns - math.ceil(footer:len())) / 2)
     local pads = string.rep(" ", spaces)
     table.insert(result, pads .. footer .. pads)
 
@@ -145,14 +145,14 @@ local cheatsheet_content = function(mode, lines_no)
 end
 
 local create_window = function(mode)
-    local t = azul.get_current_terminal()
+    local current_win = vim.api.nvim_get_current_win()
     local cols = math.floor((vim.o.columns - (WIN_PAD * 2)) / COL_LEN)
     local height = math.ceil(#get_mappings_for_mode(mode) / cols)
     azul.suspend()
     local buf = vim.api.nvim_create_buf(false, true)
     local win_id = vim.api.nvim_open_win(buf, true, {
         width = vim.o.columns, height = height + 4, col = 0, row = vim.o.lines - height - 5,
-        focusable = true, zindex = 500, border = 'none', relative = 'editor', style = 'minimal',
+        focusable = false, zindex = 500, border = 'none', relative = 'editor', style = 'minimal',
     })
     vim.filetype.add({
         filename = {
@@ -162,7 +162,7 @@ local create_window = function(mode)
     vim.api.nvim_set_option_value('winhighlight', 'Normal:Identifier', {scope = 'local', win = win_id})
     vim.api.nvim_set_option_value('filetype', 'azul_cheatsheet', {buf = buf})
     vim.api.nvim_command("syn match AzulCheatsheetArrow '" .. ARROW .. "'")
-    vim.api.nvim_set_current_win(t.win_id)
+    vim.api.nvim_set_current_win(current_win)
     vim.api.nvim_buf_set_lines(buf, 0, height + 3, false, cheatsheet_content(mode, height))
     azul.resume()
     return win_id
@@ -171,7 +171,7 @@ end
 azul.on('ModifierTrigger', function(args)
     local mode = args[1]
     local win_id = create_window(mode)
-    vim.fn.timer_start(1, function()
+    vim.fn.timer_start(0, function()
         wait_input(mode, win_id)
     end)
 end)

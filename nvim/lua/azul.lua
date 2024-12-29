@@ -52,6 +52,7 @@ local events = {
     LayoutRestored = {},
     ModifierTrigger = {},
     AboutToBeBlocked = {},
+    WinConfigChanged = {},
 }
 
 local L = {}
@@ -76,6 +77,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGERING " .. vim.inspect(ev), "/tmp/azul-log")
     if not vim.tbl_contains(vim.tbl_keys(events), ev) then
         return
     end
@@ -97,8 +99,8 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    print("MAPPINGS ARE ")
-    vim.print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
+    -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
+    print("OPTIONS ARE " .. vim.inspect(M.options))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
     -- print("EV IS " .. vim.inspect(ev))
     -- print("WIN IS " .. vim.fn.winnr())
@@ -118,6 +120,7 @@ local refresh_tab_page = function(t)
 end
 
 local refresh_win_config = function(t)
+    local old_config = t.win_config
     t.win_config = vim.api.nvim_win_get_config(t.win_id)
     refresh_tab_page(t)
     if t.win_config['height'] == nil then
@@ -125,6 +128,12 @@ local refresh_win_config = function(t)
     end
     if t.win_config['width'] == nil then
         t.win_config.width = vim.api.nvim_win_get_width(t.win_id)
+    end
+    if old_config == nil or old_config.col ~= t.win_config.col or old_config.height ~= t.win_config.height
+        or old_config.row ~= t.win_config.row or old_config.width ~= t.win_config.width then
+        vim.fn.timer_start(1, function()
+            trigger_event('WinConfigChanged', {t})
+        end)
     end
 end
 
@@ -162,10 +171,13 @@ M.hide_floats = function()
         latest_float[crt.group] = crt
     end
 
-    for _, float in ipairs(get_visible_floatings()) do
+    local floats = get_visible_floatings()
+    for _, float in ipairs(floats) do
         close_float(float)
     end
-    trigger_event('FloatClosed')
+    if #floats > 0 then
+        trigger_event('FloatClosed')
+    end
 end
 
 local OnEnter = function(ev)
@@ -446,7 +458,7 @@ cmd({'ModeChanged'}, {
 
 cmd({'UiEnter'}, {
     pattern = {'*'}, callback = function(_)
-        M.feedkeys('<C-\\><C-n>i', 't')
+        -- M.feedkeys('<C-\\><C-n>i', 't')
         -- vim.fn.timer_start(1, function()
         --     M.enter_mode('')
         --     vim.api.nvim_command('startinsert')
@@ -569,13 +581,14 @@ M.remove_key_map = function(m, ls)
 end
 
 L.unmap_all = function(mode)
-    if (workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n') then
+    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and M.options.use_cheatsheet then
         return
     end
     local cmds = {}
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
+    local pref = (workflow == 'azul' and mode == 't' and mod) or ''
     for _, m in ipairs(collection) do
-        local cmd = m.real_mode .. 'unmap ' .. m.ls
+        local cmd = m.real_mode .. 'unmap ' .. pref .. m.ls
         if vim.tbl_contains(cmds, cmd) == false then
             local result = pcall(function() vim.api.nvim_command(cmd) end)
             if not result then
@@ -587,12 +600,13 @@ L.unmap_all = function(mode)
 end
 
 L.remap_all = function(mode)
-    if (workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n') then
+    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and M.options.use_cheatsheet then
         return
     end
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
+    local pref = (workflow == 'azul' and mode == 't' and mod) or ''
     for _, m in ipairs(collection) do
-        vim.api.nvim_set_keymap(m.real_mode, m.ls, m.rs, m.options)
+        vim.api.nvim_set_keymap(m.real_mode, pref .. m.ls, m.rs, m.options)
     end
 end
 
@@ -829,7 +843,7 @@ M.set_workflow = function(w, m)
     if workflow == 'azul' or workflow == 'tmux' then
         vim.api.nvim_set_keymap('t', mod, '', {
             callback = function()
-                if mode == 'P' then
+                if mode == 'P' or not M.options.use_cheatsheet then
                     M.send_to_current(mod, true)
                     return
                 end

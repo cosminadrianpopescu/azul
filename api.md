@@ -442,6 +442,13 @@ associated with the event will be cleared.
 
 Returns all the azul mappings
 
+#### block_input
+
+Blocks the current input, by calling `vim.fn.getcharstr()`. You should call
+this, rather than the `vim` function, directly, because this will also trigger
+the `AboutToBeBlocked` event. Also, this function will return the characters
+directly transformed (like `<C-c>`)
+
 ### Configuring via init.lua
 
 You'll find inside the `examples` folder 4 lua files, corresponding to each of
