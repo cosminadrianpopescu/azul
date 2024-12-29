@@ -44,11 +44,6 @@ else {
         cd $prefix\.config\azul\pack\start\lualine.nvim
         git checkout b431d228b7bbcdaea818bdc3e25b8cdbe861f056
     }
-    if (-not (Test-Path "$prefix\.config\azul\pack\start\which-key.nvim")) {
-        git clone https://github.com/folke/which-key.nvim $prefix\.config\azul\pack\start\which-key.nvim
-        cd $prefix\.config\azul\pack\start\which-key.nvim
-        git checkout 6c1584eb76b55629702716995cca4ae2798a9cca 
-    }
     if (-not (Test-Path "$prefix\.config\azul\pack\start\plenary.nvim")) {
         git clone https://github.com/nvim-lua/plenary.nvim $prefix\.config\azul\pack\start\plenary.nvim
         cd $prefix\.config\azul\pack\start\plenary.nvim

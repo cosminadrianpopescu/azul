@@ -195,7 +195,7 @@ require('lualine').setup {
     extensions = {}
 }
 
-mx.on('ModeChanged', function(args)
+mx.on({'ModeChanged', 'AboutToBeBlocked'}, function()
     if is_disabled and mx.current_mode() ~= 'P' then
         require('lualine').setup({options = {theme = theme}})
         is_disabled = false
@@ -205,7 +205,6 @@ mx.on('ModeChanged', function(args)
         is_disabled = true
         require('lualine').setup({options = {theme = disabled}})
     end
-
 
     require('lualine').refresh()
 end)

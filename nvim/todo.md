@@ -13,7 +13,7 @@ f('p', 'h', '', {
 })
 ``` - *DONE*
 
-* The function set_key_map will take just check the mode. If the mode is 'p' (pane mode) will do custom things. If the mode is not p, is just going to pass all arguments to the vim.api.nvim_set_key_map function.
+* The function set_key_map will take just check the mode. If the mode is 'p' (pane mode) will do custom things. If the mode is not p, is just going to pass all arguments to the vim.api.nvim_set_key_map function. - *DONE*
 
 * try on windows - *DONE*
 * install script - *DONE*
@@ -22,7 +22,7 @@ f('p', 'h', '', {
 * the runner - it should use the new multiplexer - *DONE*
 * the disable of the modifier (for ssh) aka nested mode - *DONE*
 * shortcuts to move a float up, right, bottom, left - *DONE*
-* layouts
+* layouts - *DONE*
 * colors from environment (so that the ssh azul has different colors) - *DONE*
 
 ## README
@@ -47,13 +47,13 @@ f('p', 'h', '', {
 * advantages over classical multiplexers (very flexibile status, very flexibile shortcuts, nested_mode) - why - *DONE*
 * disadvantages over classical multiplexers (cursor issues in terminal mode) - why - *DONE*
 
-* standardize the status line and the other plugins
-* extract the configs and put a ini or kdf or yaml layer in between, so other people than nvim devs can use it and configure it
-* there should be a config.lua that should enumerate the config options.
-* document the public lua API, so that advanced users can really customize it.
-* create separate doc pages for api.md, config.md and the README.md
-* expose the azul api and the shortcuts as vim commands
-* copy / paste shotrtcuts
+* standardize the status line and the other plugins - *DONE*
+* extract the configs and put a ini or kdf or yaml layer in between, so other people than nvim devs can use it and configure it - *DONE*
+* there should be a config.lua that should enumerate the config options - *DONE*
+* document the public lua API, so that advanced users can really customize it - *DONE*
+* create separate doc pages for api.md, config.md and the README.md - *DONE*
+* expose the azul api and the shortcuts as vim commands - *DONE*
+* copy / paste shotrtcuts - *DONE*
 * visual mode shortcuts
 * save session and resurect session shortcuts and commands
 * install vim.ui to ask for files.

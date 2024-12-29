@@ -1,5 +1,6 @@
 local cmd = vim.api.nvim_create_autocmd
 local map = vim.api.nvim_set_keymap
+local funcs = require('functions')
 
 local is_suspended = false
 
@@ -29,7 +30,6 @@ local loggers = {}
 
 local history = {}
 
-local splits = {}
 local mode = nil
 local mode_mappings = {
 }
@@ -45,6 +45,14 @@ local events = {
     ModeChanged = {},
     FloatsVisible = {},
     FloatOpened = {},
+    PaneChanged = {},
+    Error = {},
+    PaneClosed = {},
+    LayoutSaved = {},
+    LayoutRestored = {},
+    ModifierTrigger = {},
+    AboutToBeBlocked = {},
+    WinConfigChanged = {},
 }
 
 local L = {}
@@ -78,15 +86,6 @@ local trigger_event = function(ev, args)
     end
 end
 
-local find = function(callback, table)
-    local result = vim.tbl_filter(callback, table)
-    if #result == 0 then
-        return nil
-    end
-
-    return result[1]
-end
-
 M.is_float = function(t)
     return t and t.win_config and t.win_config['zindex'] ~= nil
 end
@@ -99,8 +98,8 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    print("MAPPINGS ARE ")
-    vim.print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
+    print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
+    -- print("OPTIONS ARE " .. vim.inspect(M.options))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
     -- print("EV IS " .. vim.inspect(ev))
     -- print("WIN IS " .. vim.fn.winnr())
@@ -120,6 +119,7 @@ local refresh_tab_page = function(t)
 end
 
 local refresh_win_config = function(t)
+    local old_config = t.win_config
     t.win_config = vim.api.nvim_win_get_config(t.win_id)
     refresh_tab_page(t)
     if t.win_config['height'] == nil then
@@ -128,10 +128,16 @@ local refresh_win_config = function(t)
     if t.win_config['width'] == nil then
         t.win_config.width = vim.api.nvim_win_get_width(t.win_id)
     end
+    if old_config == nil or old_config.col ~= t.win_config.col or old_config.height ~= t.win_config.height
+        or old_config.row ~= t.win_config.row or old_config.width ~= t.win_config.width then
+        vim.fn.timer_start(1, function()
+            trigger_event('WinConfigChanged', {t})
+        end)
+    end
 end
 
 local refresh_buf = function(buf)
-    local t = find(function(t) return t.buf == buf end, terminals)
+    local t = funcs.find(function(t) return t.buf == buf end, terminals)
     if t == nil then
         return nil
     end
@@ -154,7 +160,7 @@ end
 ---
 ---@return terminals|nil
 M.get_current_terminal = function()
-    return find(function(t) return t.is_current end, terminals)
+    return funcs.find(function(t) return t.is_current end, terminals)
 end
 
 --- Hides all the floats
@@ -164,10 +170,13 @@ M.hide_floats = function()
         latest_float[crt.group] = crt
     end
 
-    for _, float in ipairs(get_visible_floatings()) do
+    local floats = get_visible_floatings()
+    for _, float in ipairs(floats) do
         close_float(float)
     end
-    trigger_event('FloatClosed')
+    if #floats > 0 then
+        trigger_event('FloatClosed')
+    end
 end
 
 local OnEnter = function(ev)
@@ -184,11 +193,16 @@ local OnEnter = function(ev)
     end
     crt.last_access = os.time(os.date("!*t"))
 
+    local is_current_terminal = (M.get_current_terminal() and M.get_current_terminal().buf) or nil
+
     for _, t in ipairs(terminals) do
         if not M.list_buffers then
             vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
         end
         t.is_current = t.buf == ev.buf
+        if t.is_current and t.buf ~= is_current_terminal then
+            trigger_event('PaneChanged', {t})
+        end
         if t.win_id ~= nil and vim.api.nvim_win_is_valid(t.win_id) then
             vim.api.nvim_win_set_option(t.win_id, 'winhl', 'FloatBorder:')
         end
@@ -201,7 +215,7 @@ local OnEnter = function(ev)
 end
 
 local on_chan_input = function(callback, which, chan_id, data)
-    local t = find(function(x) return x.term_id == chan_id end, terminals)
+    local t = funcs.find(function(x) return x.term_id == chan_id end, terminals)
     if t == nil then
         return
     end
@@ -271,20 +285,21 @@ local OnTermClose = function(ev)
     if is_suspended then
         return
     end
-    local t = find(function(t) return t.buf == ev.buf end, terminals)
+    local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
     add_to_history(ev.buf, "close", nil, t.tab_id)
     remove_term_buf(ev.buf)
     if #terminals == 0 then
         return
     end
     if t ~= nil then
-        if find(function(t2) return t2.win_id == t.win_id end, terminals) == nil then
+        if funcs.find(function(t2) return t2.win_id == t.win_id end, terminals) == nil then
             vim.api.nvim_win_close(t.win_id, true)
         else
             vim.api.nvim_command('bnext')
         end
     end
     vim.api.nvim_buf_delete(ev.buf, {force = true})
+    trigger_event("PaneClosed", {t})
     vim.fn.timer_start(1, function()
         ev.buf = vim.fn.bufnr()
         OnEnter(ev)
@@ -302,21 +317,11 @@ M.enter_mode = function(new_mode)
         end
         vim.api.nvim_command('tunmap ' .. (L.passthrough_escape or M.options.passthrough_escape))
         L.passthrough_escape = nil
-        if workflow == 'azul' then
-            require('cheatsheet').reload(vim.fn.bufnr(), mod)
-        end
-        if workflow == 'tmux' then
-            map('t', mod, '<C-\\><C-n>', {})
-        end
     end
     mode = new_mode
     if mode == 'P' then
         vim.fn.timer_start(1, function()
-            if workflow == 'azul' then
-                require('cheatsheet').stop(vim.fn.bufnr(), mod)
-            end
             if workflow == 'tmux' then
-                vim.api.nvim_command('tunmap ' .. mod)
                 vim.api.nvim_command('startinsert')
             end
             if M.options.hide_in_passthrough then
@@ -340,9 +345,7 @@ M.enter_mode = function(new_mode)
     if real_mode ~= new_mode and workflow ~= 'tmux' then
         M.suspend()
         vim.api.nvim_command('startinsert')
-        vim.fn.timer_start(1, function()
-            M.resume()
-        end)
+        M.resume()
     end
 end
 
@@ -454,7 +457,7 @@ cmd({'ModeChanged'}, {
 
 cmd({'UiEnter'}, {
     pattern = {'*'}, callback = function(_)
-        M.feedkeys('<C-\\><C-n>i', 't')
+        -- M.feedkeys('<C-\\><C-n>i', 't')
         -- vim.fn.timer_start(1, function()
         --     M.enter_mode('')
         --     vim.api.nvim_command('startinsert')
@@ -554,52 +557,37 @@ L.get_real_mode = function(m)
     return (L.is_vim_mode(m) and m) or ((workflow == 'tmux' and 'n') or 't')
 end
 
-local get_sensitive_ls = function(ls)
-    if ls == nil then
-        return ls
-    end
-    local p = '^(<[amsc])(.*)$'
-    local p1, p2 = (ls .. ""):lower():match(p)
-    if p1 == nil then
-        return ls
-    end
-    return p1:lower() .. p2
-end
-
 local do_set_key_map = function(map_mode, ls, rs, options)
-    local pref1 = (workflow == 'azul' and map_mode == 't' and mod) or ''
-    -- if L.is_vim_mode(map_mode) then
-    --     vim.api.nvim_set_keymap(map_mode, pref1 .. ls .. '', rs .. '', options)
-    -- end
-    local mappings = vim.tbl_filter(function(m)
-        return m.m == map_mode and get_sensitive_ls(m.ls) == get_sensitive_ls(ls) and m.pref == pref1
+    local map = funcs.find(function(m)
+        return m.m == map_mode and funcs.get_sensitive_ls(m.ls) == funcs.get_sensitive_ls(ls)
     end, mode_mappings)
     local _mode = L.get_real_mode(map_mode)
-    if #mappings == 0 then
+    if map == nil then
         table.insert(mode_mappings, {
-            m = map_mode, ls = ls, rs = rs, options = options, pref = pref1, real_mode = _mode
+            m = map_mode, ls = ls, rs = rs, options = options, real_mode = _mode
         })
     else
-        local x = mappings[1]
-        x.m = map_mode
-        x.ls = ls
-        x.rs = rs
-        x.options = options
-        x.pref = pref1
-        x.real_mode = _mode
+        map.m = map_mode
+        map.ls = ls
+        map.rs = rs
+        map.options = options
+        map.real_mode = _mode
     end
 end
 
 M.remove_key_map = function(m, ls)
-    local pref1 = (workflow == 'azul' and m == 't' and mod) or ''
-    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls or m.pref ~= pref1 end, mode_mappings)
+    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls end, mode_mappings)
 end
 
 L.unmap_all = function(mode)
+    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and M.options.use_cheatsheet then
+        return
+    end
     local cmds = {}
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
+    local pref = (workflow == 'azul' and mode == 't' and mod) or ''
     for _, m in ipairs(collection) do
-        local cmd = m.real_mode .. 'unmap ' .. m.pref .. m.ls
+        local cmd = m.real_mode .. 'unmap ' .. pref .. m.ls
         if vim.tbl_contains(cmds, cmd) == false then
             local result = pcall(function() vim.api.nvim_command(cmd) end)
             if not result then
@@ -611,9 +599,13 @@ L.unmap_all = function(mode)
 end
 
 L.remap_all = function(mode)
+    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and M.options.use_cheatsheet then
+        return
+    end
     local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
+    local pref = (workflow == 'azul' and mode == 't' and mod) or ''
     for _, m in ipairs(collection) do
-        vim.api.nvim_set_keymap(m.real_mode, m.pref .. m.ls, m.rs, m.options)
+        vim.api.nvim_set_keymap(m.real_mode, pref .. m.ls, m.rs, m.options)
     end
 end
 
@@ -656,7 +648,7 @@ end
 
 M.move_current_float = function(dir, inc)
     local buf = vim.fn.bufnr()
-    local t = find(function(t) return t.buf == buf end, terminals)
+    local t = funcs.find(function(t) return t.buf == buf end, terminals)
     local conf = vim.api.nvim_win_get_config(0)
     if conf.relative == "" then return end
     local row, col = conf["row"], conf["col"]
@@ -751,20 +743,8 @@ M.current_mode = function()
     return mode
 end
 
-M.reload_config = function()
-    M.set_workflow(workflow, mod)
-    local terms = terminals
-    is_reloading = true
-    -- vim.cmd('source ' .. os.getenv('AZUL_PREFIX') .. '/nvim/lua/azul.lua')
-    vim.cmd('source ' .. os.getenv('AZUL_PREFIX') .. '/nvim/init.lua')
-    -- dofile(os.getenv('AZUL_PREFIX') .. '/nvim/lua/azul.lua')
-    -- dofile(os.getenv('AZUL_PREFIX') .. '/nvim/init.lua')
-    is_reloading = false
-    terminals = terms
-end
-
 M.send_to_buf = function(buf, data, escape)
-    local t = find(function(t) return t.buf == buf end, terminals)
+    local t = funcs.find(function(t) return t.buf == buf end, terminals)
     if t == nil then
         return
     end
@@ -785,11 +765,14 @@ M.get_tab_terminal = function(n)
         return M.get_current_terminal()
     end
 
-    return find(function(t) return t.buf == vim.api.nvim_tabpage_get_var(n, 'current_buffer') end, terminals)
+    return funcs.find(function(t) return t.buf == vim.api.nvim_tabpage_get_var(n, 'current_buffer') end, terminals)
 end
 
 M.split = function(dir)
     local t = M.get_current_terminal()
+    if M.is_float(t) then
+        L.error("You can only split an embeded pane", nil)
+    end
     add_to_history(vim.fn.bufnr("%"), "split", {dir}, t.tab_id)
     local cmd = 'new'
     if dir == 'left' or dir == 'right' then
@@ -807,11 +790,10 @@ M.split = function(dir)
         vim.o.splitbelow = true
     end
 
-    vim.fn.timer_start(1, function()
-        vim.api.nvim_command(cmd)
-        vim.o.splitright = splitright
-        vim.o.splitbelow = splitbelow
-    end)
+    vim.api.nvim_command(cmd)
+    M.open(false)
+    vim.o.splitright = splitright
+    vim.o.splitbelow = splitbelow
 end
 
 M.position_current_float = function(where)
@@ -831,6 +813,7 @@ M.position_current_float = function(where)
         conf.col = 0
     end
     vim.api.nvim_win_set_config(0, conf)
+    refresh_win_config(t)
 end
 
 M.redraw = function()
@@ -841,14 +824,35 @@ M.redraw = function()
     end)
 end
 
-M.set_workflow = function(w, m)
-    if mod ~= nil and mod ~= '' and workflow == 'tmux' then
-        vim.api.nvim_command('tunmap ' .. mod)
-    end
+M.set_workflow = function(w, _use_cheatsheet, m)
+    local cheatsheet = (_use_cheatsheet == nil) or _use_cheatsheet
     mod = m or '<C-s>'
     workflow = w
-    if m ~= '' and workflow == 'tmux' then
-        map('t', mod, '<C-\\><C-n>', {})
+    if workflow == 'tmux' and not cheatsheet then
+        vim.api.nvim_set_keymap('t', mod, '', {
+            callback = function()
+                M.enter_mode('n')
+                M.feedkeys('<C-\\><C-n>', 't')
+            end
+        })
+    elseif (workflow == 'azul' or workflow == 'tmux') and cheatsheet then
+        vim.api.nvim_set_keymap('t', mod, '', {
+            callback = function()
+                if mode == 'P' then
+                    M.send_to_current(mod, true)
+                    return
+                end
+                if mode ~= 't' then
+                    return
+                end
+                if workflow == 'tmux' then
+                    M.enter_mode('n')
+                    M.feedkeys('<C-\\><C-n>', 't')
+                end
+                trigger_event('ModifierTrigger', {(workflow == 'azul' and 't') or 'n'})
+            end,
+            desc = '',
+        })
     end
 end
 
@@ -858,26 +862,6 @@ end
 
 M.resume = function()
     is_suspended = false
-end
-
-M.save_splits = function()
-    splits = {}
-    for _, t in ipairs(vim.tbl_filter(function(x) return not M.is_float(x) end, terminals)) do
-        table.insert(splits, {
-            win_id = t.win_id,
-            height = vim.api.nvim_win_get_height(t.win_id),
-            width = vim.api.nvim_win_get_width(t.win_id),
-        })
-    end
-end
-
-M.restore_splits = function()
-    for _, s in ipairs(splits) do
-        if vim.api.nvim_win_is_valid(s.win_id) then
-            vim.api.nvim_win_set_height(s.win_id, s.height)
-            vim.api.nvim_win_set_width(s.win_id, s.width)
-        end
-    end
 end
 
 M.resize = function(direction)
@@ -908,11 +892,11 @@ local deserialize = function(var)
 end
 
 L.term_by_panel_id = function(id)
-    return find(function(t) return t.panel_id == id end, terminals)
+    return funcs.find(function(t) return t.panel_id == id end, terminals)
 end
 
 L.term_by_buf_id = function(id)
-    return find(function(t) return t.buf == 1 * id end, terminals)
+    return funcs.find(function(t) return t.buf == 1 * id end, terminals)
 end
 
 local get_custom_values = function()
@@ -943,20 +927,16 @@ M.save_layout = function(where)
         customs = get_custom_values(),
     }))
     f:close()
-end
-
-L.log = function(msg, file)
-    local f = io.open(file, "a+")
-    if f == nil then
-        return
-    end
-    f:write(msg)
-    f:write("\n")
-    f:close()
+    trigger_event("LayoutSaved")
 end
 
 L.error = function(msg, h)
-    error(msg .. " at " .. vim.inspect(h))
+    local _m = msg
+    if h ~= nil then
+        _m = _m .. " at " .. vim.inspect(h)
+    end
+    trigger_event("Error", {_m})
+    error(_m)
 end
 
 local post_restored = function(t, customs, callback)
@@ -1124,6 +1104,7 @@ L.restore_ids = function()
     end
     panel_id = panel_id + 1
     tab_id = tab_id + 1
+    trigger_event("LayoutRestored")
 end
 
 L.histories_by_tab_id = function(tab_id, history)
@@ -1137,11 +1118,11 @@ end
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
     if #terminals > 1 then
-        error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened")
+        L.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
     end
     local f = io.open(where, "r")
     if f == nil then
-        error("Could not open " .. where)
+        L.error("Could not open " .. where, nil)
     end
     local h = deserialize(f:read("*a"))
     h.callback = callback
@@ -1293,11 +1274,32 @@ M.on = function(ev, callback)
 
     for _, e in ipairs(to_add) do
         if not vim.tbl_contains(vim.tbl_keys(events), e) then
-            error(e .. " event does not exists")
+            L.error(e .. " event does not exists", nil)
         end
 
-        table.insert(events[ev], callback)
+        table.insert(events[e], callback)
     end
+end
+
+M.clear_event = function(ev, callback)
+    if not vim.tbl_contains(vim.tbl_keys(events), ev) then
+        L.error(ev .. " event does not exists", nil)
+    end
+    if callback == nil then
+        events[ev] = {}
+        return
+    end
+
+    events[ev] = vim.tbl_filter(function(c) return c == callback end, events[ev])
+end
+
+M.get_mode_mappings = function()
+    return mode_mappings
+end
+
+M.block_input = function()
+    trigger_event('AboutToBeBlocked')
+    return vim.fn.keytrans(vim.fn.getcharstr())
 end
 
 return M

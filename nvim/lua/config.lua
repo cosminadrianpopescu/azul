@@ -74,7 +74,9 @@ M.default_config = {
         clipboard = "unnamedplus",
         encoding = "utf-8",
         hide_in_passthrough = false,
-        passthrough_escape = '<C-\\><C-s>'
+        passthrough_escape = '<C-\\><C-s>',
+        modifer_timeout = 500,
+        use_cheatsheet = true,
     },
     shortcuts = {
         azul = {
@@ -570,7 +572,11 @@ M.load_config = function(where)
                     M.default_config.shortcuts[wf][mode][action] = keys
                 else
                     for arg, real_keys in pairs(keys) do
-                        M.default_config.shortcuts[wf][mode][action][arg] = real_keys
+                        if M.default_config.shortcuts[wf][mode][action] == nil then
+                            print("The action " .. action .. " does not exists")
+                        else
+                            M.default_config.shortcuts[wf][mode][action][arg] = real_keys
+                        end
                     end
                 end
             end
@@ -581,8 +587,6 @@ end
 M.apply_config = function(_config)
     local config = _config or M.default_config
     local wf = config.options.workflow
-    local c = require('cheatsheet')
-    c.set_wk(wf, M.default_config.options.modifier)
     local do_setshortcut = function(shortcuts, mode)
         for action, keys in pairs(shortcuts) do
             if type(keys) ~= 'table' then

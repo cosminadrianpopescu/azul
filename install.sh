@@ -68,6 +68,7 @@ cp $AZUL_DIR/nvim/lua/disabled-theme.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/config.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/azul.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/sessions.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/functions.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/init.lua $AZUL_PREFIX/share/azul/nvim
 
 if [ ! -d $AZUL_CONFIG ]
@@ -89,7 +90,6 @@ then
 fi
 
 install_from_github "nvim-lualine" "lualine.nvim" "b431d228b7bbcdaea818bdc3e25b8cdbe861f056"
-install_from_github "folke" "which-key.nvim" "6c1584eb76b55629702716995cca4ae2798a9cca"
 install_from_github "nvim-lua" "plenary.nvim" "2d9b06177a975543726ce5c73fca176cedbffe9d"
 install_from_github "nvim-telescope" "telescope.nvim" "eae0d8fbde590b0eaa2f9481948cd6fd7dd21656"
 
