@@ -199,6 +199,16 @@ the cursor is `:highlight TermCursor`.
 If this is something that you cannot live without (having a proper cursor
 inside your terminal), again, `azul` is probably not for you yet.
 
+This is currently solved in the latest nightly neovim. You can use the latest
+nvim 0.11-dev to take advantage of a fully functional cursor. See [this
+PR](https://github.com/neovim/neovim/pull/31562).
+
+If you want to just test the new cursor, but you don't want yet to switch
+fully to neovim nightly, you can download the nightly nvim in `/opt`, and then
+run the install like this: `AZUL_NVIM_EXE=/opt/nvim.appimage ./install.sh`.
+This will use the nvim nightly only for `azul`, while when doing `nvim` in
+your `azul` environment will start your current `nvim` version.
+
 ## Terminology
 
 `Azul` uses the following terminology: tabs, panes and floats
@@ -307,15 +317,17 @@ workflow. This combination will not be sent automatically to your shell, even
 when in `TERMINAL` mode.
 
 With a `tmux` workflow, the modifier will automatically put `azul` in `AZUL`
-mode. The next key will be sent to azul, instead of your terminal. You can
-click `i` or `<ins>` if you change your mind and you want to get back to
-`TERMINAL` mode, or you can press for example `p` to switch to `PANE SELECT`
-mode.
+mode and it will show you (if `use_cheatseet` option is set to true) a list of
+possible shortcuts. The next key will be sent to azul, instead of your
+terminal. You can click `<esc>` or `<C-c>` if you change your mind and you
+want to get back to `TERMINAL` mode, or you can press for example `p` to
+switch to `PANE SELECT` mode.
 
-With an `azul` workflow, the modifier will show you the next possible keys on
-the bottom of the page, but will stay in `TERMINAL` mode. If the next key is
-an `azul` shortcut, then an `azul` command will be executed. If no, then both
-keys (the modifier and the following key) will be sent to the current shell.
+With an `azul` workflow, the modifier will show you the next possible keys (if
+`use_cheatsheet` options is set to true) on the bottom of the page, but will
+stay in `TERMINAL` mode. If the next key is an `azul` shortcut, then an `azul`
+command will be executed. If no, then both keys (the modifier and the
+following key) will be sent to the current shell.
 
 ### Emacs workflow
 
@@ -354,8 +366,8 @@ You are all the time in the `TERMINAL` mode, you have a modifier (default
 
 Unlike `tmux` workflow, when you click the modifier `azul` will remain in
 `TERMINAL` mode, but will wait for the next key and is going to interpret it
-like an `azul` command. If you wait for 300 ms, then you will also have a help
-indicating what are the possible commands that you can send to `azul`.
+like an `azul` command if it's a known shortcut, or if not, will send `<C-s>`
+followed by the key you pressed to your interpreter.
 
 ## Mouse support
 
@@ -387,13 +399,9 @@ following: `:AzulSelectPane left<cr>` (the `<cr>` represents `enter`).
 
 Hiddens all the floats. 
 
-**Parameters**: none
-
 #### AzulOpen
 
 Opens a new tab with a new shell. 
-
-**Parameters**: none
 
 #### AzulEnterMode
 
@@ -405,11 +413,9 @@ Puts `azul` in the requested mode.
 
 #### AzulShowFloats
 
-Shows the currently opened floats. If no floats is created yet, then nothing
+Shows the currently opened floats. If no floats are created yet, then nothing
 will be shown. If the option `link_floats_with_tabs` is true, then it shows
 the currently opened floats on the current tab.
-
-**Parameters**: none
 
 #### AzulOpenFloat
 
@@ -417,14 +423,10 @@ Creates a new float on the current tab. If the option `link_floats_with_tabs`
 is set to `true`, then this float will only be visible on the currently
 selected tab.
 
-**Parameters**: none
-
 #### AzulToggleFloats
 
 Toggles the opened floats visibility. If `link_floats_with_tabs` is true, then
 it toggles the visibility of opened floats for the current tab.
-
-**Parameters**: none
 
 #### AzulMoveCurrentFloat
 
@@ -474,8 +476,6 @@ Positions the currently selected floating pane in a region of the screen.
 
 Redraws the terminal
 
-**Parameters**: none
-
 #### AzulSuspend
 
 Suspends all the `azul` events. This is an usefull command for advanced users
@@ -483,8 +483,6 @@ who might want to open something in an underlying `nvim` buffer. Normally,
 that something would be overriten by a new shell. In order to prevent this,
 you can suspend the `azul` events, finish your job and then resume the `azul`
 events.
-
-**Parameters**: none
 
 #### AzulResume
 
@@ -494,13 +492,9 @@ that something would be overriten by a new shell. In order to prevent this,
 you can suspend the `azul` events, finish your job and then resume the `azul`
 events.
 
-**Parameters**: none
-
 #### AzulDisconnect
 
 Disconnects the current session
-
-**Parameters**: none
 
 #### AzulSaveLayout
 
@@ -512,8 +506,6 @@ file, using `tab` for autocompletion.
 `Azul` has very powerfull features for saving and restoring saved sessions.
 See the [Session restore section](#session-restore)
 
-**Parameters**: none
-
 #### AzulRestoreLayout
 
 Restores a saved layout. Uppon invoking this command, you will be met with a
@@ -523,16 +515,6 @@ file, using `tab` for autocompletion.
 
 `Azul` has very powerfull features for saving and restoring saved sessions.
 See the [Session restore section](#session-restore)
-
-#### AzulSetWinId
-
-Sets an azul windows id for the currently selected pane. See the [Session
-restore section](#session-restore) for why you would set and how you would use
-this id
-
-**Parameters**:
-
-* the id of the pane
 
 #### AzulSetCmd
 
@@ -550,13 +532,9 @@ Starts logging the current terminal scrollback buffer.
 **Note**: this commands does not log what is visibile on the screen. Only what
 is in the scroll buffer.
 
-**Parameters**: none
-
 #### AzulStopLogging
 
 If started, stops the current terminal logging of the scroll buffer.
-
-**Parameters**: none
 
 #### AzulSetWinId
 
@@ -625,18 +603,18 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **hide_in_passthrough** If true, then when in passthrough mode, hide the
   status line of the passed through session (default false)
 * **use_cheatsheet** If this is set to true, for `azul` and `tmux` workflows, a
-  cheatsheet will be displayed after you click the modified key (default true)
+  cheatsheet will be displayed after you click the modifier key (default true)
 * **modifer_timeout** The milliseconds to wait for a key sequence after the
   modifier has been clicked (for `azul` or `tmux` worklows and only if
-  `cheatsheet` option is set to true). In `azul` or `tmux` workflows, after
-  you click the modifier, if the `cheatsheet` option is true, then the list of
+  `use_cheatsheet` option is set to ``). In `azul` or `tmux` workflows, after
+  you click the modifier, if the `use_cheatsheet` option is true, then the list of
   the possible keys will be displayed. If you have combination of multiple
   keys, this timeout is the time that `azul` will wait for the combination to
   be finished (default 500)
 
 ### Shortcuts
 
-`Azul` can use any shortcuts that `vim` can use. As a notation, to set up a
+`Azul` can use any shortcuts that `nvim` can use. As a notation, to set up a
 `ctrl`, `alt` of `shift` shortcut, you need to enclose the shortcut between
 `<` and `>`. So, for example, to set a `ctrl` + `s` shortcut, you would
 define it as `<C-s>`. You can see the example files inside the `examples`
@@ -1118,8 +1096,8 @@ done via the `clipboard` setting. You can see the meaning of it and also
 possible options for possible operating systems
 [here](https://neovim.io/doc/user/options.html#'clipboard').
 
-For vim users, you also have `<C-s>pp` for example to paste in `TERMINAL` mode
-in `azul` workflow or `y` in `VISUAL` mode for multiple workflows. 
+For `nvim` users, you also have `<C-s>pp` for example to paste in `TERMINAL`
+mode in `azul` workflow or `y` in `VISUAL` mode for multiple workflows. 
 
 Whenever you select a text with the mouse, you can then click `<C-c>` and
 `<C-v>`. This will paste the currently selected text into the currently
@@ -1172,11 +1150,35 @@ instead `AzulSetWinId`. This will set a variable identifier on the currently
 selected pane that will be saved together with the layout. 
 
 To restore the layout, instead of calling the `AzulRestoreLayout` command, you
-can call in a lua file the `azul.restore_layout` function, which take as a
-first argument the file where the layout is saved and as a second a callback
-with 2 parameters: the azul terminal structure and the this id. This gives you
-a much more flexibility to set up your pane upon a layout restore. For more
-details, see the [`azul` api](./api.md)
+can call in a lua file the `azul.restore_layout` function, which takes as a
+first argument the file where the layout is saved and as a second argument a
+callback with 2 parameters: the azul terminal structure and the this id. This
+gives you a much more flexibility to set up your pane upon a layout restore.
+
+For example: `:AzulSaveLayout<cr>`, and then
+`~/azul-sessions/my-saved-session.layout<cr>`. This will save the current
+layout in the `~/azul-sessions/my-saved-session.layout` file.
+
+Then, to restore it, create the following script and saved it in
+`~/azul-sessions/my-saved-session.lua` file:
+
+```lua
+require('azul').restore_layout('~/azul-sessions/my-saved-session.layout', function(t, id)
+    if id == "vifm" then
+        azul.send_to_buf(t.buf, 'vifm<cr>', true)
+        vim.fn.timer_start(1000, function()
+            azul.send_to_buf(t.buf, ':session my-vifm-session<cr>', true)
+        end)
+    end
+end)
+```
+
+Then, in azul, you can do: `<C-s>n` (this will put azul in `AZUL` mode) and
+then `:luafile ~/tmp/my-saved-session.lua<cr>`. This will run the above
+script, which in turn, for the pane with the id `vifm` (split, tab or float)
+will execute `vifm<cr>`, wait one second for `vifm` to open and then execute
+`:session my-vifm-session<cr>`. So, this should restore your `vifm` pane and
+inside this pane, should also restore your saved `vifm` session.
 
 ## Lua API
 
