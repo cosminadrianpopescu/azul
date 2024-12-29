@@ -17,7 +17,7 @@ will add a window management system.
 Please note that `azul` is not a `neovim` plugin. `Azul` will launch a neovim
 instance, but that instance is sandboxed. It will not interfere with any
 settings of another `neovim` instance that you might have on your system.
-You can run `~/.local/bin/azul -l my-sesssion`, and then in the current pane
+You can run `~/.local/bin/azul -a my-sesssion`, and then in the current pane
 (or in any `azul` panes for that matter) you can run `nvim`. The neovim
 started there will be your local `neovim`, with it's own settings.
 
@@ -463,7 +463,6 @@ install there a plugin manager. By default, `azul` uses the following `neovim`
 plugins:
 
 * [lualine](https://github.com/nvim-lualine/lualine.nvim) 
-* [which-key](https://github.com/folke/which-key.nvim)
 * [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
 * [nvim-telescope](https://github.com/nvim-telescope/telescope.nvim)
 
