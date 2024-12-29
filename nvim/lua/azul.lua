@@ -883,10 +883,6 @@ M.disconnect = function()
     end
 end
 
-local serialize = function(var)
-    return string.gsub(string.gsub(vim.inspect(var), "\n", "\\n"), "'", "\\'")
-end
-
 local deserialize = function(var)
     return loadstring("return " .. string.gsub(var, "\\n", "\n"))()
 end
