@@ -572,7 +572,11 @@ M.load_config = function(where)
                     M.default_config.shortcuts[wf][mode][action] = keys
                 else
                     for arg, real_keys in pairs(keys) do
-                        M.default_config.shortcuts[wf][mode][action][arg] = real_keys
+                        if M.default_config.shortcuts[wf][mode][action] == nil then
+                            print("The action " .. action .. " does not exists")
+                        else
+                            M.default_config.shortcuts[wf][mode][action][arg] = real_keys
+                        end
                     end
                 end
             end

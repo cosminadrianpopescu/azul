@@ -104,6 +104,7 @@ async function loop_tests(idx: number) {
     await run_test(TO_RUN[idx]);
     assert_test_passed(TO_RUN[idx]);
     await new Promise(resolve => setTimeout(resolve, 500));
+    console.log("");
     return loop_tests(idx + 1);
 }
 

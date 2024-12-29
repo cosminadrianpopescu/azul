@@ -21,7 +21,7 @@ end
 
 local log = function(msg, file)
     if file == nil then
-        error("NO LOG TO WRITE TO")
+        file = "/tmp/azul-log"
     end
     local f = io.open(file, "a+")
     if f == nil then

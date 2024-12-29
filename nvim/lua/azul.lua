@@ -77,7 +77,6 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    funcs.log("TRIGGERING " .. vim.inspect(ev), "/tmp/azul-log")
     if not vim.tbl_contains(vim.tbl_keys(events), ev) then
         return
     end
@@ -99,8 +98,8 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
-    print("OPTIONS ARE " .. vim.inspect(M.options))
+    print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
+    -- print("OPTIONS ARE " .. vim.inspect(M.options))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
     -- print("EV IS " .. vim.inspect(ev))
     -- print("WIN IS " .. vim.fn.winnr())
@@ -744,18 +743,6 @@ M.current_mode = function()
     return mode
 end
 
-M.reload_config = function()
-    M.set_workflow(workflow, mod)
-    local terms = terminals
-    is_reloading = true
-    -- vim.cmd('source ' .. os.getenv('AZUL_PREFIX') .. '/nvim/lua/azul.lua')
-    vim.cmd('source ' .. os.getenv('AZUL_PREFIX') .. '/nvim/init.lua')
-    -- dofile(os.getenv('AZUL_PREFIX') .. '/nvim/lua/azul.lua')
-    -- dofile(os.getenv('AZUL_PREFIX') .. '/nvim/init.lua')
-    is_reloading = false
-    terminals = terms
-end
-
 M.send_to_buf = function(buf, data, escape)
     local t = funcs.find(function(t) return t.buf == buf end, terminals)
     if t == nil then
@@ -837,24 +824,32 @@ M.redraw = function()
     end)
 end
 
-M.set_workflow = function(w, m)
+M.set_workflow = function(w, _use_cheatsheet, m)
+    local cheatsheet = (_use_cheatsheet == nil) or _use_cheatsheet
     mod = m or '<C-s>'
     workflow = w
-    if workflow == 'azul' or workflow == 'tmux' then
+    if workflow == 'tmux' and not cheatsheet then
         vim.api.nvim_set_keymap('t', mod, '', {
             callback = function()
-                if mode == 'P' or not M.options.use_cheatsheet then
+                M.enter_mode('n')
+                M.feedkeys('<C-\\><C-n>', 't')
+            end
+        })
+    elseif (workflow == 'azul' or workflow == 'tmux') and cheatsheet then
+        vim.api.nvim_set_keymap('t', mod, '', {
+            callback = function()
+                if mode == 'P' then
                     M.send_to_current(mod, true)
                     return
                 end
                 if mode ~= 't' then
                     return
                 end
-                trigger_event('ModifierTrigger', {(workflow == 'azul' and 't') or 'n'})
                 if workflow == 'tmux' then
                     M.enter_mode('n')
                     M.feedkeys('<C-\\><C-n>', 't')
                 end
+                trigger_event('ModifierTrigger', {(workflow == 'azul' and 't') or 'n'})
             end,
             desc = '',
         })

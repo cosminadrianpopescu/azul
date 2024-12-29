@@ -11,7 +11,7 @@ local cfg = require('config')
 if files.exists(files.config_dir .. '/config.ini') then
     cfg.load_config(files.config_dir .. '/config.ini')
 end
-azul.set_workflow(cfg.default_config.options.workflow, cfg.default_config.options.modifier)
+azul.set_workflow(cfg.default_config.options.workflow, cfg.default_config.options.use_cheatsheet, cfg.default_config.options.modifier)
 cfg.apply_config()
 
 require('commands').setup()

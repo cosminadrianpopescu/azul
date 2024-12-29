@@ -86,6 +86,11 @@ local wait_input = function(mode, win_id)
                 try_select(collection, c, mode, win_id)
                 return
             end
+            if new_char == '<c-s>' and c == '' then
+                azul.send_to_current('<c-s>', true)
+                close_window(win_id)
+                return
+            end
             before_c = c
             c = c .. new_char
             collection = vim.tbl_filter(function(x) return funcs.get_sensitive_ls(x.ls):match("^" .. c) end, collection)
