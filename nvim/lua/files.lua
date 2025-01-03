@@ -34,6 +34,15 @@ M.read_file = function(which)
     return result
 end
 
+M.write_file = function(which, content)
+    local f = io.open(which, "w")
+    if f == nil then
+        return
+    end
+    f:write(content)
+    f:close()
+end
+
 M.read_ini = function(which)
     local txt = M.read_file(which)
     local result = {}

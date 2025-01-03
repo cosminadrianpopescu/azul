@@ -1,6 +1,7 @@
 local cmd = vim.api.nvim_create_autocmd
 local map = vim.api.nvim_set_keymap
 local funcs = require('functions')
+local FILES = require('files')
 
 local is_suspended = false
 
@@ -306,6 +307,36 @@ local OnTermClose = function(ev)
     end)
 end
 
+local session_child_file = function(for_parent)
+    return os.getenv('AZUL_RUN_DIR') .. '/' .. os.getenv((for_parent and 'AZUL_PARENT_SESSION') or 'AZUL_SESSION') .. '-child'
+end
+
+local has_child_sessions_in_passthrough = function()
+    local f = session_child_file()
+    if not FILES.exists(f) then
+        return false
+    end
+
+    local content = FILES.read_file(f)
+    return content:gsub('[\n\r\t]', '') == 'true'
+end
+
+local anounce_passthrough = function()
+    local f = session_child_file(true)
+    if not FILES.exists(f) then
+        return
+    end
+    FILES.write_file(f, "true")
+end
+
+local recall_passthrough = function()
+    local f = session_child_file(true)
+    if not FILES.exists(f) then
+        return
+    end
+    FILES.write_file(f, "")
+end
+
 --- Enters a custom mode. Use this function for changing custom modes
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'
 M.enter_mode = function(new_mode)
@@ -315,6 +346,7 @@ M.enter_mode = function(new_mode)
         if M.options.hide_in_passthrough then
             vim.o.laststatus = global_last_status
         end
+        recall_passthrough()
         vim.api.nvim_command('tunmap ' .. (L.passthrough_escape or M.options.passthrough_escape))
         L.passthrough_escape = nil
     end
@@ -329,8 +361,13 @@ M.enter_mode = function(new_mode)
                 vim.o.laststatus = 0
             end
         end)
+        anounce_passthrough()
         map('t', (L.passthrough_escape or M.options.passthrough_escape), '', {
             callback = function()
+                if has_child_sessions_in_passthrough() then
+                    M.send_to_current('<C-\\><C-s>', true)
+                    return
+                end
                 M.enter_mode('t')
             end
         })
