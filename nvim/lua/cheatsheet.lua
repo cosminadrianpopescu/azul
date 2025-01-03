@@ -21,12 +21,16 @@ local close_window = function(win_id)
 end
 
 local select = function(m, mode, win_id)
+    local err
     if m.options.callback ~= nil then
-        m.options.callback()
+        _, err = pcall(function() m.options.callback() end)
     elseif m.rs ~= nil then
-        azul.feedkeys(m.rs, mode)
+        _, err = pcall(function() azul.feedkeys(m.rs, mode) end)
     end
     close_window(win_id)
+    if err then
+        error(err)
+    end
 end
 
 local try_select = function(collection, c, mode, win_id)
