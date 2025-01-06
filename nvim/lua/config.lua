@@ -77,6 +77,7 @@ M.default_config = {
         passthrough_escape = '<C-\\><C-s>',
         modifer_timeout = 500,
         use_cheatsheet = true,
+        blocking_cheatsheet = true,
     },
     shortcuts = {
         azul = {

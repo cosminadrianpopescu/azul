@@ -3,6 +3,12 @@ local funcs = require('functions')
 local M = {}
 local cfg = require('config')
 
+local win_id = nil
+local mappings = {
+    modifier = nil,
+    esc = nil,
+    cc = nil,
+}
 local timer = nil
 local timer_set = false
 
@@ -53,6 +59,18 @@ local get_mappings_for_mode = function(mode)
     return vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
 end
 
+local find_map = function(which, mode)
+    return funcs.find(function(m) return m.lhs == which end, vim.api.nvim_get_keymap(mode))
+end
+
+local restore_map = function(mode, which, map)
+    vim.api.nvim_set_keymap(mode, which, map.rhs or '', {
+        nowait = map.nowait, silent = map.silent, expr = map.expr,
+        unique = map.unique, callback = map.callback or nil,
+        noremap = map.noremap, desc = map.desc,
+    })
+end
+
 local wait_input = function(mode, win_id)
     local collection = get_mappings_for_mode(mode)
     local c = ''
@@ -61,15 +79,11 @@ local wait_input = function(mode, win_id)
     while true do
         -- Prevent Keyboard interrupt error when pressing <C-c>. 
         -- See https://github.com/neovim/neovim/issues/16416
-        local cc_maps = funcs.find(function(m) return m.lhs == '<C-C>' end, vim.api.nvim_get_keymap('n'))
+        local cc_map = find_map('<C-C>', 'n')
         vim.api.nvim_set_keymap('n', '<C-c>', '<Esc>', {})
         local trans = azul.block_input()
-        if cc_maps ~= nil then
-            vim.api.nvim_set_keymap('n', '<C-c>', cc_maps.rhs or '', {
-                nowait = cc_maps.nowait, silent = cc_maps.silent, expr = cc_maps.expr,
-                unique = cc_maps.unique, callback = cc_maps.callback or nil,
-                noremap = cc_maps.noremap, desc = cc_maps.desc,
-            })
+        if cc_map ~= nil then
+            restore_map('n', '<C-c>', cc_map)
         else
             vim.api.nvim_del_keymap('n', '<C-c>')
         end
@@ -177,12 +191,83 @@ local create_window = function(mode)
     return win_id
 end
 
+local restore_previous_mappings = function(mode, modifier)
+    vim.api.nvim_del_keymap('t', modifier)
+    vim.api.nvim_del_keymap(mode, '<esc>')
+    vim.api.nvim_del_keymap(mode, '<C-c>')
+    if mappings.modifier ~= nil then
+        restore_map('t', modifier, mappings.modifier)
+    end
+    if mappings.esc ~= nil then
+        restore_map(mode, '<esc>', mappings.esc)
+    end
+    if mappings.cc ~= nil then
+        restore_map(mode, '<C-c>', mappings.cc)
+    end
+end
+
+local unmap_all = function(mode, modifier)
+    restore_previous_mappings(mode, modifier)
+    for _, m in ipairs(get_mappings_for_mode(mode)) do
+        local cmd = m.real_mode .. 'unmap ' .. m.ls
+        local result = pcall(function() vim.api.nvim_command(cmd) end)
+        if not result then
+            print(cmd .. " failed")
+        end
+    end
+end
+
+local save_current_mappings = function(mode, modifier)
+    mappings.modifier = find_map(modifier:upper(), 't')
+    mappings.cc = find_map('<C-C>', mode)
+    mappings.esc = find_map('<Esc>', mode)
+end
+
+local cancel_cheatsheet = function(mode, modifier)
+    close_window(win_id)
+    unmap_all(mode, modifier)
+end
+
+local set_cancel_shortcut = function(which, mode, modifier)
+    vim.api.nvim_set_keymap(mode, which, '', {
+        callback = function()
+            cancel_cheatsheet(mode, modifier)
+        end
+    })
+end
+
+local map_all = function(mode, modifier)
+    save_current_mappings(mode, modifier)
+    vim.api.nvim_set_keymap('t', modifier, '', {
+        callback = function()
+            azul.send_to_current(modifier, true)
+            cancel_cheatsheet(mode, modifier)
+        end
+    })
+    set_cancel_shortcut('<esc>', mode, modifier)
+    set_cancel_shortcut('<C-c>', mode, modifier)
+    for _, m in ipairs(get_mappings_for_mode(mode)) do
+        vim.api.nvim_set_keymap(mode, m.ls, '', {
+            callback = function()
+                unmap_all(mode, modifier)
+                select(m, mode, win_id)
+            end,
+            desc = m.desc,
+        })
+    end
+end
+
 azul.on('ModifierTrigger', function(args)
     local mode = args[1]
-    local win_id = create_window(mode)
-    vim.fn.timer_start(0, function()
-        wait_input(mode, win_id)
-    end)
+    local modifier = args[2]
+    win_id = create_window(mode)
+    if cfg.default_config.options.blocking_cheatsheet then
+        vim.fn.timer_start(0, function()
+            wait_input(mode, win_id)
+        end)
+    else
+        map_all(mode, modifier)
+    end
 end)
 
 return M

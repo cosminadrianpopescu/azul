@@ -879,14 +879,11 @@ M.set_workflow = function(w, _use_cheatsheet, m)
                     M.send_to_current(mod, true)
                     return
                 end
-                if mode ~= 't' then
-                    return
-                end
                 if workflow == 'tmux' then
                     M.enter_mode('n')
                     M.feedkeys('<C-\\><C-n>', 't')
                 end
-                trigger_event('ModifierTrigger', {(workflow == 'azul' and 't') or 'n'})
+                trigger_event('ModifierTrigger', {(workflow == 'azul' and 't') or 'n', mod})
             end,
             desc = '',
         })

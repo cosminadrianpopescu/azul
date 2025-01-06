@@ -57,3 +57,7 @@ f('p', 'h', '', {
 * visual mode shortcuts
 * save session and resurect session shortcuts and commands
 * install vim.ui to ask for files.
+
+* group shortcuts together by action
+* sort by action rather than shortcut
+* show first 2 rows of shortcuts and then have a shortcut to see all.
