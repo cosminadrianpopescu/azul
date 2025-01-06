@@ -558,10 +558,14 @@ M.open_float = function(group, opts)
         local h = (vim.o.lines - factor) / 2
         local x = (vim.o.columns - w) / 2
         local y = (vim.o.lines - h) / 2
-        vim.api.nvim_open_win(buf, true, opts or {
+        local _opts = {
             width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
             focusable = true, zindex = 1, border = 'rounded', title = vim.b.term_title, relative = 'editor', style = 'minimal'
-        })
+        }
+        for k, v in pairs(opts or {}) do
+            _opts[k] = v
+        end
+        vim.api.nvim_open_win(buf, true, _opts)
         trigger_event('FloatOpened', {L.term_by_buf_id(buf)})
     end
     L.current_group = group or 'default'
