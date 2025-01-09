@@ -25,6 +25,7 @@ if cfg.default_config.options.shell then
 end
 vim.o.clipboard = cfg.default_config.options.clipboard
 vim.o.encoding = cfg.default_config.options.encoding
+vim.o.winblend = cfg.default_config.options.opacity
 vim.o.number = false
 vim.o.relativenumber = false
 vim.o.belloff = "all"

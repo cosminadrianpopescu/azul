@@ -611,6 +611,8 @@ or the action directly, for the `emacs` workflow. For more info see the
   the possible keys will be displayed. If you have combination of multiple
   keys, this timeout is the time that `azul` will wait for the combination to
   be finished (default 500)
+* **opacity** The opacity of the floating windows, from 0 - non transparent to
+  100 - fullytransparent (default 0)
 
 ### Shortcuts
 

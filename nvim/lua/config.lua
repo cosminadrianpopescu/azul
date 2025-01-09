@@ -78,6 +78,7 @@ M.default_config = {
         modifer_timeout = 500,
         use_cheatsheet = true,
         blocking_cheatsheet = true,
+        opacity = 0,
     },
     shortcuts = {
         azul = {
