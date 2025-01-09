@@ -204,12 +204,7 @@ local OnEnter = function(ev)
         if t.is_current and t.buf ~= is_current_terminal then
             trigger_event('PaneChanged', {t})
         end
-        if t.win_id ~= nil and vim.api.nvim_win_is_valid(t.win_id) then
-            vim.api.nvim_win_set_option(t.win_id, 'winhl', 'FloatBorder:')
-        end
     end
-    local what = (M.is_float(crt) and 'FloatBorder') or 'WinSeparator'
-    vim.api.nvim_win_set_option(crt.win_id, 'winhl', what .. ':CurrentFloatSel')
     if workflow == 'emacs' or workflow == 'azul' then
         vim.api.nvim_command('startinsert')
     end

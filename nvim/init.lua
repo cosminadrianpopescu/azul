@@ -40,6 +40,7 @@ vim.o.showtabline = 0
 vim.o.timeout = true
 vim.o.timeoutlen = 300
 
+require('theme')
 local config_file = files.config_dir .. '/init.lua'
 if not files.try_load_config(config_file) then
     files.try_load_config(files.config_dir .. '/init.vim')
@@ -47,6 +48,5 @@ end
 vim.o.shadafile = files.config_dir .. '/nvim/shada'
 
 vim.fn.timer_start(1, function()
-    require('theme')
     azul.open()
 end)

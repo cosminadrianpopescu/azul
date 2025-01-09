@@ -15,7 +15,8 @@ if colors.command == nil then
     colors.command = colors.inactive
 end
 
-vim.api.nvim_command('highlight CurrentFloatSel guifg=' .. colors.replace.a.bg)
+vim.api.nvim_command('highlight link AzulCurrentFloat WinFloat')
+vim.api.nvim_command('highlight link AzulInactiveWin Folded')
 vim.api.nvim_set_hl(0, 'NormalFloat', {})
 
 local MOD_MAP = {
@@ -207,6 +208,18 @@ mx.on({'ModeChanged', 'AboutToBeBlocked'}, function()
     end
 
     require('lualine').refresh()
+end)
+
+mx.on({'PaneChanged'}, function(args)
+    local crt = args[1]
+    local what = (mx.is_float(crt) and 'FloatBorder') or 'WinSeparator'
+    local repl = (mx.is_float(crt) and 'AzulCurrentFloat') or 'AzulInactiveWin'
+    vim.api.nvim_set_option_value('winhl', what .. ':' .. repl, {win = crt.win_id, scope = 'local'})
+    for _, t in ipairs(mx.get_terminals()) do
+        if t.win_id ~= crt.win_id and t.win_id ~= nil then
+            vim.api.nvim_set_option_value('winhl', 'Normal:AzulInactiveWin,FloatBorder:AzulInactiveWin,CursorLine:AzulInactiveWin,CursorColumn:AzulInactiveWin,FloatTitle:AzulInactiveWin', {win = t.win_id, scope = 'local'})
+        end
+    end
 end)
 
 return M
