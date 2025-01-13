@@ -5,6 +5,8 @@ local FILES = require('files')
 
 local is_suspended = false
 
+local default_placeholders = { 'tab_n', 'term_title' }
+
 local M = {
     --- If set to true, then list all buffers
     list_buffers = false,
@@ -54,6 +56,7 @@ local events = {
     ModifierTrigger = {},
     AboutToBeBlocked = {},
     WinConfigChanged = {},
+    TabTitleChanged = {},
 }
 
 local L = {}
@@ -388,6 +391,33 @@ cmd({'TabNew', 'VimEnter'}, {
     end
 })
 
+local update_tab_titles = function()
+    for i, t in ipairs(vim.api.nvim_list_tabpages()) do
+        local result, tab_placeholders = pcall(function() return vim.api.nvim_tabpage_get_var(t, 'azul_title_placeholders') end)
+        local placeholders = vim.tbl_extend(
+            'keep', { tab_n = i, term_title = vim.b.term_title },
+            (not result and {}) or tab_placeholders
+        )
+        M.parse_custom_title(
+            M.options.tab_title,
+            placeholders,
+            function(result, placeholders)
+                vim.api.nvim_tabpage_set_var(t, 'azul_title_placeholders', placeholders)
+                vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', result)
+                trigger_event('TabTitleChanged', {i, result, placeholders})
+            end
+        )
+    end
+    for i = 1, vim.fn.tabpagenr('$') do
+    end
+end
+
+cmd({'TabNew', 'TabClosed', 'TabEnter'}, {
+    pattern= '*', callback = function()
+        vim.fn.timer_start(1, update_tab_titles)
+    end
+})
+
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
         if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
@@ -404,6 +434,7 @@ cmd('TermOpen',{
             cwd = vim.fn.getcwd(),
             azul_win_id = azul_win_id,
         })
+        update_tab_titles()
         L.current_group = nil
         OnEnter(ev)
         if #history > 0 and history[#history].to == -1 then
@@ -1329,6 +1360,73 @@ end
 M.block_input = function()
     trigger_event('AboutToBeBlocked')
     return vim.fn.keytrans(vim.fn.getcharstr())
+end
+
+M.user_input = function(prompt, completion, callback)
+    M.suspend()
+    vim.ui.input({
+        prompt =  prompt, 
+        completion = completion,
+    }, function(input)
+        M.resume()
+        if input ~= nil and input ~= '' then
+            callback(input)
+        end
+    end)
+end
+
+M.get_file = function(callback)
+    M.user_input("Select a file:" .. ((M.options.use_dressing and '') or ' '), "file", callback);
+end
+
+L.get_all_vars = function(vars, idx, placeholders, result, when_finished)
+    if idx > #vars then
+        when_finished(result)
+        return
+    end
+
+    local advance = function()
+        L.get_all_vars(vars, idx + 1, placeholders, result, when_finished)
+    end
+
+    local which = vars[idx]
+    if placeholders[which] ~= nil then
+        result[which] = placeholders[which]
+        advance()
+    else
+        M.user_input('Please provide an input for ' .. which, '', function(response)
+            result[which] = response
+            advance(which)
+        end)
+    end
+
+end
+
+local replace_placeholder = function(placeholders, which, where)
+    if placeholders[which] == nil then
+        return where
+    end
+
+    return where:gsub(':' .. which, placeholders[which])
+end
+
+M.parse_custom_title = function(title, placeholders, callback)
+    local result = title or ''
+    local p = ':([a-z_%-A-Z]+)'
+    local vars = {}
+    for m in result:gmatch(p) do
+        if not vim.tbl_contains(vars, m) then
+            table.insert(vars, m)
+        end
+    end
+
+    local _placeholders = {}
+    L.get_all_vars(vars, 1, placeholders, _placeholders, function(vars)
+        for _, p in ipairs(default_placeholders) do
+            result = replace_placeholder(_placeholders, p, result)
+        end
+        callback(result, _placeholders)
+    end)
 end
 
 return M

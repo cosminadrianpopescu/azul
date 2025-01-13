@@ -50,7 +50,9 @@ M.read_ini = function(which)
         return result
     end
 
-    local lines = vim.tbl_map(function (s) return s:gsub("%s+", "") end, split.split(txt, "\n"))
+    local lines = vim.tbl_map(function (s)
+        return vim.fn.substitute(s, '\\v^[ \\t]*([^\\=\\t ]+)[ \\t]*\\=[ \\t]*(.*)$', '\\1=\\2', 'g')
+    end, split.split(txt, "\n"))
     local current_section = nil
     for idx, line in ipairs(lines) do
         if vim.fn.match(line, '\\v^[ ]*#') ~= -1 or vim.fn.match(line, '\\v^[ \\s\\t]*$') ~= -1 then

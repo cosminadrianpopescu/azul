@@ -54,4 +54,9 @@ else {
         cd $prefix\.config\azul\pack\start\telescope.nvim
         git checkout eae0d8fbde590b0eaa2f9481948cd6fd7dd21656 
     }
+    if (-not (Test-Path "$prefix\.config\azul\pack\start\dressing.nvim")) {
+        git clone https://github.com/stevearc/dressing.nvim $prefix\.config\azul\pack\start\dressing.nvim
+        cd $prefix\.config\azul\pack\start\dressing.nvim
+        git checkout 3a45525bb182730fe462325c99395529308f431e
+    }
 }

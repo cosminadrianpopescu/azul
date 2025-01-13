@@ -3,6 +3,22 @@ local cfg = require('config')
 local theme = cfg.default_config.options.theme
 local disabled = require('disabled-theme')
 
+local dressing_opts = {
+    input = {enabled = false},
+    select = {enabled = false},
+}
+if cfg.default_config.options.use_dressing then
+    local opts = {
+        enabled = true,
+        title_pos = 'center',
+        start_mode = 'insert',
+        relative = 'win',
+    }
+    dressing_opts.input = opts
+    dressing_opts.select = opts
+end
+require('dressing').setup(dressing_opts)
+
 local is_disabled = false
 
 local M = {}
@@ -73,7 +89,7 @@ end
 local function tabs(from, to)
     local result = ''
     for t = from, to do
-        result = result .. 'Tab ' .. t
+        result = result .. vim.api.nvim_tabpage_get_var(t, 'azul_tab_title')
 
         if t ~= to then
             result = result .. '  '
@@ -105,7 +121,7 @@ local function next_tabs()
 end
 
 local function current_tab()
-    return 'Tab ' .. vim.fn.tabpagenr()
+    return vim.api.nvim_tabpage_get_var(vim.fn.tabpagenr(), 'azul_tab_title')
 end
 
 local function current_name()
@@ -196,7 +212,7 @@ require('lualine').setup {
     extensions = {}
 }
 
-mx.on({'ModeChanged', 'AboutToBeBlocked'}, function()
+mx.on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function(args)
     if is_disabled and mx.current_mode() ~= 'P' then
         require('lualine').setup({options = {theme = theme}})
         is_disabled = false
