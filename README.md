@@ -612,7 +612,7 @@ or the action directly, for the `emacs` workflow. For more info see the
   keys, this timeout is the time that `azul` will wait for the combination to
   be finished (default 500)
 * **opacity** The opacity of the floating windows, from 0 - non transparent to
-  100 - fullytransparent (default 0)
+  100 - fully transparent (default 0)
 * **use_dressing** If true, use the
   [dressing.nvim](https://github.com/stevearc/dressing.nvim) plugin for user
   input, for example, for file locations when saving and restoring layouts
@@ -643,6 +643,9 @@ without asking for user input:
 * **:tab_n:** will be replaced with the current tab number
 * **:term_title:** will be replaced with the current terminal title as
   suggested by the running terminal in the pane.
+* **:is_current:** will be replaced with the `*` character, if the current tab
+  is selected, giving you the possibility to mark the currently selected tab
+  as in `tmux`.
 
 ### Shortcuts
 
