@@ -398,21 +398,20 @@ local update_tab_titles = function()
             'keep', { tab_n = i, term_title = vim.b.term_title },
             (not result and {}) or tab_placeholders
         )
+        print("UPDATE WITH " .. vim.inspect(placeholders))
         M.parse_custom_title(
             M.options.tab_title,
             placeholders,
-            function(result, placeholders)
+            function(title, placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_title_placeholders', placeholders)
-                vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', result)
-                trigger_event('TabTitleChanged', {i, result, placeholders})
+                vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
+                trigger_event('TabTitleChanged', {i, title, placeholders})
             end
         )
     end
-    for i = 1, vim.fn.tabpagenr('$') do
-    end
 end
 
-cmd({'TabNew', 'TabClosed', 'TabEnter'}, {
+cmd({'TabNew', 'TermClose', 'TabEnter'}, {
     pattern= '*', callback = function()
         vim.fn.timer_start(1, update_tab_titles)
     end
@@ -434,7 +433,6 @@ cmd('TermOpen',{
             cwd = vim.fn.getcwd(),
             azul_win_id = azul_win_id,
         })
-        update_tab_titles()
         L.current_group = nil
         OnEnter(ev)
         if #history > 0 and history[#history].to == -1 then
@@ -447,6 +445,9 @@ cmd('TermOpen',{
         end
         panel_id = panel_id + 1
         azul_win_id = azul_win_id + 1
+        if #terminals == 1 then
+            update_tab_titles()
+        end
     end
 })
 
@@ -1364,11 +1365,13 @@ end
 
 M.user_input = function(prompt, completion, callback)
     M.suspend()
+    vim.fn.timer_start(1, function()
+        M.resume()
+    end)
     vim.ui.input({
         prompt =  prompt, 
         completion = completion,
     }, function(input)
-        M.resume()
         if input ~= nil and input ~= '' then
             callback(input)
         end

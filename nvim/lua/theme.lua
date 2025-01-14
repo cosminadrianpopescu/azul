@@ -88,13 +88,14 @@ end
 
 local function tabs(from, to)
     local result = ''
-    for t = from, to do
-        result = result .. vim.api.nvim_tabpage_get_var(t, 'azul_tab_title')
+    for i, t in ipairs(vim.api.nvim_list_tabpages()) do
+        if i >= from and i <= to then
+            result = result .. vim.api.nvim_tabpage_get_var(t, 'azul_tab_title')
 
-        if t ~= to then
-            result = result .. '  '
+            if i ~= to then
+                result = result .. '  '
+            end
         end
-
     end
 
     return result
@@ -121,7 +122,8 @@ local function next_tabs()
 end
 
 local function current_tab()
-    return vim.api.nvim_tabpage_get_var(vim.fn.tabpagenr(), 'azul_tab_title')
+    local id = vim.api.nvim_list_tabpages()[vim.fn.tabpagenr()]
+    return vim.api.nvim_tabpage_get_var(id, 'azul_tab_title')
 end
 
 local function current_name()
