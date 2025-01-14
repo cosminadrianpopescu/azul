@@ -2,7 +2,7 @@ local t = require('test-env')
 local azul = require('azul')
 local funcs = require('functions')
 
-local title = 'Tab :tab_n (:term_title)'
+local title = 'Tab :tab_n: (:term_title:)'
 vim.fn.timer_start(1, function()
     azul.parse_custom_title(title, {tab_n = 2, term_title = 'localhost'}, function(result, placeholders)
         t.assert(result == 'Tab 2 (localhost)', 'The placeholders in the first test have not been replaced properly')

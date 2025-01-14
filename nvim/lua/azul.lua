@@ -5,7 +5,8 @@ local FILES = require('files')
 
 local is_suspended = false
 
-local default_placeholders = { 'tab_n', 'term_title' }
+local updating_tab_titles = false
+local azul_started = false
 
 local M = {
     --- If set to true, then list all buffers
@@ -57,6 +58,7 @@ local events = {
     AboutToBeBlocked = {},
     WinConfigChanged = {},
     TabTitleChanged = {},
+    AzulStarted = {},
 }
 
 local L = {}
@@ -210,6 +212,10 @@ local OnEnter = function(ev)
     end
     if workflow == 'emacs' or workflow == 'azul' then
         vim.api.nvim_command('startinsert')
+    end
+    if not azul_started then
+        azul_started = true
+        trigger_event('AzulStarted')
     end
 end
 
@@ -392,17 +398,26 @@ cmd({'TabNew', 'VimEnter'}, {
 })
 
 local update_tab_titles = function()
+    if updating_tab_titles or not azul_started then
+        return
+    end
+    updating_tab_titles = true
+    local tabs_to_update = #vim.api.nvim_list_tabpages()
+    local tabs_updated = 0
     for i, t in ipairs(vim.api.nvim_list_tabpages()) do
         local result, tab_placeholders = pcall(function() return vim.api.nvim_tabpage_get_var(t, 'azul_title_placeholders') end)
         local placeholders = vim.tbl_extend(
             'keep', { tab_n = i, term_title = vim.b.term_title },
             (not result and {}) or tab_placeholders
         )
-        print("UPDATE WITH " .. vim.inspect(placeholders))
         M.parse_custom_title(
             M.options.tab_title,
             placeholders,
             function(title, placeholders)
+                tabs_updated = tabs_updated + 1
+                if tabs_updated >= tabs_to_update then
+                    updating_tab_titles = false
+                end
                 vim.api.nvim_tabpage_set_var(t, 'azul_title_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
                 trigger_event('TabTitleChanged', {i, title, placeholders})
@@ -445,9 +460,6 @@ cmd('TermOpen',{
         end
         panel_id = panel_id + 1
         azul_win_id = azul_win_id + 1
-        if #terminals == 1 then
-            update_tab_titles()
-        end
     end
 })
 
@@ -459,6 +471,17 @@ cmd('TermClose', {
 
 cmd('TermEnter', {
     pattern = "*", callback = OnEnter
+})
+
+cmd({'WinEnter'}, {
+    pattern = "*", callback = function()
+        vim.fn.timer_start(10, function()
+            if vim.o.filetype == 'DressingInput' then
+                vim.api.nvim_command('startinsert')
+                trigger_event('ModeChanged', {'t', 'n'})
+            end
+        end)
+    end
 })
 
 cmd({'WinEnter'}, {
@@ -1363,7 +1386,7 @@ M.block_input = function()
     return vim.fn.keytrans(vim.fn.getcharstr())
 end
 
-M.user_input = function(prompt, completion, callback)
+M.user_input = function(prompt, completion, callback, force)
     M.suspend()
     vim.fn.timer_start(1, function()
         M.resume()
@@ -1372,7 +1395,7 @@ M.user_input = function(prompt, completion, callback)
         prompt =  prompt, 
         completion = completion,
     }, function(input)
-        if input ~= nil and input ~= '' then
+        if (input ~= nil and input ~= '') or force then
             callback(input)
         end
     end)
@@ -1382,25 +1405,25 @@ M.get_file = function(callback)
     M.user_input("Select a file:" .. ((M.options.use_dressing and '') or ' '), "file", callback);
 end
 
-L.get_all_vars = function(vars, idx, placeholders, result, when_finished)
+L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, when_finished)
     if idx > #vars then
-        when_finished(result)
+        when_finished()
         return
     end
 
     local advance = function()
-        L.get_all_vars(vars, idx + 1, placeholders, result, when_finished)
+        L.get_all_vars(vars, idx + 1, placeholders, resulted_placeholders, when_finished)
     end
 
     local which = vars[idx]
     if placeholders[which] ~= nil then
-        result[which] = placeholders[which]
+        resulted_placeholders[which] = placeholders[which]
         advance()
     else
         M.user_input('Please provide an input for ' .. which, '', function(response)
-            result[which] = response
-            advance(which)
-        end)
+            resulted_placeholders[which] = (response == nil and 'N/A') or response
+            advance()
+        end, true)
     end
 
 end
@@ -1410,12 +1433,12 @@ local replace_placeholder = function(placeholders, which, where)
         return where
     end
 
-    return where:gsub(':' .. which, placeholders[which])
+    return where:gsub(':' .. which .. ':', placeholders[which])
 end
 
 M.parse_custom_title = function(title, placeholders, callback)
     local result = title or ''
-    local p = ':([a-z_%-A-Z]+)'
+    local p = ':([a-z_%-A-Z]+):'
     local vars = {}
     for m in result:gmatch(p) do
         if not vim.tbl_contains(vars, m) then
@@ -1424,12 +1447,16 @@ M.parse_custom_title = function(title, placeholders, callback)
     end
 
     local _placeholders = {}
-    L.get_all_vars(vars, 1, placeholders, _placeholders, function(vars)
-        for _, p in ipairs(default_placeholders) do
+    L.get_all_vars(vars, 1, placeholders, _placeholders, function()
+        for p, _ in pairs(_placeholders) do
             result = replace_placeholder(_placeholders, p, result)
         end
         callback(result, _placeholders)
     end)
 end
+
+M.on('AzulStarted', function()
+    vim.fn.timer_start(1, update_tab_titles)
+end)
 
 return M

@@ -1,4 +1,4 @@
-import { test } from "./test";
+import { test, test_single } from "./test";
 
 test('test-started');
 test('floats');
@@ -6,4 +6,4 @@ test('splits');
 test('modes');
 test('tabs');
 test('layout');
-test('custom-titles');
+test_single('custom-titles');

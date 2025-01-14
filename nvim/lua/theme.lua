@@ -82,6 +82,9 @@ local last_color = nil
 
 local function my_mode()
     local m = mx.current_mode()
+    if m == 'i' then
+        m = 't'
+    end
     last_color = (MOD_MAP[m] and MOD_MAP[m].color) or nil
     return (MOD_MAP[m] and MOD_MAP[m].text) or m
 end
