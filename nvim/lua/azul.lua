@@ -40,7 +40,6 @@ local mode_mappings = {
 local workflow = 'azul'
 local mod = nil
 local latest_float = {}
-local is_reloading = false
 local global_last_status = nil
 local quit_on_last = true
 
@@ -249,9 +248,6 @@ end
 ---@param force boolean If true, then open the terminal without opening a new tab in the current place
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
 M.open = function(start_edit, force, callback)
-    if is_reloading then
-        return
-    end
     if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and not force then
         L.open_params = {start_edit, force, callback}
         vim.api.nvim_command('$tabnew')
@@ -404,15 +400,17 @@ local update_tab_titles = function()
     updating_tab_titles = true
     local tabs_to_update = #vim.api.nvim_list_tabpages()
     local tabs_updated = 0
+    local current_tab_page = vim.fn.tabpagenr()
     for i, t in ipairs(vim.api.nvim_list_tabpages()) do
         local result, tab_placeholders = pcall(function() return vim.api.nvim_tabpage_get_var(t, 'azul_title_placeholders') end)
         local placeholders = vim.tbl_extend(
-            'keep', { tab_n = i, term_title = vim.b.term_title },
+            'keep', { tab_n = i, term_title = vim.b.term_title, is_current = (i == current_tab_page and '*') or '' },
             (not result and {}) or tab_placeholders
         )
         M.parse_custom_title(
             M.options.tab_title,
             placeholders,
+            'for tab ' .. i,
             function(title, placeholders)
                 tabs_updated = tabs_updated + 1
                 if tabs_updated >= tabs_to_update then
@@ -420,7 +418,7 @@ local update_tab_titles = function()
                 end
                 vim.api.nvim_tabpage_set_var(t, 'azul_title_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
-                trigger_event('TabTitleChanged', {i, title, placeholders})
+                trigger_event('TabTitleChanged')
             end
         )
     end
@@ -473,13 +471,14 @@ cmd('TermEnter', {
     pattern = "*", callback = OnEnter
 })
 
-cmd({'WinEnter'}, {
+cmd({'FileType'}, {
     pattern = "*", callback = function()
-        vim.fn.timer_start(10, function()
-            if vim.o.filetype == 'DressingInput' then
-                vim.api.nvim_command('startinsert')
-                trigger_event('ModeChanged', {'t', 'n'})
-            end
+        if vim.o.filetype ~= 'DressingInput' then
+            return
+        end
+        vim.fn.timer_start(1, function()
+            M.feedkeys('i', 'n')
+            trigger_event('ModeChanged', {'t', 'n'})
         end)
     end
 })
@@ -1001,14 +1000,17 @@ M.save_layout = function(where)
         refresh_tab_page(t)
     end
     local history_to_save = {}
+    local placeholders = {}
     for _, id in ipairs(vim.api.nvim_list_tabpages()) do
         table.insert(history_to_save, L.histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), history))
+        table.insert(placeholders, vim.api.nvim_tabpage_get_var(id, 'azul_title_placeholders') or {})
     end
     local f = io.open(where, "w")
     f:write(vim.inspect({
         floats = vim.tbl_filter(function(x) return M.is_float(x) end, terminals),
         history = history_to_save,
         customs = get_custom_values(),
+        azul_title_placeholders = placeholders,
     }))
     f:close()
     trigger_event("LayoutSaved")
@@ -1047,6 +1049,7 @@ end
 
 L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     if timeout > 100 then
+        updating_tab_titles = false
         L.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
     end
 
@@ -1062,7 +1065,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     end
 
     if idx > #histories.floats then
-        L.restore_ids()
+        L.restore_ids(histories.azul_title_placeholders)
         return
     end
 
@@ -1076,6 +1079,7 @@ end
 
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if timeout > 100 then
+        updating_tab_titles = false
         L.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
     end
 
@@ -1175,7 +1179,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 end
 
-L.restore_ids = function()
+L.restore_ids = function(title_placeholders)
     panel_id = 0
     tab_id = 0
     for _, t in ipairs(terminals) do
@@ -1188,6 +1192,11 @@ L.restore_ids = function()
     end
     panel_id = panel_id + 1
     tab_id = tab_id + 1
+    for i, p in ipairs(title_placeholders) do
+        vim.api.nvim_tabpage_set_var(i, 'azul_title_placeholders', p)
+    end
+    updating_tab_titles = false
+    update_tab_titles()
     trigger_event("LayoutRestored")
 end
 
@@ -1210,6 +1219,7 @@ M.restore_layout = function(where, callback)
     end
     local h = deserialize(f:read("*a"))
     h.callback = callback
+    updating_tab_titles = true
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
 end
@@ -1405,14 +1415,14 @@ M.get_file = function(callback)
     M.user_input("Select a file:" .. ((M.options.use_dressing and '') or ' '), "file", callback);
 end
 
-L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, when_finished)
+L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, prompt_ctx, when_finished)
     if idx > #vars then
         when_finished()
         return
     end
 
     local advance = function()
-        L.get_all_vars(vars, idx + 1, placeholders, resulted_placeholders, when_finished)
+        L.get_all_vars(vars, idx + 1, placeholders, resulted_placeholders, prompt_ctx, when_finished)
     end
 
     local which = vars[idx]
@@ -1420,8 +1430,8 @@ L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, when_f
         resulted_placeholders[which] = placeholders[which]
         advance()
     else
-        M.user_input('Please provide an input for ' .. which, '', function(response)
-            resulted_placeholders[which] = (response == nil and 'N/A') or response
+        M.user_input('Value for ' .. which .. ' (' .. prompt_ctx .. ')', '', function(response)
+            resulted_placeholders[which] = (response == nil and '_') or response
             advance()
         end, true)
     end
@@ -1436,7 +1446,7 @@ local replace_placeholder = function(placeholders, which, where)
     return where:gsub(':' .. which .. ':', placeholders[which])
 end
 
-M.parse_custom_title = function(title, placeholders, callback)
+M.parse_custom_title = function(title, placeholders, prompt_ctx, callback)
     local result = title or ''
     local p = ':([a-z_%-A-Z]+):'
     local vars = {}
@@ -1447,7 +1457,7 @@ M.parse_custom_title = function(title, placeholders, callback)
     end
 
     local _placeholders = {}
-    L.get_all_vars(vars, 1, placeholders, _placeholders, function()
+    L.get_all_vars(vars, 1, placeholders, _placeholders, prompt_ctx, function()
         for p, _ in pairs(_placeholders) do
             result = replace_placeholder(_placeholders, p, result)
         end
@@ -1456,7 +1466,7 @@ M.parse_custom_title = function(title, placeholders, callback)
 end
 
 M.on('AzulStarted', function()
-    vim.fn.timer_start(1, update_tab_titles)
+    vim.fn.timer_start(200, update_tab_titles)
 end)
 
 return M

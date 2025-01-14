@@ -4,6 +4,7 @@
 
 * [How it works](#how-it-works)
 * [API](#api)
+* [Events](#events)
 * [Configuring via init.lua](#configuring-via-initlua)
 * [Further configuration](#further-configuration)
 
@@ -426,7 +427,8 @@ It adds an event listener. Azul triggers some events. You can listen to these
 events by registering a callback to be called every time one of the events is
 triggered. Some events can have an array of arguments. For example, the
 `ModeChanged` event taks an array with 2 arguments. First one is the old mode
-and the second one is the new mode.
+and the second one is the new mode. See the [events](#events) section for a
+list of all the possible `azul` events.
 
 #### clear_event
 
@@ -448,6 +450,100 @@ Blocks the current input, by calling `vim.fn.getcharstr()`. You should call
 this, rather than the `vim` function, directly, because this will also trigger
 the `AboutToBeBlocked` event. Also, this function will return the characters
 directly transformed (like `<C-c>`)
+
+### Events
+
+Azul triggers some custom events (not `vim` events). Some of the events will
+also have an array of arguments.
+
+#### FloatClosed
+
+Triggered everytime a float is closed (also when the floats are hidden).
+
+#### ModeChanged
+
+**Parameters**:
+
+* `args[1]` The old mode
+* `args[2]` The new mode
+
+Triggered every time the `azul` mode changes.
+
+#### FloatsVisible
+
+Triggered every time the floats are being showed.
+
+#### FloatOpened
+
+**Parameters**:
+
+* `args[1]` The new opened pane
+
+Triggered every time a new floating pane is being created.
+
+#### PaneChanged
+
+**Parameters**:
+
+* `args[1]` The newly selected pane
+
+Triggered every time the current selected pane is changed (float or embedded)
+
+#### Error
+
+**Parameters**:
+
+* `args[1]` The thrown error
+
+Triggered every time `azul` throws a handled error
+
+#### PaneClosed
+
+**Parameters**:
+
+* `args[1]` The just information from the pane that was just closed
+
+Triggered every time when a panel is closed (float or embeded). It does not
+trigger when the floats panels are hidden.
+
+#### LayoutSaved
+
+Triggered every time after the current layout has been saved to a file.
+
+#### LayoutRestored
+
+Triggered every time after a layout has been restored from a file.
+
+#### ModifierTrigger
+
+**Parameters**:
+
+* `args[1]` The current mode in which `azul` is after the modifier has been
+  clicked
+* `args[2]` The modifier that has been triggered
+
+Triggered every time the modifier is clicked for `azul` or `tmux` workflows.
+
+#### AboutToBeBlocked
+
+Triggered every time before the UI gets blocked by a call to
+`azul.block_input`.
+
+#### WinConfigChanged
+
+**Parameters**:
+
+* `args[1]` The terminal whose window config has changed
+
+Triggered every time the window configuration changes for a given terminal.
+
+#### TabTitleChanged
+
+Triggered every time the tab titles are updated.
+
+#### AzulStarted
+
+Triggered only once, after azul loaded and it's ready to process input.
 
 ### Configuring via init.lua
 

@@ -11,8 +11,8 @@ if cfg.default_config.options.use_dressing then
     local opts = {
         enabled = true,
         title_pos = 'center',
-        start_mode = 'insert',
-        relative = 'win',
+        start_mode = 'normal',
+        relative = 'editor',
     }
     dressing_opts.input = opts
     dressing_opts.select = opts
@@ -130,7 +130,7 @@ local function current_tab()
 end
 
 local function current_name()
-    return vim.b.term_title
+    return vim.b.term_title or ''
 end
 
 local line_utils = require('lualine.utils.utils')
