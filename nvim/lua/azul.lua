@@ -402,10 +402,10 @@ local update_tab_titles = function()
     local tabs_updated = 0
     local current_tab_page = vim.fn.tabpagenr()
     for i, t in ipairs(vim.api.nvim_list_tabpages()) do
-        local result, tab_placeholders = pcall(function() return vim.api.nvim_tabpage_get_var(t, 'azul_title_placeholders') end)
+        local tab_placeholders = funcs.safe_get_tab_var(t, 'azul_title_placeholders')
         local placeholders = vim.tbl_extend(
             'keep', { tab_n = i, term_title = vim.b.term_title, is_current = (i == current_tab_page and '*') or '' },
-            (not result and {}) or tab_placeholders
+            tab_placeholders or {}
         )
         M.parse_custom_title(
             M.options.tab_title,
@@ -1192,7 +1192,7 @@ L.restore_ids = function(title_placeholders)
     end
     panel_id = panel_id + 1
     tab_id = tab_id + 1
-    for i, p in ipairs(title_placeholders) do
+    for i, p in ipairs(title_placeholders or {}) do
         vim.api.nvim_tabpage_set_var(i, 'azul_title_placeholders', p)
     end
     updating_tab_titles = false
@@ -1220,6 +1220,7 @@ M.restore_layout = function(where, callback)
     local h = deserialize(f:read("*a"))
     h.callback = callback
     updating_tab_titles = true
+    funcs.safe_del_tab_var(0, 'azul_title_placeholders')
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
 end
@@ -1463,6 +1464,17 @@ M.parse_custom_title = function(title, placeholders, prompt_ctx, callback)
         end
         callback(result, _placeholders)
     end)
+end
+
+M.rename_tab = function(tab)
+    local tab_id = vim.api.nvim_list_tabpages()[tab]
+    M.user_input("Tab name: ", '', function(result)
+        vim.api.nvim_tabpage_set_var(tab_id, 'azul_tab_title_overriden', result)
+    end)
+end
+
+M.rename_current_tab = function()
+    M.rename_tab(vim.fn.tabpagenr())
 end
 
 M.on('AzulStarted', function()

@@ -32,8 +32,25 @@ local log = function(msg, file)
     f:close()
 end
 
+local safe_get_tab_var = function(tab, name)
+    local safe, result = pcall(function() return vim.api.nvim_tabpage_get_var(tab, name) end)
+    if not safe then
+        return nil
+    end
+
+    return result
+end
+
+local safe_del_tab_var = function(tab, name)
+    if safe_get_tab_var(tab, name) ~= nil then
+        vim.api.nvim_tabpage_del_var(tab, name)
+    end
+end
+
 return {
     get_sensitive_ls = get_sensitive_ls,
     find = find,
     log = log,
+    safe_get_tab_var = safe_get_tab_var,
+    safe_del_tab_var = safe_del_tab_var,
 }
