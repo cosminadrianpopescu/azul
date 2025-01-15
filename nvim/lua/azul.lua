@@ -393,6 +393,11 @@ cmd({'TabNew', 'VimEnter'}, {
     end
 })
 
+local get_tab_title = function(t)
+    local overriden_title = funcs.safe_get_tab_var(t, 'azul_tab_title_overriden')
+    return overriden_title or M.options.tab_title
+end
+
 local update_tab_titles = function()
     if updating_tab_titles or not azul_started then
         return
@@ -408,7 +413,7 @@ local update_tab_titles = function()
             tab_placeholders or {}
         )
         M.parse_custom_title(
-            M.options.tab_title,
+            get_tab_title(t),
             placeholders,
             'for tab ' .. i,
             function(title, placeholders)
@@ -1001,9 +1006,11 @@ M.save_layout = function(where)
     end
     local history_to_save = {}
     local placeholders = {}
+    local title_overrides = {}
     for _, id in ipairs(vim.api.nvim_list_tabpages()) do
         table.insert(history_to_save, L.histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), history))
-        table.insert(placeholders, vim.api.nvim_tabpage_get_var(id, 'azul_title_placeholders') or {})
+        table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_title_placeholders') or {})
+        table.insert(title_overrides, funcs.safe_get_tab_var(id, 'azul_tab_title_overriden') or '')
     end
     local f = io.open(where, "w")
     f:write(vim.inspect({
@@ -1011,6 +1018,7 @@ M.save_layout = function(where)
         history = history_to_save,
         customs = get_custom_values(),
         azul_title_placeholders = placeholders,
+        title_overrides = title_overrides,
     }))
     f:close()
     trigger_event("LayoutSaved")
@@ -1065,7 +1073,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     end
 
     if idx > #histories.floats then
-        L.restore_ids(histories.azul_title_placeholders)
+        L.restore_ids(histories.azul_title_placeholders, histories.title_overrides)
         return
     end
 
@@ -1179,7 +1187,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 end
 
-L.restore_ids = function(title_placeholders)
+L.restore_ids = function(title_placeholders, title_overrides)
     panel_id = 0
     tab_id = 0
     for _, t in ipairs(terminals) do
@@ -1194,6 +1202,11 @@ L.restore_ids = function(title_placeholders)
     tab_id = tab_id + 1
     for i, p in ipairs(title_placeholders or {}) do
         vim.api.nvim_tabpage_set_var(i, 'azul_title_placeholders', p)
+    end
+    for i, o in ipairs(title_overrides or {}) do
+        if o ~= '' then
+            vim.api.nvim_tabpage_set_var(i, 'azul_tab_title_overriden', o)
+        end
     end
     updating_tab_titles = false
     update_tab_titles()
@@ -1397,15 +1410,12 @@ M.block_input = function()
     return vim.fn.keytrans(vim.fn.getcharstr())
 end
 
-M.user_input = function(prompt, completion, callback, force)
+M.user_input = function(opts, callback, force)
     M.suspend()
     vim.fn.timer_start(1, function()
         M.resume()
     end)
-    vim.ui.input({
-        prompt =  prompt, 
-        completion = completion,
-    }, function(input)
+    vim.ui.input(opts, function(input)
         if (input ~= nil and input ~= '') or force then
             callback(input)
         end
@@ -1413,7 +1423,7 @@ M.user_input = function(prompt, completion, callback, force)
 end
 
 M.get_file = function(callback)
-    M.user_input("Select a file:" .. ((M.options.use_dressing and '') or ' '), "file", callback);
+    M.user_input({prompt = "Select a file:" .. ((M.options.use_dressing and '') or ' '), completion = "file"}, callback);
 end
 
 L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, prompt_ctx, when_finished)
@@ -1431,7 +1441,7 @@ L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, prompt
         resulted_placeholders[which] = placeholders[which]
         advance()
     else
-        M.user_input('Value for ' .. which .. ' (' .. prompt_ctx .. ')', '', function(response)
+        M.user_input({prompt = 'Value for ' .. which .. ' (' .. prompt_ctx .. ')'}, function(response)
             resulted_placeholders[which] = (response == nil and '_') or response
             advance()
         end, true)
@@ -1468,9 +1478,15 @@ end
 
 M.rename_tab = function(tab)
     local tab_id = vim.api.nvim_list_tabpages()[tab]
-    M.user_input("Tab name: ", '', function(result)
-        vim.api.nvim_tabpage_set_var(tab_id, 'azul_tab_title_overriden', result)
-    end)
+    local def = get_tab_title(tab)
+    M.user_input({propmt = "Tab new name: ", default = def}, function(result)
+        if result == '' then
+            funcs.safe_del_tab_var(tab_id, 'azul_tab_title_overriden')
+        elseif result ~= nil then
+            vim.api.nvim_tabpage_set_var(tab_id, 'azul_tab_title_overriden', result)
+        end
+        update_tab_titles()
+    end, true)
 end
 
 M.rename_current_tab = function()

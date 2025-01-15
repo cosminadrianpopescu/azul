@@ -98,5 +98,8 @@ return {
                 vim.api.nvim_command('startinsert')
             end)
         end, {desc = "Stops the logging of the current terminal scrollback buffer"})
+        vim.api.nvim_create_user_command('AzulRenameCurrentTab', function()
+            azul.rename_current_tab()
+        end, {desc = "Renames the current tab"})
     end
 }
