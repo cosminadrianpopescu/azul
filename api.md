@@ -451,6 +451,43 @@ this, rather than the `vim` function, directly, because this will also trigger
 the `AboutToBeBlocked` event. Also, this function will return the characters
 directly transformed (like `<C-c>`)
 
+#### user_input
+
+**Parameters**:
+
+* opts The options to be passed to `vim.ui.input`
+* callback The callback to be invoked with the result
+* force Invoke the callback even if the user cancels the input
+
+Gets some user input using `vim.ui.input`. Call this function rather than
+invoking directly `vim.ui.input`. If you are using a library which will
+produce float windows (like
+[dressing.nvim](https://github.com/stevearc/dressing.nvim)) and you call
+directly `vim.ui.input`, you will break `azul`. This function will call first
+`azul.suspend` to allow the floating window to be created without `azul`
+intervening and then will call `azul.resume()` in the next event loop.
+
+#### get_file
+
+**Parameters**:
+
+* callback The callback to be invoked if the user selected a file
+
+Invoked the callback `callback` with the user selected file, if the user
+selects a file.
+
+#### rename_tab
+
+**Parameters**:
+
+* tab The tab number to be renamed
+
+Renames the tab title
+
+#### rename_current_tab
+
+Renames the currently selected tab.
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will

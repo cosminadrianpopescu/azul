@@ -235,7 +235,7 @@ You can add another pane in a tab by changing to `SPLIT` mode (for example, for
 to left, right, top or bottom (for `azul` workflow, in `SPLIT` mode, clicking
 on the cursors).
 
-Other then the embeded panes, you can also have floating panes.
+Other than the embeded panes, you can also have floating panes.
 
 ### Floats
 
@@ -552,6 +552,11 @@ Toggles the passthrough mode.
 
 **Parameters**: the escape sequence
 
+
+#### AzulRenameCurrentTab
+
+Renames the currently selected tab.
+
 ## Configuration
 
 Azul can be configured in several ways. For
@@ -617,8 +622,6 @@ or the action directly, for the `emacs` workflow. For more info see the
   [dressing.nvim](https://github.com/stevearc/dressing.nvim) plugin for user
   input, for example, for file locations when saving and restoring layouts
   (default true)
-* **pane_title** The default pane title. See the [placeholders](#placeholders)
-  section (default `:term_title:`)
 * **tab_title** The default tab title. See the [placeholders](#placeholders)
   section (default `Tab :tab_n:`)
 
