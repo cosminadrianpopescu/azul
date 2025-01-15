@@ -78,6 +78,9 @@ M.default_config = {
         modifer_timeout = 500,
         use_cheatsheet = true,
         blocking_cheatsheet = true,
+        pane_title = ':term_title:',
+        tab_title = 'Tab :tab_n:',
+        use_dressing = true,
         opacity = 0,
     },
     shortcuts = {

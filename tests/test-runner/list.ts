@@ -6,3 +6,4 @@ test('splits');
 test('modes');
 test('tabs');
 test('layout');
+test('custom-titles');

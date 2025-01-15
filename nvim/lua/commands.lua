@@ -62,18 +62,14 @@ return {
         vim.api.nvim_create_user_command('AzulResume', azul.resume, {desc = "Resumes all azul events"})
         vim.api.nvim_create_user_command('AzulDisconnect', azul.disconnect, {desc = "Disconnects the current session"})
         vim.api.nvim_create_user_command('AzulSaveLayout', function()
-            local where = vim.fn.input({prompt = "Select a file: ", completion = "file"})
-            if where == nil then
-                return
-            end
-            azul.save_layout(vim.fn.fnamemodify(where, ':p'))
+            azul.get_file(function(where)
+                azul.save_layout(vim.fn.fnamemodify(where, ':p'))
+            end)
         end, {desc = "Saves the layout"})
         vim.api.nvim_create_user_command('AzulRestoreLayout', function()
-            local where = vim.fn.input({prompt = "Select a file: ", completion = "file"})
-            if where == nil then
-                return
-            end
-            azul.restore_layout(vim.fn.fnamemodify(where, ':p'))
+            azul.get_file(function(where)
+                azul.restore_layout(vim.fn.fnamemodify(where, ':p'))
+            end)
         end, {desc = "Restores a layout"})
         vim.api.nvim_create_user_command('AzulSetWinId', function(opts)
             azul.set_win_id(opts.fargs[1])
@@ -89,10 +85,11 @@ return {
             end)
         end, {desc = "Sets a command to be run in the current terminal uppon a restore", nargs = 1})
         vim.api.nvim_create_user_command('AzulStartLogging', function()
-            local where = vim.fn.input({prompt = "Select a file: ", completion = "file"})
-            azul.start_logging(where)
-            vim.fn.timer_start(1, function()
-                vim.api.nvim_command('startinsert')
+            azul.get_file(function(where)
+                azul.start_logging(where)
+                vim.fn.timer_start(1, function()
+                    vim.api.nvim_command('startinsert')
+                end)
             end)
         end, {desc = "Starts logging the current terminal scrollback buffer"})
         vim.api.nvim_create_user_command('AzulStopLogging', function()
@@ -101,5 +98,8 @@ return {
                 vim.api.nvim_command('startinsert')
             end)
         end, {desc = "Stops the logging of the current terminal scrollback buffer"})
+        vim.api.nvim_create_user_command('AzulRenameCurrentTab', function()
+            azul.rename_current_tab()
+        end, {desc = "Renames the current tab"})
     end
 }

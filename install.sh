@@ -92,5 +92,6 @@ fi
 install_from_github "nvim-lualine" "lualine.nvim" "b431d228b7bbcdaea818bdc3e25b8cdbe861f056"
 install_from_github "nvim-lua" "plenary.nvim" "2d9b06177a975543726ce5c73fca176cedbffe9d"
 install_from_github "nvim-telescope" "telescope.nvim" "eae0d8fbde590b0eaa2f9481948cd6fd7dd21656"
+install_from_github "stevearc" "dressing.nvim" "3a45525bb182730fe462325c99395529308f431e"
 
 echo "Installation done in $AZUL_PREFIX. Run azul"

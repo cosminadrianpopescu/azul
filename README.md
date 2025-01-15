@@ -235,7 +235,7 @@ You can add another pane in a tab by changing to `SPLIT` mode (for example, for
 to left, right, top or bottom (for `azul` workflow, in `SPLIT` mode, clicking
 on the cursors).
 
-Other then the embeded panes, you can also have floating panes.
+Other than the embeded panes, you can also have floating panes.
 
 ### Floats
 
@@ -552,6 +552,11 @@ Toggles the passthrough mode.
 
 **Parameters**: the escape sequence
 
+
+#### AzulRenameCurrentTab
+
+Renames the currently selected tab.
+
 ## Configuration
 
 Azul can be configured in several ways. For
@@ -612,7 +617,38 @@ or the action directly, for the `emacs` workflow. For more info see the
   keys, this timeout is the time that `azul` will wait for the combination to
   be finished (default 500)
 * **opacity** The opacity of the floating windows, from 0 - non transparent to
-  100 - fullytransparent (default 0)
+  100 - fully transparent (default 0)
+* **use_dressing** If true, use the
+  [dressing.nvim](https://github.com/stevearc/dressing.nvim) plugin for user
+  input, for example, for file locations when saving and restoring layouts
+  (default true)
+* **tab_title** The default tab title. See the [placeholders](#placeholders)
+  section (default `Tab :tab_n:`)
+
+#### Placeholders
+
+The `pane_title` and `tab_title` options, can have placeholders in their
+content. This means that certan values will be replaced either with standard
+options, either with user input. For example, setting the `tab_title` like
+this in the `config.ini`:
+
+```ini
+tab_title = :app: - :tab_n:
+```
+
+will make azul asking for the a value for the `app` parameter, everytime a new
+tab is created. The newly created tab will have the `:app:` value replaced
+with the input from the user. 
+
+There are some standard placeholders which `azul` will replace automatically,
+without asking for user input: 
+
+* **:tab_n:** will be replaced with the current tab number
+* **:term_title:** will be replaced with the current terminal title as
+  suggested by the running terminal in the pane.
+* **:is_current:** will be replaced with the `*` character, if the current tab
+  is selected, giving you the possibility to mark the currently selected tab
+  as in `tmux`.
 
 ### Shortcuts
 

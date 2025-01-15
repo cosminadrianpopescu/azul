@@ -4,6 +4,7 @@
 
 * [How it works](#how-it-works)
 * [API](#api)
+* [Events](#events)
 * [Configuring via init.lua](#configuring-via-initlua)
 * [Further configuration](#further-configuration)
 
@@ -426,7 +427,8 @@ It adds an event listener. Azul triggers some events. You can listen to these
 events by registering a callback to be called every time one of the events is
 triggered. Some events can have an array of arguments. For example, the
 `ModeChanged` event taks an array with 2 arguments. First one is the old mode
-and the second one is the new mode.
+and the second one is the new mode. See the [events](#events) section for a
+list of all the possible `azul` events.
 
 #### clear_event
 
@@ -448,6 +450,137 @@ Blocks the current input, by calling `vim.fn.getcharstr()`. You should call
 this, rather than the `vim` function, directly, because this will also trigger
 the `AboutToBeBlocked` event. Also, this function will return the characters
 directly transformed (like `<C-c>`)
+
+#### user_input
+
+**Parameters**:
+
+* opts The options to be passed to `vim.ui.input`
+* callback The callback to be invoked with the result
+* force Invoke the callback even if the user cancels the input
+
+Gets some user input using `vim.ui.input`. Call this function rather than
+invoking directly `vim.ui.input`. If you are using a library which will
+produce float windows (like
+[dressing.nvim](https://github.com/stevearc/dressing.nvim)) and you call
+directly `vim.ui.input`, you will break `azul`. This function will call first
+`azul.suspend` to allow the floating window to be created without `azul`
+intervening and then will call `azul.resume()` in the next event loop.
+
+#### get_file
+
+**Parameters**:
+
+* callback The callback to be invoked if the user selected a file
+
+Invoked the callback `callback` with the user selected file, if the user
+selects a file.
+
+#### rename_tab
+
+**Parameters**:
+
+* tab The tab number to be renamed
+
+Renames the tab title
+
+#### rename_current_tab
+
+Renames the currently selected tab.
+
+### Events
+
+Azul triggers some custom events (not `vim` events). Some of the events will
+also have an array of arguments.
+
+#### FloatClosed
+
+Triggered everytime a float is closed (also when the floats are hidden).
+
+#### ModeChanged
+
+**Parameters**:
+
+* `args[1]` The old mode
+* `args[2]` The new mode
+
+Triggered every time the `azul` mode changes.
+
+#### FloatsVisible
+
+Triggered every time the floats are being showed.
+
+#### FloatOpened
+
+**Parameters**:
+
+* `args[1]` The new opened pane
+
+Triggered every time a new floating pane is being created.
+
+#### PaneChanged
+
+**Parameters**:
+
+* `args[1]` The newly selected pane
+
+Triggered every time the current selected pane is changed (float or embedded)
+
+#### Error
+
+**Parameters**:
+
+* `args[1]` The thrown error
+
+Triggered every time `azul` throws a handled error
+
+#### PaneClosed
+
+**Parameters**:
+
+* `args[1]` The just information from the pane that was just closed
+
+Triggered every time when a panel is closed (float or embeded). It does not
+trigger when the floats panels are hidden.
+
+#### LayoutSaved
+
+Triggered every time after the current layout has been saved to a file.
+
+#### LayoutRestored
+
+Triggered every time after a layout has been restored from a file.
+
+#### ModifierTrigger
+
+**Parameters**:
+
+* `args[1]` The current mode in which `azul` is after the modifier has been
+  clicked
+* `args[2]` The modifier that has been triggered
+
+Triggered every time the modifier is clicked for `azul` or `tmux` workflows.
+
+#### AboutToBeBlocked
+
+Triggered every time before the UI gets blocked by a call to
+`azul.block_input`.
+
+#### WinConfigChanged
+
+**Parameters**:
+
+* `args[1]` The terminal whose window config has changed
+
+Triggered every time the window configuration changes for a given terminal.
+
+#### TabTitleChanged
+
+Triggered every time the tab titles are updated.
+
+#### AzulStarted
+
+Triggered only once, after azul loaded and it's ready to process input.
 
 ### Configuring via init.lua
 

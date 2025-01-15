@@ -1,0 +1,18 @@
+local t = require('test-env')
+local azul = require('azul')
+local funcs = require('functions')
+
+local title = 'Tab :tab_n: (:term_title:)'
+vim.fn.timer_start(1, function()
+    azul.parse_custom_title(title, {tab_n = 2, term_title = 'localhost'}, '', function(result, placeholders)
+        t.assert(result == 'Tab 2 (localhost)', 'The placeholders in the first test have not been replaced properly')
+        azul.parse_custom_title(title, {tab_n = 3}, '', function(result, placeholders)
+            t.assert(result == 'Tab 3 (abc)', 'The placeholders in the second test have not been replaced properly')
+            t.assert(placeholders.term_title == 'abc', 'The returned placeholders in the second test are not ok')
+            t.done()
+        end)
+        vim.fn.timer_start(2, function()
+            t.simulate_keys('abc<cr>')
+        end)
+    end)
+end)

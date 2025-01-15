@@ -3,6 +3,22 @@ local cfg = require('config')
 local theme = cfg.default_config.options.theme
 local disabled = require('disabled-theme')
 
+local dressing_opts = {
+    input = {enabled = false},
+    select = {enabled = false},
+}
+if cfg.default_config.options.use_dressing then
+    local opts = {
+        enabled = true,
+        title_pos = 'center',
+        start_mode = 'normal',
+        relative = 'editor',
+    }
+    dressing_opts.input = opts
+    dressing_opts.select = opts
+end
+require('dressing').setup(dressing_opts)
+
 local is_disabled = false
 
 local M = {}
@@ -66,19 +82,23 @@ local last_color = nil
 
 local function my_mode()
     local m = mx.current_mode()
+    if m == 'i' then
+        m = 't'
+    end
     last_color = (MOD_MAP[m] and MOD_MAP[m].color) or nil
     return (MOD_MAP[m] and MOD_MAP[m].text) or m
 end
 
 local function tabs(from, to)
     local result = ''
-    for t = from, to do
-        result = result .. 'Tab ' .. t
+    for i, t in ipairs(vim.api.nvim_list_tabpages()) do
+        if i >= from and i <= to then
+            result = result .. vim.api.nvim_tabpage_get_var(t, 'azul_tab_title')
 
-        if t ~= to then
-            result = result .. '  '
+            if i ~= to then
+                result = result .. '  '
+            end
         end
-
     end
 
     return result
@@ -105,11 +125,12 @@ local function next_tabs()
 end
 
 local function current_tab()
-    return 'Tab ' .. vim.fn.tabpagenr()
+    local id = vim.api.nvim_list_tabpages()[vim.fn.tabpagenr()]
+    return vim.api.nvim_tabpage_get_var(id, 'azul_tab_title')
 end
 
 local function current_name()
-    return vim.b.term_title
+    return vim.b.term_title or ''
 end
 
 local line_utils = require('lualine.utils.utils')
@@ -196,7 +217,7 @@ require('lualine').setup {
     extensions = {}
 }
 
-mx.on({'ModeChanged', 'AboutToBeBlocked'}, function()
+mx.on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function(args)
     if is_disabled and mx.current_mode() ~= 'P' then
         require('lualine').setup({options = {theme = theme}})
         is_disabled = false
