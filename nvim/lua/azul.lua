@@ -287,6 +287,9 @@ local OnTermClose = function(ev)
         return
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
+    if t == nil then
+        return
+    end
     add_to_history(ev.buf, "close", nil, t.tab_id)
     remove_term_buf(ev.buf)
     if #terminals == 0 then

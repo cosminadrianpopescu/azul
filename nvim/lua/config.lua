@@ -54,6 +54,7 @@ local actions = {
     'split_left', 'split_right', 'split_up', 'split_down',
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
     'copy', 'paste', 'rotate_panel',
+    'rename_tab'
 }
 
 local modes = {
@@ -153,6 +154,7 @@ M.default_config = {
             tabs = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
+                rename_tab = 'r',
             },
             visual = {
                 copy = 'y$$$<C-c>',
@@ -228,6 +230,7 @@ M.default_config = {
             tabs = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
+                rename_tab = 'r',
             },
             visual = {
                 copy = 'y$$$<C-c>',
@@ -288,6 +291,7 @@ M.default_config = {
             tabs = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
+                rename_tab = 'r',
             },
             visual = {
                 copy = 'y$$$<C-c>',
@@ -348,6 +352,7 @@ M.default_config = {
                 copy = '<C-c>',
                 paste = '<C-v>',
                 rotate_panel = '<C-x>x',
+                rename_tab = '<C-x><C-r>',
             },
         }
     }
@@ -542,6 +547,10 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 azul.rotate_panel()
             end,
             desc = 'Rotates the current panel'
+        })
+    elseif action == 'rename_tab' then
+        map(mode, shortcut, '', {
+            callback = azul.rename_current_tab
         })
     end
 end
