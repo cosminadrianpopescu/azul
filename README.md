@@ -1126,6 +1126,13 @@ session
     + `zellij`: `pane.rotate_panel = x`
     + `emacs`: `rotate_panel = <C-x>x`
 
+* **rename_tab**: Renames the currently selected tab.
+  - defaults:
+    + `azul`: `tabs.rename_tab = r`
+    + `tmux`: `tabs.rename_tab = r`
+    + `zellij`: `tabs.rename_tab = r`
+    + `emacs`: `rename_tab = <C-x><C-r>`
+
 ## Copy/pasting
 
 In `azul`, you can copy paste by using the expected `<C-c>` and `<C-v>`
