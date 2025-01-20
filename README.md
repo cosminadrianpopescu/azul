@@ -506,6 +506,10 @@ file, using `tab` for autocompletion.
 `Azul` has very powerfull features for saving and restoring saved sessions.
 See the [Session restore section](#session-restore)
 
+**Parameters**:
+
+* The file in which to save the layout (optional)
+
 #### AzulRestoreLayout
 
 Restores a saved layout. Uppon invoking this command, you will be met with a
@@ -515,6 +519,10 @@ file, using `tab` for autocompletion.
 
 `Azul` has very powerfull features for saving and restoring saved sessions.
 See the [Session restore section](#session-restore)
+
+**Parameters**:
+
+* The file from which to restore the layout (optional)
 
 #### AzulSetCmd
 
@@ -531,6 +539,10 @@ Starts logging the current terminal scrollback buffer.
 
 **Note**: this commands does not log what is visibile on the screen. Only what
 is in the scroll buffer.
+
+**Parameters**:
+
+* The file in which to start logging (optional)
 
 #### AzulStopLogging
 
@@ -552,10 +564,29 @@ Toggles the passthrough mode.
 
 **Parameters**: the escape sequence
 
-
 #### AzulRenameCurrentTab
 
 Renames the currently selected tab.
+
+#### AzulEdit
+
+Edits a file in the current terminal by opening in the editor set by the
+`$EDITOR` variable on your system.
+
+**Parameters**:
+
+* The file in to edit (optional)
+
+#### AzulEditScrollback
+
+Edits the current terminal's buffer in the editor set by the `$EDITOR`
+variable on your system.
+
+#### AzulEditScrollbackLog
+
+Edits the current terminal's scrollback log in the editor set by the `$EDITOR`
+variable on your system. If the logging is not started using
+`AzulStartLogging` command, an error message is thrown.
 
 ## Configuration
 
@@ -628,6 +659,29 @@ or the action directly, for the `emacs` workflow. For more info see the
   statusbar. In case you want to use your own statusbar nvim plugin, or a
   tabline plugin, just set this option to false and load your statusline or
   tabline plugin via `init.lua`
+* **auto_start_logging** If true, then start logging automatically when
+  opening a new pane. This option allows you to have as many lines in your
+  current scrollback, that you can see at anytime by invoking
+  `edit_scrollback_log` action `<C-s>pe`
+
+**Note**:
+
+If you want to have infinite scrolling on your scrollback buffer, set
+`auto_start_logging` to `true`. Whenever you need to access the scrollback
+buffer of any terminal, just do `<C-s>pge`. Or you can set a faster shortcut,
+like this (assuming `azul` workflow):
+
+```lua
+local azul = require('azul')
+azul.set_key_map('t', '[', '', {
+    callback = function()
+        azul.edit_scrollback_log()
+    end
+})
+```
+
+Then, just like in `tmux`, doing `<C-s>[` will open your scrollback buffer log
+in your current `$EDITOR`.
 
 #### Placeholders
 
@@ -1136,6 +1190,21 @@ session
     + `tmux`: `tabs.rename_tab = r`
     + `zellij`: `tabs.rename_tab = r`
     + `emacs`: `rename_tab = <C-x><C-r>`
+
+* **edit_scrollback**: Edits the scrollback of the currently selected terminal
+  - defaults:
+    + `azul`: `pane.edit_scrollback = e`
+    + `tmux`: `pane.edit_scrollback = e`
+    + `zellij`: `pane.edit_scrollback = e`
+    + `emacs`: `edit_scrollback = <C-x><C-e>`
+
+* **edit_scrollback**: Edits the scrollback log of the currently selected
+  terminal (if started with `AzulStartLogging`)
+  - defaults:
+    + `azul`: `pane.edit_scrollback = ge`
+    + `tmux`: `pane.edit_scrollback = ge`
+    + `zellij`: `pane.edit_scrollback = ge`
+    + `emacs`: `edit_scrollback = <C-x>ge`
 
 ## Copy/pasting
 

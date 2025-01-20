@@ -18,6 +18,7 @@ local M = {
 --- @field is_current boolean If true, it means that this is the current terminal
 --- @field cwd string The current working dir
 --- @field buf number The corresponding nvim buffer number
+--- @field editing_buf number If the scroll back tab is being edited in the $EDITOR, this is the editor buf if
 --- @field tab_page number The corresponding neovim tab
 --- @field win_id number The current neovim window id
 --- @field term_id number The current neovim channel id
@@ -103,7 +104,8 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
+    print(vim.inspect(vim.tbl_filter(function(t) return M.is_float(t) end, M.get_terminals())))
+    -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
     -- print("OPTIONS ARE " .. vim.inspect(M.options))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
     -- print("EV IS " .. vim.inspect(ev))
@@ -141,8 +143,12 @@ local refresh_win_config = function(t)
     end
 end
 
+local _buf = function(t)
+    return t.editing_buf or t.buf
+end
+
 local refresh_buf = function(buf)
-    local t = funcs.find(function(t) return t.buf == buf end, terminals)
+    local t = funcs.find(function(t) return _buf(t) == buf end, terminals)
     if t == nil then
         return nil
     end
@@ -204,9 +210,12 @@ local OnEnter = function(ev)
         if not M.list_buffers then
             vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
         end
-        t.is_current = t.buf == ev.buf
-        if t.is_current and t.buf ~= is_current_terminal then
+        t.is_current = _buf(t) == ev.buf
+        if t.is_current and _buf(t) ~= is_current_terminal then
             trigger_event('PaneChanged', {t})
+        end
+        if t.is_current and M.options.auto_start_logging and not L.is_logging_started(t.buf) then
+            M.start_logging(os.tmpname())
         end
     end
     if workflow == 'emacs' or workflow == 'azul' then
@@ -560,11 +569,13 @@ cmd({'UiEnter'}, {
 })
 
 local restore_float = function(t)
-    if t == nil or not vim.api.nvim_buf_is_valid(t.buf) then
+    if t == nil or not vim.api.nvim_buf_is_valid(_buf(t)) then
         return
     end
-    vim.api.nvim_open_win(t.buf, true, t.win_config)
-    refresh_buf(t.buf)
+    vim.api.nvim_open_win(_buf(t), true, t.win_config)
+    if t.editing_buf == nil then
+        refresh_buf(t.buf)
+    end
 end
 
 L.do_show_floats = function(floatings, idx, after_callback)
@@ -746,7 +757,7 @@ end
 
 M.move_current_float = function(dir, inc)
     local buf = vim.fn.bufnr()
-    local t = funcs.find(function(t) return t.buf == buf end, terminals)
+    local t = funcs.find(function(t) return _buf(t) == buf end, terminals)
     local conf = vim.api.nvim_win_get_config(0)
     if conf.relative == "" then return end
     local row, col = conf["row"], conf["col"]
@@ -833,7 +844,7 @@ M.select_next_pane = function(dir, group)
     end
 
     vim.fn.timer_start(1, function()
-        M.select_pane(found.buf)
+        M.select_pane(_buf(found))
     end)
 end
 
@@ -856,14 +867,6 @@ end
 
 M.send_to_current = function(data, escape)
     M.send_to_buf(vim.fn.bufnr(), data, escape)
-end
-
-M.get_tab_terminal = function(n)
-    if n == vim.api.nvim_tabpage_get_number(0) then
-        return M.get_current_terminal()
-    end
-
-    return funcs.find(function(t) return t.buf == vim.api.nvim_tabpage_get_var(n, 'current_buffer') end, terminals)
 end
 
 M.split = function(dir)
@@ -987,7 +990,7 @@ L.term_by_panel_id = function(id)
 end
 
 L.term_by_buf_id = function(id)
-    return funcs.find(function(t) return t.buf == 1 * id end, terminals)
+    return funcs.find(function(t) return _buf(t) == 1 * id end, terminals)
 end
 
 local get_custom_values = function()
@@ -1204,11 +1207,11 @@ L.restore_ids = function(title_placeholders, title_overrides)
     panel_id = panel_id + 1
     tab_id = tab_id + 1
     for i, p in ipairs(title_placeholders or {}) do
-        vim.api.nvim_tabpage_set_var(i, 'azul_title_placeholders', p)
+        vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_title_placeholders', p)
     end
     for i, o in ipairs(title_overrides or {}) do
         if o ~= '' then
-            vim.api.nvim_tabpage_set_var(i, 'azul_tab_title_overriden', o)
+            vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_tab_title_overriden', o)
         end
     end
     updating_tab_titles = false
@@ -1264,11 +1267,13 @@ M.paste_from_clipboard = function()
 end
 
 local snapshot = function(buf)
+    local t = L.term_by_buf_id(buf)
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    if #lines <= vim.o.lines - 1 then
+    local height = vim.fn.winheight(t.win_id)
+    if #lines <= height then
         return {}
     end
-    local length = #lines - vim.o.lines + 1
+    local length = #lines - height
 
     while #lines > length do
         table.remove(lines, #lines)
@@ -1277,10 +1282,10 @@ local snapshot = function(buf)
     return lines
 end
 
-local snapshotEquals = function(s1, s2)
+local snapshotEquals = function(new_lines, existing_lines)
     local i = 1;
-    while i <= #s1 do
-        if s1[i] ~= s2[i] then
+    while i <= #new_lines do
+        if new_lines[i] ~= existing_lines[i] then
             return false
         end
         i = i + 1
@@ -1289,31 +1294,35 @@ local snapshotEquals = function(s1, s2)
     return true
 end
 
-local function diff(s1, s2)
-    if snapshotEquals(s1, s2) then
+local function diff(new_lines, existing_lines)
+    if snapshotEquals(new_lines, existing_lines) then
         local result = {}
-        local j = #s1 + 1
-        while j <= #s2 do
-            table.insert(result, s2[j])
+        local j = #new_lines + 1
+        while j <= #existing_lines do
+            table.insert(result, existing_lines[j])
             j = j + 1
         end
 
         return result
     end
 
-    if #s1 == 0 then
-        return s2
+    if #new_lines == 0 then
+        return existing_lines
     end
 
-    table.remove(s1, 0)
-    return diff(s1, s2)
+    table.remove(new_lines, 0)
+    return diff(new_lines, existing_lines)
+end
+
+L.is_logging_started = function(buf)
+    return loggers[buf .. ''] ~= nil
 end
 
 local append_log = function(buf)
-    local logger = loggers[buf .. '']
-    if logger == nil then
+    if not L.is_logging_started(buf) then
         return
     end
+    local logger = loggers[buf .. '']
     local lines = snapshot(buf)
     if #lines == 0 then
         return
@@ -1355,7 +1364,7 @@ end
 
 M.stop_logging = function()
     local t = M.get_current_terminal()
-    if t == nil or loggers[t.buf .. ''] == nil then
+    if t == nil or not L.is_logging_started(t.buf) then
         return
     end
 
@@ -1486,6 +1495,7 @@ M.rename_tab = function(tab)
         if result == '' then
             funcs.safe_del_tab_var(tab_id, 'azul_tab_title_overriden')
         elseif result ~= nil then
+            funcs.safe_del_tab_var(tab_id, 'azul_title_placeholders')
             vim.api.nvim_tabpage_set_var(tab_id, 'azul_tab_title_overriden', result)
         end
         update_tab_titles()
@@ -1499,5 +1509,62 @@ end
 M.on('AzulStarted', function()
     vim.fn.timer_start(200, update_tab_titles)
 end)
+
+M.edit = function(t, file, on_finish)
+    if t.editing_buf ~= nil then
+        L.error('The current terminal is already displaying an editor')
+    end
+    M.suspend()
+    local buf = vim.api.nvim_create_buf(false, true)
+    t.editing_buf = buf
+    vim.api.nvim_win_set_buf(t.win_id, buf)
+    local opts = {
+        cdw = vim.fn.getcwd(),
+        env = {
+            EDITOR = os.getenv('EDITOR'),
+            VIM = '',
+            VIMRUNTIME='',
+        },
+        on_exit = function()
+            M.suspend()
+            t.editing_buf = nil
+            vim.api.nvim_win_set_buf(t.win_id, t.buf)
+            vim.fn.timer_start(10, function()
+                M.resume()
+                refresh_buf(t.buf)
+                if on_finish ~= nil then
+                    on_finish()
+                end
+            end)
+        end
+    }
+    vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
+    M.resume()
+    vim.api.nvim_command('startinsert')
+end
+
+M.edit_scrollback = function(t)
+    local lines = table.concat(vim.api.nvim_buf_get_lines(t.buf, 0, -1, false), "\n")
+    local file = os.tmpname()
+    FILES.write_file(file, lines)
+    M.edit(t, file, function()
+        os.remove(file)
+    end)
+end
+
+M.edit_scrollback_log = function(t)
+    if not L.is_logging_started(t.buf) then
+        L.error("The current buffer is not being logged", nil)
+    end
+    M.edit(t, loggers[t.buf .. ''].location)
+end
+
+M.edit_current_scrollback = function()
+    M.edit_scrollback(M.get_current_terminal())
+end
+
+M.edit_current_scrollback_log = function()
+    M.edit_scrollback_log(M.get_current_terminal())
+end
 
 return M

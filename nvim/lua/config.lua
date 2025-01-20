@@ -54,7 +54,7 @@ local actions = {
     'split_left', 'split_right', 'split_up', 'split_down',
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
     'copy', 'paste', 'rotate_panel',
-    'rename_tab'
+    'rename_tab', 'edit_scrollback', 'edit_scrollback_log',
 }
 
 local modes = {
@@ -84,6 +84,7 @@ M.default_config = {
         use_dressing = true,
         opacity = 0,
         use_lualine = true,
+        auto_start_logging = false,
     },
     shortcuts = {
         azul = {
@@ -127,6 +128,7 @@ M.default_config = {
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 split_left = 'H$$$<s-left>', split_right = 'L$$$<s-right>', split_up = 'K$$$<s-up>', split_down = 'J$$$<s-down>',
                 rotate_panel = 'x',
+                edit_scrollback = 'e', edit_scrollback_log = 'ge'
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -203,6 +205,7 @@ M.default_config = {
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 split_left = 'H$$$<s-left>', split_right = 'L$$$<s-right>', split_up = 'K$$$<s-up>', split_down = 'J$$$<s-down>',
                 rotate_panel = 'x',
+                edit_scrollback = 'e', edit_scrollback_log = 'ge'
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -264,6 +267,7 @@ M.default_config = {
                 create_float = 'f',
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 rotate_panel = 'x',
+                edit_scrollback = 'e', edit_scrollback_log = 'ge'
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -354,6 +358,8 @@ M.default_config = {
                 paste = '<C-v>',
                 rotate_panel = '<C-x>x',
                 rename_tab = '<C-x><C-r>',
+                edit_scrollback = '<C-x><C-e>',
+                edit_scrollback_log = '<C-x>ge',
             },
         }
     }
@@ -551,7 +557,24 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     elseif action == 'rename_tab' then
         map(mode, shortcut, '', {
-            callback = azul.rename_current_tab
+            callback = azul.rename_current_tab,
+            desc = 'Renames the current tab',
+        })
+    elseif action == 'edit_scrollback' then
+        map(mode, shortcut, '', {
+            callback = function()
+                azul.edit_current_scrollback()
+                azul.enter_mode('t')
+            end,
+            desc = 'Edits the scrollback buffer',
+        })
+    elseif action == 'edit_scrollback_log' then
+        map(mode, shortcut, '', {
+            callback = function()
+                azul.edit_current_scrollback_log()
+                azul.enter_mode('t')
+            end,
+            desc = 'Edits the scrollback log',
         })
     end
 end
