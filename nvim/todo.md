@@ -61,3 +61,6 @@ f('p', 'h', '', {
 * group shortcuts together by action
 * sort by action rather than shortcut
 * show first 2 rows of shortcuts and then have a shortcut to see all.
+
+* option use_default_statusbar
+* option to automatically start logging

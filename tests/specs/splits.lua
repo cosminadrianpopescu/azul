@@ -1,5 +1,16 @@
+local uuid = require('uuid').uuid;
+local base_path = '/tmp/azul-' .. uuid
 local t = require('test-env')
 local azul = require('azul')
+
+local test_bug1 = function()
+    local file = base_path .. '/splits.log'
+    azul.start_logging(file)
+    azul.send_to_current('for run in {1..' .. (vim.fn.winheight(0) * 2) .. '}; do echo $run; done<cr>', true)
+    local lines = require('split').split(require('files').read_file(file), "\n")
+    t.assert(#vim.tbl_filter(function(l) return l == "1" end, lines) > 0, 'Could not find logged line')
+    t.done()
+end
 
 local main_t = azul.get_current_terminal()
 t.simulate_keys('<C-s>sljjj<cr>', {PaneChanged = 4, ModeChanged = 3}, function()
@@ -15,7 +26,7 @@ t.simulate_keys('<C-s>sljjj<cr>', {PaneChanged = 4, ModeChanged = 3}, function()
                 t.simulate_keys('<cr>')
                 n = #azul.get_terminals()
                 t.assert(n == 6, "There should be 6 terminals, not " .. vim.inspect(n))
-                t.done()
+                test_bug1()
             end)
         end)
     end)

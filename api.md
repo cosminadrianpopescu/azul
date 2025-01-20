@@ -488,6 +488,47 @@ Renames the tab title
 
 Renames the currently selected tab.
 
+#### edit
+
+**Parameters**:
+
+* t The azul terminal in which to edit
+* file The file to edit
+* on_finish Callback to be called when the editing is finished (optional)
+
+Edit a file inside the azul `t` terminal window using the editor set in the
+`$EDITOR` variable. When the editing is finished (the editor is closed), the
+terminal output is restored and the callback `on_finish` is called (if passed
+in the initial call)
+
+#### edit_scrollback
+
+**Parameters**:
+
+* t The azul terminal for which to edit the current scrollback
+
+Edits the current terminal buffer of the azul terminal `t`.
+
+#### edit_scrollback_log
+
+**Parameters**:
+
+* t The azul terminal for which to edit the scrollback log
+
+Edits the scrollback buffer log for the azul terminal `t`. If the logging is
+not started for the given terminal (by calling `AzulStartLogging`), an error
+message is thrown.
+
+#### edit_current_scrollback
+
+Edits the scrollback buffer of the current terminal.
+
+#### edit_current_scrollback_log
+
+Edits the scrollback buffer log of the current terminal. If the logging is not
+started for the current terminal (by calling `AzulStartLogging`), an error
+message is thrown.
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will

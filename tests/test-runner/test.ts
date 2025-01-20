@@ -1,4 +1,4 @@
-export type TestCaseInitCallback = () => Promise<string> | string;
+export type TestCaseInitCallback = () => Promise<void | string> | string;
 export type TestCaseDesc = {
     desc?: string;
     luaFile: string;
