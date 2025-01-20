@@ -83,6 +83,7 @@ M.default_config = {
         tab_title = 'Tab :tab_n:',
         use_dressing = true,
         opacity = 0,
+        use_lualine = true,
     },
     shortcuts = {
         azul = {

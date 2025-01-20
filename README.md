@@ -624,6 +624,10 @@ or the action directly, for the `emacs` workflow. For more info see the
   (default true)
 * **tab_title** The default tab title. See the [placeholders](#placeholders)
   section (default `Tab :tab_n:`)
+* **use_lualine** If true, then use the current lunaline theme for the
+  statusbar. In case you want to use your own statusbar nvim plugin, or a
+  tabline plugin, just set this option to false and load your statusline or
+  tabline plugin via `init.lua`
 
 #### Placeholders
 

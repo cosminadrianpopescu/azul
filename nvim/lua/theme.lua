@@ -1,7 +1,5 @@
 local mx = require('azul')
 local cfg = require('config')
-local theme = cfg.default_config.options.theme
-local disabled = require('disabled-theme')
 
 local dressing_opts = {
     input = {enabled = false},
@@ -19,6 +17,12 @@ if cfg.default_config.options.use_dressing then
 end
 require('dressing').setup(dressing_opts)
 
+if not cfg.default_config.options.use_lualine then
+    return
+end
+
+local theme = cfg.default_config.options.theme
+local disabled = require('disabled-theme')
 local is_disabled = false
 
 local M = {}
