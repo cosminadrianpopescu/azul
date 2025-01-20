@@ -11,6 +11,7 @@ if cfg.default_config.options.use_dressing then
         title_pos = 'center',
         start_mode = 'normal',
         relative = 'editor',
+        border = "double",
     }
     dressing_opts.input = opts
     dressing_opts.select = opts
