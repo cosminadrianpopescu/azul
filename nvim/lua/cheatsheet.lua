@@ -1,6 +1,5 @@
 local azul = require('azul')
 local funcs = require('functions')
-local M = {}
 local cfg = require('config')
 
 local win_id = nil
@@ -134,14 +133,14 @@ local wait_input = function(mode, win_id)
     end
 end
 
-local cheatsheet_content = function(mode, lines_no)
+local cheatsheet_content = function(mode, height)
     local maps = get_mappings_for_mode(mode)
     table.sort(maps, function(m1, m2) return m1.ls < m2.ls end)
     -- A first empty line
     local result = {""}
 
     for i, map in ipairs(maps) do
-        local line_idx = math.fmod(i - 1, lines_no) + 2
+        local line_idx = math.fmod(i - 1, height) + 2
         local s = string.rep(" ", COL_PAD) .. map.ls .. " " .. ARROW .. " " .. (map.options.desc or 'No description')
         if s:len() > COL_LEN - COL_PAD then
             s = s:sub(1, COL_LEN - COL_PAD - 3) .. "..."
@@ -257,6 +256,10 @@ local map_all = function(mode, modifier)
     end
 end
 
+if not cfg.default_config.options.use_cheatsheet then
+    return
+end
+
 azul.on('ModifierTrigger', function(args)
     local mode = args[1]
     local modifier = args[2]
@@ -269,5 +272,3 @@ azul.on('ModifierTrigger', function(args)
         map_all(mode, modifier)
     end
 end)
-
-return M
