@@ -1282,10 +1282,10 @@ local snapshot = function(buf)
     return lines
 end
 
-local snapshotEquals = function(s1, s2)
+local snapshotEquals = function(new_lines, existing_lines)
     local i = 1;
-    while i <= #s1 do
-        if s1[i] ~= s2[i] then
+    while i <= #new_lines do
+        if new_lines[i] ~= existing_lines[i] then
             return false
         end
         i = i + 1
@@ -1294,24 +1294,24 @@ local snapshotEquals = function(s1, s2)
     return true
 end
 
-local function diff(s1, s2)
-    if snapshotEquals(s1, s2) then
+local function diff(new_lines, existing_lines)
+    if snapshotEquals(new_lines, existing_lines) then
         local result = {}
-        local j = #s1 + 1
-        while j <= #s2 do
-            table.insert(result, s2[j])
+        local j = #new_lines + 1
+        while j <= #existing_lines do
+            table.insert(result, existing_lines[j])
             j = j + 1
         end
 
         return result
     end
 
-    if #s1 == 0 then
-        return s2
+    if #new_lines == 0 then
+        return existing_lines
     end
 
-    table.remove(s1, 0)
-    return diff(s1, s2)
+    table.remove(new_lines, 0)
+    return diff(new_lines, existing_lines)
 end
 
 L.is_logging_started = function(buf)
