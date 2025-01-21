@@ -4,6 +4,7 @@ local funcs = require('functions')
 local FILES = require('files')
 
 local is_suspended = false
+local is_modifier = false
 
 local updating_tab_titles = false
 local azul_started = false
@@ -44,6 +45,11 @@ local latest_float = {}
 local global_last_status = nil
 local quit_on_last = true
 
+local get_modifier_mode = function()
+    return (workflow == 'azul' and 't') or 'n'
+end
+
+
 local events = {
     FloatClosed = {},
     ModeChanged = {},
@@ -55,6 +61,7 @@ local events = {
     LayoutSaved = {},
     LayoutRestored = {},
     ModifierTrigger = {},
+    ModifierFinished = {},
     AboutToBeBlocked = {},
     WinConfigChanged = {},
     TabTitleChanged = {},
@@ -83,6 +90,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGER " .. vim.inspect(ev) .. " WITH " .. vim.inspect(args))
     if not vim.tbl_contains(vim.tbl_keys(events), ev) then
         return
     end
@@ -663,7 +671,7 @@ L.is_vim_mode = function(m)
 end
 
 L.get_real_mode = function(m)
-    return (L.is_vim_mode(m) and m) or ((workflow == 'tmux' and 'n') or 't')
+    return (L.is_vim_mode(m) and m) or get_modifier_mode()
 end
 
 local do_set_key_map = function(map_mode, ls, rs, options)
@@ -673,7 +681,7 @@ local do_set_key_map = function(map_mode, ls, rs, options)
     local _mode = L.get_real_mode(map_mode)
     if map == nil then
         table.insert(mode_mappings, {
-            m = map_mode, ls = ls, rs = rs, options = options, real_mode = _mode
+            m = map_mode, ls = ls, rs = rs, options = options, real_mode = _mode,
         })
     else
         map.m = map_mode
@@ -929,16 +937,15 @@ M.set_workflow = function(w, _use_cheatsheet, m)
     local cheatsheet = (_use_cheatsheet == nil) or _use_cheatsheet
     mod = m or '<C-s>'
     workflow = w
-    if workflow == 'tmux' and not cheatsheet then
+    if workflow == 'azul' or workflow == 'tmux' then
         vim.api.nvim_set_keymap('t', mod, '', {
             callback = function()
-                M.enter_mode('n')
-                M.feedkeys('<C-\\><C-n>', 't')
-            end
-        })
-    elseif (workflow == 'azul' or workflow == 'tmux') and cheatsheet then
-        vim.api.nvim_set_keymap('t', mod, '', {
-            callback = function()
+                if is_modifier then
+                    M.send_to_current(mod, true)
+                    is_modifier = false
+                    trigger_event('ModifierFinished', {get_modifier_mode(), mod})
+                    return
+                end
                 if mode == 'P' then
                     M.send_to_current(mod, true)
                     return
@@ -947,7 +954,8 @@ M.set_workflow = function(w, _use_cheatsheet, m)
                     M.enter_mode('n')
                     M.feedkeys('<C-\\><C-n>', 't')
                 end
-                trigger_event('ModifierTrigger', {(workflow == 'azul' and 't') or 'n', mod})
+                trigger_event('ModifierTrigger', {get_modifier_mode(), mod})
+                is_modifier = true
             end,
             desc = '',
         })
@@ -1569,6 +1577,34 @@ end
 
 M.get_current_modifier = function()
     return mod
+end
+
+M.run_map = function(m)
+    if M.is_modifier_mode(m.m) then
+        trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
+        is_modifier = false
+    end
+    if m.options.callback ~= nil then
+        m.options.callback()
+    elseif m.rs ~= nil then
+        M.feedkeys(m.rs, m.real_mode)
+    end
+end
+
+M.cancel_modifier = function()
+    if not M.is_modifier_mode(M.current_mode()) then
+        return
+    end
+    trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
+    is_modifier = false
+end
+
+M.is_modifier_mode = function(m)
+    if workflow ~= 'tmux' and workflow ~= 'azul' then
+        return false
+    end
+
+    return (workflow == 'tmux' and m == 'n') or (workflow == 'azul' and m == 't')
 end
 
 return M

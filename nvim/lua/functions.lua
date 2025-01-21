@@ -19,6 +19,10 @@ local find = function(callback, table)
     return result[1]
 end
 
+local find_map = function(which, mode)
+    return find(function(m) return m.lhs == which end, vim.api.nvim_get_keymap(mode))
+end
+
 local log = function(msg, file)
     if file == nil then
         file = "/tmp/azul-log"
@@ -47,10 +51,20 @@ local safe_del_tab_var = function(tab, name)
     end
 end
 
+local restore_map = function(mode, which, map)
+    vim.api.nvim_set_keymap(mode, which, map.rhs or '', {
+        nowait = map.nowait, silent = map.silent, expr = map.expr,
+        unique = map.unique, callback = map.callback or nil,
+        noremap = map.noremap, desc = map.desc,
+    })
+end
+
 return {
     get_sensitive_ls = get_sensitive_ls,
     find = find,
     log = log,
     safe_get_tab_var = safe_get_tab_var,
     safe_del_tab_var = safe_del_tab_var,
+    find_map = find_map,
+    restore_map = restore_map,
 }

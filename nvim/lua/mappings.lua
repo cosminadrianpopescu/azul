@@ -2,6 +2,44 @@ local azul = require('azul')
 local cfg = require('config')
 local funcs = require('functions')
 
+local mappings = {
+    modifier = nil,
+    esc = nil,
+    cc = nil,
+}
+
+local save_current_mappings = function(mode, modifier)
+    mappings.modifier = funcs.find_map(modifier:upper(), 't')
+    mappings.cc = funcs.find_map('<C-C>', mode)
+    mappings.esc = funcs.find_map('<Esc>', mode)
+end
+
+local restore_previous_mappings = function(mode, modifier)
+    vim.api.nvim_del_keymap('t', modifier)
+    vim.api.nvim_del_keymap(mode, '<esc>')
+    vim.api.nvim_del_keymap(mode, '<C-c>')
+    if mappings.modifier ~= nil then
+        funcs.restore_map('t', modifier, mappings.modifier)
+        mappings.modifier = nil
+    end
+    if mappings.esc ~= nil then
+        funcs.restore_map(mode, '<esc>', mappings.esc)
+        mappings.esc = nil
+    end
+    if mappings.cc ~= nil then
+        funcs.restore_map(mode, '<C-c>', mappings.cc)
+        mappings.cc = nil
+    end
+end
+
+local set_cancel_shortcut = function(which, mode)
+    vim.api.nvim_set_keymap(mode, which, '', {
+        callback = function()
+            azul.cancel_modifier()
+        end
+    })
+end
+
 local unmap_all = function(mode)
     local collection = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
     for _, m in ipairs(collection) do
@@ -18,15 +56,48 @@ local remap_all = function(mode)
     for _, m in ipairs(collection) do
         vim.api.nvim_set_keymap(m.real_mode, m.ls, m.rs, m.options)
     end
+    for _, m in ipairs(collection) do
+        vim.api.nvim_set_keymap(m.real_mode, m.ls, '', {
+            callback = function()
+                -- unmap_all(mode, modifier)
+                azul.run_map(m)
+            end,
+            desc = m.desc,
+        })
+    end
 end
 
-azul.on('ModeChanged', function(args)
-    local wf = azul.get_current_workflow()
-    local old_mode = args[1]
-    local new_mode = args[2]
-    if cfg.default_config.options.blocking_cheatsheet and ((wf == 'azul' and new_mode == 't') or (wf == 'tmux' and new_mode == 'n')) then
+azul.on('ModifierTrigger', function(args)
+    local mode = args[1]
+    local modifier = args[2]
+    if cfg.default_config.options.blocking_cheatsheet then
         return
     end
-    unmap_all(old_mode)
-    remap_all(new_mode)
+    save_current_mappings(mode, modifier)
+    remap_all(mode)
+    set_cancel_shortcut('<esc>', mode)
+    set_cancel_shortcut('<C-c>', mode)
+end)
+
+azul.on('ModifierFinished', function(args)
+    local mode = args[1]
+    local modifier = args[2]
+    if cfg.default_config.options.blocking_cheatsheet then
+        return
+    end
+    unmap_all(mode)
+    restore_previous_mappings(mode, modifier)
+end)
+
+azul.on('ModeChanged', function(args)
+    local old_mode = args[1]
+    local new_mode = args[2]
+
+    if not azul.is_modifier_mode(old_mode) then
+        unmap_all(old_mode)
+    end
+
+    if not azul.is_modifier_mode(new_mode) then
+        remap_all(new_mode)
+    end
 end)

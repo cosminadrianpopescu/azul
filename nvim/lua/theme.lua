@@ -22,9 +22,11 @@ if not cfg.default_config.options.use_lualine then
     return
 end
 
+local is_modifier = false
 local theme = cfg.default_config.options.theme
 local disabled = require('disabled-theme')
 local is_disabled = false
+local wf = mx.get_current_workflow()
 
 local M = {}
 
@@ -138,6 +140,13 @@ local function current_name()
     return vim.b.term_title or ''
 end
 
+local function modifier()
+    if wf ~= 'tmux' and wf ~= 'azul' then
+        return ''
+    end
+    return (is_modifier and mx.get_current_modifier()) or ''
+end
+
 local line_utils = require('lualine.utils.utils')
 
 local obj = require('lualine.components.filename');
@@ -212,7 +221,7 @@ require('lualine').setup {
         lualine_c = {
             {current_name}
         },
-        lualine_x = {'encoding', 'fileformat', 'filetype'},
+        lualine_x = {modifier, 'encoding', 'fileformat', 'filetype'},
         lualine_y = {'progress'},
         lualine_z = {'location'}
     },
@@ -221,6 +230,16 @@ require('lualine').setup {
     inactive_winbar = {},
     extensions = {}
 }
+
+mx.on('ModifierTrigger', function()
+    is_modifier = true
+    -- require('lualine').setup({options = {theme = theme}})
+end)
+
+mx.on('ModifierFinished', function()
+    is_modifier = false
+    -- require('lualine').setup({options = {theme = theme}})
+end)
 
 mx.on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function(args)
     if is_disabled and mx.current_mode() ~= 'P' then

@@ -3,11 +3,6 @@ local funcs = require('functions')
 local cfg = require('config')
 
 local win_id = nil
-local mappings = {
-    modifier = nil,
-    esc = nil,
-    cc = nil,
-}
 local timer = nil
 local timer_set = false
 
@@ -25,20 +20,7 @@ local close_window = function(win_id)
     end
 end
 
-local select = function(m, mode, win_id)
-    local err
-    if m.options.callback ~= nil then
-        _, err = pcall(function() m.options.callback() end)
-    elseif m.rs ~= nil then
-        _, err = pcall(function() azul.feedkeys(m.rs, mode) end)
-    end
-    close_window(win_id)
-    if err then
-        error(err)
-    end
-end
-
-local try_select = function(collection, c, mode, win_id)
+local try_select = function(collection, c)
     local map = funcs.find(function(x) return funcs.get_sensitive_ls(x.ls) == funcs.get_sensitive_ls(c) end, collection)
     if map == nil then
         if azul.get_current_workflow() == 'tmux' then
@@ -46,28 +28,16 @@ local try_select = function(collection, c, mode, win_id)
         else
             azul.send_to_current('<C-s>' .. c, true)
         end
-        close_window(win_id)
+        azul.cancel_modifier()
         return false
     else
-        select(map, mode, win_id)
+        azul.run_map(map)
         return true
     end
 end
 
 local get_mappings_for_mode = function(mode)
     return vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
-end
-
-local find_map = function(which, mode)
-    return funcs.find(function(m) return m.lhs == which end, vim.api.nvim_get_keymap(mode))
-end
-
-local restore_map = function(mode, which, map)
-    vim.api.nvim_set_keymap(mode, which, map.rhs or '', {
-        nowait = map.nowait, silent = map.silent, expr = map.expr,
-        unique = map.unique, callback = map.callback or nil,
-        noremap = map.noremap, desc = map.desc,
-    })
 end
 
 local wait_input = function(mode, win_id)
@@ -78,11 +48,11 @@ local wait_input = function(mode, win_id)
     while true do
         -- Prevent Keyboard interrupt error when pressing <C-c>. 
         -- See https://github.com/neovim/neovim/issues/16416
-        local cc_map = find_map('<C-C>', 'n')
+        local cc_map = funcs.find_map('<C-C>', 'n')
         vim.api.nvim_set_keymap('n', '<C-c>', '<Esc>', {})
         local trans = azul.block_input()
         if cc_map ~= nil then
-            restore_map('n', '<C-c>', cc_map)
+            funcs.restore_map('n', '<C-c>', cc_map)
         else
             vim.api.nvim_del_keymap('n', '<C-c>')
         end
@@ -96,16 +66,16 @@ local wait_input = function(mode, win_id)
         if timer ~= nil then
             local new_char = funcs.get_sensitive_ls(trans)
             if new_char == "<c-c>" or new_char == '<Esc>' then
-                close_window(win_id)
+                azul.cancel_modifier()
                 return
             end
             if new_char == '<cr>' then
-                try_select(collection, c, mode, win_id)
+                try_select(collection, c)
                 return
             end
             if new_char == '<c-s>' and c == '' then
                 azul.send_to_current('<c-s>', true)
-                close_window(win_id)
+                azul.cancel_modifier()
                 return
             end
             before_c = c
@@ -113,15 +83,15 @@ local wait_input = function(mode, win_id)
             collection = vim.tbl_filter(function(x) return funcs.get_sensitive_ls(x.ls):match("^" .. c) end, collection)
         end
         if timer == nil then
-            try_select(collection, c, mode, win_id)
+            try_select(collection, c)
             return
         end
         if #collection == 1 and funcs.get_sensitive_ls(collection[1].ls) == c then
-            select(collection[1], mode, win_id)
+            azul.run_map(collection[1])
             return
         end
         if #collection == 0 then
-            local result = try_select(vim.tbl_filter(function(x) return x.m == mode end, get_mappings_for_mode(mode)), before_c, mode, win_id)
+            local result = try_select(vim.tbl_filter(function(x) return x.m == mode end, get_mappings_for_mode(mode)), before_c)
             local after = c:gsub("^" .. before_c, "")
             if not result and azul.get_current_workflow() ~= 'tmux' then
                 azul.send_to_current(after, true)
@@ -174,7 +144,7 @@ local create_window = function(mode)
     local buf = vim.api.nvim_create_buf(false, true)
     local win_id = vim.api.nvim_open_win(buf, true, {
         width = vim.o.columns, height = height + 4, col = 0, row = vim.o.lines - height - 5,
-        focusable = false, zindex = 500, border = 'none', relative = 'editor', style = 'minimal',
+        focusable = false, zindex = 1, border = 'none', relative = 'editor', style = 'minimal',
     })
     vim.filetype.add({
         filename = {
@@ -190,85 +160,21 @@ local create_window = function(mode)
     return win_id
 end
 
-local restore_previous_mappings = function(mode, modifier)
-    vim.api.nvim_del_keymap('t', modifier)
-    vim.api.nvim_del_keymap(mode, '<esc>')
-    vim.api.nvim_del_keymap(mode, '<C-c>')
-    if mappings.modifier ~= nil then
-        restore_map('t', modifier, mappings.modifier)
-    end
-    if mappings.esc ~= nil then
-        restore_map(mode, '<esc>', mappings.esc)
-    end
-    if mappings.cc ~= nil then
-        restore_map(mode, '<C-c>', mappings.cc)
-    end
-end
-
-local unmap_all = function(mode, modifier)
-    restore_previous_mappings(mode, modifier)
-    for _, m in ipairs(get_mappings_for_mode(mode)) do
-        local cmd = m.real_mode .. 'unmap ' .. m.ls
-        local result = pcall(function() vim.api.nvim_command(cmd) end)
-        if not result then
-            print(cmd .. " failed")
-        end
-    end
-end
-
-local save_current_mappings = function(mode, modifier)
-    mappings.modifier = find_map(modifier:upper(), 't')
-    mappings.cc = find_map('<C-C>', mode)
-    mappings.esc = find_map('<Esc>', mode)
-end
-
-local cancel_cheatsheet = function(mode, modifier)
-    close_window(win_id)
-    unmap_all(mode, modifier)
-end
-
-local set_cancel_shortcut = function(which, mode, modifier)
-    vim.api.nvim_set_keymap(mode, which, '', {
-        callback = function()
-            cancel_cheatsheet(mode, modifier)
-        end
-    })
-end
-
-local map_all = function(mode, modifier)
-    save_current_mappings(mode, modifier)
-    vim.api.nvim_set_keymap('t', modifier, '', {
-        callback = function()
-            azul.send_to_current(modifier, true)
-            cancel_cheatsheet(mode, modifier)
-        end
-    })
-    set_cancel_shortcut('<esc>', mode, modifier)
-    set_cancel_shortcut('<C-c>', mode, modifier)
-    for _, m in ipairs(get_mappings_for_mode(mode)) do
-        vim.api.nvim_set_keymap(mode, m.ls, '', {
-            callback = function()
-                unmap_all(mode, modifier)
-                select(m, mode, win_id)
-            end,
-            desc = m.desc,
-        })
-    end
-end
-
 if not cfg.default_config.options.use_cheatsheet then
     return
 end
 
+azul.on('ModifierFinished', function()
+    close_window(win_id)
+end)
+
 azul.on('ModifierTrigger', function(args)
     local mode = args[1]
-    -- local modifier = args[2]
     win_id = create_window(mode)
     if cfg.default_config.options.blocking_cheatsheet then
         vim.fn.timer_start(0, function()
             wait_input(mode, win_id)
         end)
-    -- else
-    --     map_all(mode, modifier)
+        return
     end
 end)
