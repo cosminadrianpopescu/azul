@@ -353,7 +353,7 @@ end
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'
 M.enter_mode = function(new_mode)
     local old_mode = mode
-    L.unmap_all(mode)
+    -- L.unmap_all(mode)
     if mode == 'P' then
         if M.options.hide_in_passthrough then
             vim.o.laststatus = global_last_status
@@ -385,7 +385,7 @@ M.enter_mode = function(new_mode)
         })
     end
     trigger_event('ModeChanged', {old_mode, new_mode})
-    L.remap_all(new_mode)
+    -- L.remap_all(new_mode)
     if L.is_vim_mode(new_mode) then
         return
     end
@@ -1565,6 +1565,10 @@ end
 
 M.edit_current_scrollback_log = function()
     M.edit_scrollback_log(M.get_current_terminal())
+end
+
+M.get_current_modifier = function()
+    return mod
 end
 
 return M
