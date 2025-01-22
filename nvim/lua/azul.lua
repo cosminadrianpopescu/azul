@@ -327,7 +327,11 @@ local OnTermClose = function(ev)
 end
 
 local session_child_file = function(for_parent)
-    return os.getenv('AZUL_RUN_DIR') .. '/' .. os.getenv((for_parent and 'AZUL_PARENT_SESSION') or 'AZUL_SESSION') .. '-child'
+    local name = os.getenv((for_parent and 'AZUL_PARENT_SESSION') or 'AZUL_SESSION')
+    if name == nil then
+        name = ''
+    end
+    return os.getenv('AZUL_RUN_DIR') .. '/' .. name .. '-child'
 end
 
 local has_child_sessions_in_passthrough = function()
