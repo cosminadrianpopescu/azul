@@ -233,12 +233,12 @@ require('lualine').setup {
 
 mx.on('ModifierTrigger', function()
     is_modifier = true
-    -- require('lualine').setup({options = {theme = theme}})
+    require('lualine').refresh()
 end)
 
 mx.on('ModifierFinished', function()
     is_modifier = false
-    -- require('lualine').setup({options = {theme = theme}})
+    require('lualine').refresh()
 end)
 
 mx.on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function(args)

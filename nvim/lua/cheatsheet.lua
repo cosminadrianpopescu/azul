@@ -80,7 +80,11 @@ local wait_input = function(mode, win_id)
             end
             before_c = c
             c = c .. new_char
-            collection = vim.tbl_filter(function(x) return funcs.get_sensitive_ls(x.ls):match("^" .. c) end, collection)
+            collection = vim.tbl_filter(function(x)
+                local s = funcs.get_sensitive_ls(x.ls)
+                return string.sub(s, 1, string.len(c)) == c
+            end, collection)
+            -- collection = vim.tbl_filter(function(x) return funcs.get_sensitive_ls(x.ls):match("^" .. c) end, collection)
         end
         if timer == nil then
             try_select(collection, c)
@@ -144,7 +148,7 @@ local create_window = function(mode)
     local buf = vim.api.nvim_create_buf(false, true)
     local win_id = vim.api.nvim_open_win(buf, true, {
         width = vim.o.columns, height = height + 4, col = 0, row = vim.o.lines - height - 5,
-        focusable = false, zindex = 1, border = 'none', relative = 'editor', style = 'minimal',
+        focusable = false, zindex = 500, border = 'none', relative = 'editor', style = 'minimal',
     })
     vim.filetype.add({
         filename = {

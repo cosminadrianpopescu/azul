@@ -90,7 +90,6 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    funcs.log("TRIGGER " .. vim.inspect(ev) .. " WITH " .. vim.inspect(args))
     if not vim.tbl_contains(vim.tbl_keys(events), ev) then
         return
     end
@@ -392,8 +391,9 @@ M.enter_mode = function(new_mode)
             end
         })
     end
-    trigger_event('ModeChanged', {old_mode, new_mode})
-    -- L.remap_all(new_mode)
+    if old_mode ~= new_mode then
+        trigger_event('ModeChanged', {old_mode, new_mode})
+    end
     if L.is_vim_mode(new_mode) then
         return
     end
@@ -444,6 +444,9 @@ local update_tab_titles = function()
                 vim.api.nvim_tabpage_set_var(t, 'azul_title_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
                 trigger_event('TabTitleChanged')
+                vim.fn.timer_start(1, function()
+                    vim.api.nvim_command('startinsert')
+                end)
             end
         )
     end
@@ -501,10 +504,10 @@ cmd({'FileType'}, {
         if vim.o.filetype ~= 'DressingInput' then
             return
         end
-        vim.fn.timer_start(1, function()
-            M.feedkeys('i', 'n')
-            trigger_event('ModeChanged', {'t', 'n'})
-        end)
+        -- vim.fn.timer_start(1, function()
+        --     M.feedkeys('i', 'n')
+        --     trigger_event('ModeChanged', {'t', 'n'})
+        -- end)
     end
 })
 
@@ -671,7 +674,7 @@ L.is_vim_mode = function(m)
 end
 
 L.get_real_mode = function(m)
-    return (L.is_vim_mode(m) and m) or get_modifier_mode()
+    return (L.is_vim_mode(m) and m) or (workflow == 'tmux' and 'n') or 't'
 end
 
 local do_set_key_map = function(map_mode, ls, rs, options)
@@ -712,17 +715,6 @@ L.unmap_all = function(mode)
             end
             table.insert(cmds, cmd)
         end
-    end
-end
-
-L.remap_all = function(mode)
-    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and M.options.use_cheatsheet then
-        return
-    end
-    local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
-    local pref = (workflow == 'azul' and mode == 't' and mod) or ''
-    for _, m in ipairs(collection) do
-        vim.api.nvim_set_keymap(m.real_mode, pref .. m.ls, m.rs, m.options)
     end
 end
 
@@ -1518,6 +1510,13 @@ M.on('AzulStarted', function()
     vim.fn.timer_start(200, update_tab_titles)
 end)
 
+M.on('ModeChanged', function(args)
+    local old_mode = args[1]
+    if M.is_modifier_mode(old_mode) and is_modifier then
+        M.cancel_modifier()
+    end
+end)
+
 M.edit = function(t, file, on_finish)
     if t.editing_buf ~= nil then
         L.error('The current terminal is already displaying an editor')
@@ -1592,7 +1591,7 @@ M.run_map = function(m)
 end
 
 M.cancel_modifier = function()
-    if not M.is_modifier_mode(M.current_mode()) then
+    if not is_modifier then
         return
     end
     trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})

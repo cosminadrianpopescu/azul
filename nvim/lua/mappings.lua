@@ -53,9 +53,9 @@ end
 
 local remap_all = function(mode)
     local collection = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
-    for _, m in ipairs(collection) do
-        vim.api.nvim_set_keymap(m.real_mode, m.ls, m.rs, m.options)
-    end
+    -- for _, m in ipairs(collection) do
+    --     vim.api.nvim_set_keymap(m.real_mode, m.ls, m.rs, m.options)
+    -- end
     for _, m in ipairs(collection) do
         vim.api.nvim_set_keymap(m.real_mode, m.ls, '', {
             callback = function()
@@ -70,7 +70,7 @@ end
 azul.on('ModifierTrigger', function(args)
     local mode = args[1]
     local modifier = args[2]
-    if cfg.default_config.options.blocking_cheatsheet then
+    if cfg.default_config.options.blocking_cheatsheet and cfg.default_config.options.use_cheatsheet then
         return
     end
     save_current_mappings(mode, modifier)
@@ -82,7 +82,7 @@ end)
 azul.on('ModifierFinished', function(args)
     local mode = args[1]
     local modifier = args[2]
-    if cfg.default_config.options.blocking_cheatsheet then
+    if cfg.default_config.options.blocking_cheatsheet and cfg.default_config.options.use_cheatsheet then
         return
     end
     unmap_all(mode)
