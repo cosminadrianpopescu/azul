@@ -55,6 +55,7 @@ local actions = {
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
     'copy', 'paste', 'rotate_panel',
     'rename_tab', 'edit_scrollback', 'edit_scrollback_log',
+    'show_mode_cheatsheet',
 }
 
 local modes = {
@@ -122,13 +123,15 @@ M.default_config = {
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 resize_left = 'h$$$<left>', resize_right = 'l$$$<right>', resize_up = 'k$$$<up>', resize_down = 'j$$$<down>',
+                show_mode_cheatsheet = '<C-o>',
             },
             pane = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 split_left = 'H$$$<s-left>', split_right = 'L$$$<s-right>', split_up = 'K$$$<s-up>', split_down = 'J$$$<s-down>',
                 rotate_panel = 'x',
-                edit_scrollback = 'e', edit_scrollback_log = 'ge'
+                edit_scrollback = 'e', edit_scrollback_log = 'ge',
+                show_mode_cheatsheet = '<C-o>',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -149,15 +152,18 @@ M.default_config = {
                     ['1'] = '<C-j>$$$<c-down>',
                 },
                 move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
+                show_mode_cheatsheet = '<C-o>',
             },
             split = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 split_left = 'h$$$<left>', split_right = 'l$$$<right>', split_up = 'k$$$<up>', split_down = 'j$$$<down>',
+                show_mode_cheatsheet = '<C-o>',
             },
             tabs = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
                 rename_tab = 'r',
+                show_mode_cheatsheet = '<C-o>',
             },
             visual = {
                 copy = 'y$$$<C-c>',
@@ -199,13 +205,15 @@ M.default_config = {
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 resize_left = 'h$$$<left>', resize_right = 'l$$$<right>', resize_up = 'k$$$<up>', resize_down = 'j$$$<down>',
+                show_mode_cheatsheet = '<C-o>',
             },
             pane = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 split_left = 'H$$$<s-left>', split_right = 'L$$$<s-right>', split_up = 'K$$$<s-up>', split_down = 'J$$$<s-down>',
                 rotate_panel = 'x',
-                edit_scrollback = 'e', edit_scrollback_log = 'ge'
+                edit_scrollback = 'e', edit_scrollback_log = 'ge',
+                show_mode_cheatsheet = '<C-o>',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -226,15 +234,18 @@ M.default_config = {
                     ['1'] = '<C-j>$$$<c-down>',
                 },
                 move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
+                show_mode_cheatsheet = '<C-o>',
             },
             split = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 split_left = 'h$$$<left>', split_right = 'l$$$<right>', split_up = 'k$$$<up>', split_down = 'j$$$<down>',
+                show_mode_cheatsheet = '<C-o>',
             },
             tabs = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
                 rename_tab = 'r',
+                show_mode_cheatsheet = '<C-o>',
             },
             visual = {
                 copy = 'y$$$<C-c>',
@@ -258,6 +269,7 @@ M.default_config = {
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 resize_left = 'h$$$<left>', resize_right = 'l$$$<right>', resize_up = 'k$$$<up>', resize_down = 'j$$$<down>',
+                show_mode_cheatsheet = '<C-o>',
             },
             pane = {
                 select_terminal = 'T',
@@ -267,7 +279,8 @@ M.default_config = {
                 create_float = 'f',
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 rotate_panel = 'x',
-                edit_scrollback = 'e', edit_scrollback_log = 'ge'
+                edit_scrollback = 'e', edit_scrollback_log = 'ge',
+                show_mode_cheatsheet = '<C-o>',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -288,15 +301,18 @@ M.default_config = {
                     ['1'] = '<C-j>$$$<c-down>',
                 },
                 move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
+                show_mode_cheatsheet = '<C-o>',
             },
             split = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 split_left = 'h$$$<left>', split_right = 'l$$$<right>', split_up = 'k$$$<up>', split_down = 'j$$$<down>',
+                show_mode_cheatsheet = '<C-o>',
             },
             tabs = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
                 rename_tab = 'r',
+                show_mode_cheatsheet = '<C-o>',
             },
             visual = {
                 copy = 'y$$$<C-c>',
@@ -479,10 +495,12 @@ local set_shortcut = function(action, shortcut, mode, arg)
             desc = "Disconnect",
         })
     elseif action == 'resize_left' or action == 'resize_right' or action == 'resize_down' or action == 'resize_up' then
+        local where = action:gsub('resize_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.resize(action:gsub('resize_', ''))
+                azul.resize(where)
             end,
+            desc = "Resize " .. where
         })
     elseif action == 'select_left' or action == 'select_right' or action == 'select_down' or action == 'select_up' then
         local dir = action:gsub('select_', '')
@@ -490,7 +508,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 azul.select_next_pane(dir, float_group())
             end,
-            desc = 'Select a pane to the ' .. dir
+            desc = 'Select a pane ' .. dir
         })
     elseif action == 'move_left' or action == 'move_right' or action == 'move_up' or action == 'move_down' then
         local dir = action:gsub('move_', '')
@@ -506,7 +524,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 azul.split(dir)
             end,
-            desc = 'Split to ' .. dir
+            desc = 'Split ' .. dir
         })
     elseif action == 'move_top' or action == 'move_bottom' or action == 'move_start' or action == 'move_end' then
         local dir = action:gsub('move_', '')
@@ -520,10 +538,12 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local args = {
             tab_select_first = 'tabfirst', tab_select_next = 'tabnext', tab_select_previous = 'tabprev', tab_select_last = 'tablast',
         }
+        local where = action:gsub('tab_select_', '')
         map(mode, shortcut, '', {
             callback = function()
                 vim.api.nvim_command(args[action])
-            end
+            end,
+            desc = "Select " .. where .. " tab"
         })
     elseif action == 'copy' then
         if wf ~= 'emacs' and mode ~= 'v' then
@@ -575,6 +595,14 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 azul.enter_mode('t')
             end,
             desc = 'Edits the scrollback log',
+        })
+    elseif action == 'show_mode_cheatsheet' then
+        map(mode, shortcut, '', {
+            callback = function()
+                print("TOGGLE ALL")
+            end,
+            desc = "All shortcuts",
+            action = "show_mode_cheatsheet"
         })
     end
 end

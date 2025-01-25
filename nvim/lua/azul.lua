@@ -111,7 +111,7 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    print(vim.inspect(vim.tbl_filter(function(t) return M.is_float(t) end, M.get_terminals())))
+    -- print(vim.inspect(vim.tbl_filter(function(t) return M.is_float(t) end, M.get_terminals())))
     -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
     -- print("OPTIONS ARE " .. vim.inspect(M.options))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
@@ -121,7 +121,7 @@ M.debug = function(ev)
     -- print("TITLE IS ALREADY" .. vim.b.term_title)
     -- print("JOB ID IS " .. vim.b.terminal_job_id)
     -- print("LATEST FLOATS ARE " .. vim.inspect(latest_float))
-    -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MODE IS" .. mode)
 end
 

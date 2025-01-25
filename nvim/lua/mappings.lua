@@ -2,34 +2,16 @@ local azul = require('azul')
 local cfg = require('config')
 local funcs = require('functions')
 
-local mappings = {
-    modifier = nil,
-    esc = nil,
-    cc = nil,
-}
-
 local save_current_mappings = function(mode, modifier)
-    mappings.modifier = funcs.find_map(modifier:upper(), 't')
-    mappings.cc = funcs.find_map('<C-C>', mode)
-    mappings.esc = funcs.find_map('<Esc>', mode)
+    funcs.save_current_mapping('modifier', modifier:upper(), 't')
+    funcs.save_current_mapping('cc', '<C-C>', mode)
+    funcs.save_current_mapping('esc', '<Esc>', mode)
 end
 
 local restore_previous_mappings = function(mode, modifier)
-    vim.api.nvim_del_keymap('t', modifier)
-    vim.api.nvim_del_keymap(mode, '<esc>')
-    vim.api.nvim_del_keymap(mode, '<C-c>')
-    if mappings.modifier ~= nil then
-        funcs.restore_map('t', modifier, mappings.modifier)
-        mappings.modifier = nil
-    end
-    if mappings.esc ~= nil then
-        funcs.restore_map(mode, '<esc>', mappings.esc)
-        mappings.esc = nil
-    end
-    if mappings.cc ~= nil then
-        funcs.restore_map(mode, '<C-c>', mappings.cc)
-        mappings.cc = nil
-    end
+    funcs.restore_previous_mapping('modifier', modifier:upper(), 't')
+    funcs.restore_previous_mapping('esc', '<Esc>', mode)
+    funcs.restore_previous_mapping('cc', '<C-c>', mode)
 end
 
 local set_cancel_shortcut = function(which, mode)

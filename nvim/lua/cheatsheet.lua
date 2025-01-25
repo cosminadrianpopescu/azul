@@ -13,8 +13,9 @@ local COL_PAD = 2
 local WIN_PAD = 4
 local ARROW = '➜'
 
-local close_window = function(win_id)
+local close_window = function()
     vim.api.nvim_win_close(win_id, true)
+    win_id = nil
     if timer ~= nil then
         vim.fn.timer_stop(timer)
     end
@@ -37,7 +38,23 @@ local try_select = function(collection, c)
 end
 
 local get_mappings_for_mode = function(mode)
-    return vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
+    local result = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
+    table.sort(result, function(m1, m2)
+        if m1.options.action == 'show_mode_cheatsheet' then
+            return false
+        end
+        if m2.options.action == 'show_mode_cheatsheet' then
+            return true
+        end
+        if type(m1) == 'table' and type(m2) == 'table' then
+            return (m1.options.desc or 'No description') < (m2.options.desc or 'No description')
+        end
+        if type(m2) == 'string' then
+            return true
+        end
+        return false
+    end)
+    return result
 end
 
 local wait_input = function(mode, win_id)
@@ -107,15 +124,24 @@ local wait_input = function(mode, win_id)
     end
 end
 
-local cheatsheet_content = function(mode, height)
-    local maps = get_mappings_for_mode(mode)
-    table.sort(maps, function(m1, m2) return m1.ls < m2.ls end)
+local cheatsheet_content = function(mappings, height, full)
     -- A first empty line
-    local result = {""}
+    local result = {}
+    if full then
+        table.insert(result, "")
+    end
 
-    for i, map in ipairs(maps) do
-        local line_idx = math.fmod(i - 1, height) + 2
-        local s = string.rep(" ", COL_PAD) .. map.ls .. " " .. ARROW .. " " .. (map.options.desc or 'No description')
+    local pad = (full and 2) or 1
+
+    for i, map in ipairs(mappings) do
+        local line_idx = math.fmod(i - 1, height) + pad
+        local s = string.rep(" ", COL_PAD)
+        if type(map) == 'string' then
+            s = s .. map
+        else
+            -- s = s .. map.ls .. " " .. ARROW .. " " .. (map.options.desc or 'No description')
+            s = s .. (map.options.desc or 'No description') .. " " .. ARROW .. " " .. map.ls
+        end
         if s:len() > COL_LEN - COL_PAD then
             s = s:sub(1, COL_LEN - COL_PAD - 3) .. "..."
         else
@@ -131,23 +157,39 @@ local cheatsheet_content = function(mode, height)
         result[i] = line .. string.rep(" ", WIN_PAD)
     end
 
-    table.insert(result, "")
-    local footer = "<esc> <C-c> " .. ARROW .. " Cancel"
-    local spaces = math.ceil((vim.o.columns - math.ceil(footer:len())) / 2)
-    local pads = string.rep(" ", spaces)
-    table.insert(result, pads .. footer .. pads)
+    if full then
+        table.insert(result, "")
+        local footer = "<esc> <C-c> " .. ARROW .. " Cancel"
+        local spaces = math.ceil((vim.o.columns - math.ceil(footer:len())) / 2)
+        local pads = string.rep(" ", spaces)
+        table.insert(result, pads .. footer .. pads)
+    end
 
     return result
 end
 
-local create_window = function(mode)
+local get_cols_number = function()
+    return math.floor((vim.o.columns - (WIN_PAD * 2)) / COL_LEN)
+end
+
+local create_window = function(mappings, full)
+    local _full
+    if full == nil then
+        _full = true
+    else
+        _full = full
+    end
     local current_win = vim.api.nvim_get_current_win()
-    local cols = math.floor((vim.o.columns - (WIN_PAD * 2)) / COL_LEN)
-    local height = math.ceil(#get_mappings_for_mode(mode) / cols)
+    local cols = get_cols_number()
+    local height = math.ceil(#mappings / cols)
     azul.suspend()
     local buf = vim.api.nvim_create_buf(false, true)
+    local extra_lines = 0
+    if _full then
+        extra_lines = 4
+    end
     local win_id = vim.api.nvim_open_win(buf, true, {
-        width = vim.o.columns, height = height + 4, col = 0, row = vim.o.lines - height - 5,
+        width = vim.o.columns, height = height + extra_lines, col = 0, row = vim.o.lines - height - extra_lines - 1,
         focusable = false, zindex = 500, border = 'none', relative = 'editor', style = 'minimal',
     })
     vim.filetype.add({
@@ -159,7 +201,7 @@ local create_window = function(mode)
     vim.api.nvim_set_option_value('filetype', 'azul_cheatsheet', {buf = buf})
     vim.api.nvim_command("syn match AzulCheatsheetArrow '" .. ARROW .. "'")
     vim.api.nvim_set_current_win(current_win)
-    vim.api.nvim_buf_set_lines(buf, 0, height + 3, false, cheatsheet_content(mode, height))
+    vim.api.nvim_buf_set_lines(buf, 0, height + 3, false, cheatsheet_content(mappings, height, _full))
     azul.resume()
     return win_id
 end
@@ -168,13 +210,41 @@ if not cfg.default_config.options.use_cheatsheet then
     return
 end
 
+
+
+azul.on('ModeChanged', function(args)
+    local new_mode = args[2]
+    local mappings = get_mappings_for_mode(new_mode)
+    if win_id ~= nil then
+        close_window()
+    end
+    if azul.is_modifier_mode(new_mode) then
+        return
+    end
+    if #mappings == 0 then
+        return
+    end
+    local cols = get_cols_number()
+    local x = #mappings
+    local more = #mappings >= cols * 2
+    while x >= cols * 2 do
+        table.remove(mappings, #mappings)
+        x = #mappings
+    end
+    if more then
+        local maps = funcs.map_by_action(new_mode, 'show_mode_cheatsheet', azul.get_mode_mappings())
+        table.insert(mappings, (#maps > 0 and maps[1]) or "etc.")
+    end
+    win_id = create_window(mappings, false)
+end)
+
 azul.on('ModifierFinished', function()
-    close_window(win_id)
+    close_window()
 end)
 
 azul.on('ModifierTrigger', function(args)
     local mode = args[1]
-    win_id = create_window(mode)
+    win_id = create_window(get_mappings_for_mode(mode))
     if cfg.default_config.options.blocking_cheatsheet then
         vim.fn.timer_start(0, function()
             wait_input(mode, win_id)
