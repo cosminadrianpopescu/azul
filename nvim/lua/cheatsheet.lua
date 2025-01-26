@@ -3,6 +3,7 @@ local funcs = require('functions')
 local cfg = require('config')
 
 local win_id = nil
+local mode_win_id = nil
 local timer = nil
 local timer_set = false
 
@@ -14,11 +15,20 @@ local WIN_PAD = 4
 local ARROW = '➜'
 
 local close_window = function()
-    vim.api.nvim_win_close(win_id, true)
+    if win_id ~= nil then
+        vim.api.nvim_win_close(win_id, true)
+    end
     win_id = nil
     if timer ~= nil then
         vim.fn.timer_stop(timer)
     end
+end
+
+local close_mode_window = function()
+    if mode_win_id ~= nil then
+        vim.api.nvim_win_close(mode_win_id, true)
+    end
+    mode_win_id = nil
 end
 
 local try_select = function(collection, c)
@@ -57,7 +67,7 @@ local get_mappings_for_mode = function(mode)
     return result
 end
 
-local wait_input = function(mode, win_id)
+local wait_input = function(mode)
     local collection = get_mappings_for_mode(mode)
     local c = ''
     local before_c = ''
@@ -131,26 +141,81 @@ local cheatsheet_content = function(mappings, height, full)
         table.insert(result, "")
     end
 
+    local cut_text = function(s, width)
+        if string.len(s) <= width then
+            return s
+        end
+        return s:sub(1, width - 3) .. "..."
+    end
+
     local pad = (full and 2) or 1
 
+    local column_width = COL_LEN - COL_PAD
+    local widths = {}
+    local spaces = string.rep(" ", COL_PAD)
+    local max_desc_width = 0
+    local max_shortcut_width = 0
+    -- Calculate max widths for shortcuts
+    for i, map in ipairs(mappings) do
+        if max_shortcut_width < string.len(map.ls) then
+            max_shortcut_width = string.len(map.ls)
+        end
+
+        if math.fmod(i, height) == 0 and i <#mappings then
+            table.insert(widths, {
+                max_shortcut_width = max_shortcut_width,
+                -- three represents the space, arrow space before the shortcut
+                pref_max_width = column_width - max_shortcut_width - 3,
+            })
+            max_shortcut_width = 0
+        end
+    end
+    table.insert(widths, {
+        max_shortcut_width = max_shortcut_width,
+        pref_max_width = column_width - max_shortcut_width - 3,
+    })
+    funcs.log("GOT WIDTHS " .. vim.inspect(widths) .. " FOR " .. vim.inspect(column_width))
+    local col_idx = 1
+    -- Now, calculate the max widths for descriptions
+    for i, map in ipairs(mappings) do
+        local txt = cut_text(map.options.desc or 'No description', widths[col_idx].pref_max_width)
+        if max_desc_width < string.len(txt) then
+            max_desc_width = string.len(txt)
+        end
+
+        if math.fmod(i, height) == 0 and i < #mappings then
+            widths[col_idx].max_desc_width = max_desc_width
+            max_desc_width = 0
+            col_idx = col_idx + 1
+        end
+    end
+    widths[col_idx].max_desc_width = max_desc_width
+    funcs.log("GOT WIDTHS " .. vim.inspect(widths) .. " FOR " .. vim.inspect(column_width))
+
+    col_idx = 1
     for i, map in ipairs(mappings) do
         local line_idx = math.fmod(i - 1, height) + pad
-        local s = string.rep(" ", COL_PAD)
+        local s = ''
         if type(map) == 'string' then
-            s = s .. map
+            s = spaces .. s .. cut_text(map, column_width)
         else
             -- s = s .. map.ls .. " " .. ARROW .. " " .. (map.options.desc or 'No description')
-            s = s .. (map.options.desc or 'No description') .. " " .. ARROW .. " " .. map.ls
+            local pref = cut_text(map.options.desc or 'No description', widths[col_idx].max_desc_width)
+            local pref_len = string.len(pref)
+            pref = pref .. string.rep(" ", widths[col_idx].max_desc_width - pref_len)
+            s = spaces .. pref .. " " .. ARROW .. " " .. string.rep(" ", widths[col_idx].max_shortcut_width - string.len(map.ls)) .. map.ls
+            s = s .. string.rep(" ", column_width - string.len(s))
+            -- s = s .. (map.options.desc or 'No description') .. " " .. ARROW .. " " .. map.ls
         end
-        if s:len() > COL_LEN - COL_PAD then
-            s = s:sub(1, COL_LEN - COL_PAD - 3) .. "..."
-        else
-            s = s .. string.rep(" ", COL_LEN - COL_PAD - s:len())
-        end
+
         if result[line_idx] == nil then
             result[line_idx] = string.rep(" ", WIN_PAD)
         end
+
         result[line_idx] = result[line_idx] .. s
+        if math.fmod(i, height) == 0 then
+            col_idx = col_idx + 1
+        end
     end
 
     for i, line in ipairs(result) do
@@ -210,18 +275,26 @@ if not cfg.default_config.options.use_cheatsheet then
     return
 end
 
-
+azul.on_action('show_mode_cheatsheet', function()
+    close_window()
+    if mode_win_id ~= nil then
+        close_mode_window()
+        return
+    end
+    local mode = azul.current_mode()
+    local mappings = get_mappings_for_mode(mode)
+    if #mappings == 0 or azul.is_modifier_mode(mode) then
+        return
+    end
+    mode_win_id = create_window(mappings, false)
+end)
 
 azul.on('ModeChanged', function(args)
     local new_mode = args[2]
     local mappings = get_mappings_for_mode(new_mode)
-    if win_id ~= nil then
-        close_window()
-    end
-    if azul.is_modifier_mode(new_mode) then
-        return
-    end
-    if #mappings == 0 then
+    close_window()
+    if azul.is_modifier_mode(new_mode) or #mappings == 0 then
+        close_mode_window()
         return
     end
     local cols = get_cols_number()
@@ -247,7 +320,7 @@ azul.on('ModifierTrigger', function(args)
     win_id = create_window(get_mappings_for_mode(mode))
     if cfg.default_config.options.blocking_cheatsheet then
         vim.fn.timer_start(0, function()
-            wait_input(mode, win_id)
+            wait_input(mode)
         end)
         return
     end

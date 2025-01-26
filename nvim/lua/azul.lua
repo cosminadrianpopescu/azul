@@ -66,6 +66,7 @@ local events = {
     WinConfigChanged = {},
     TabTitleChanged = {},
     AzulStarted = {},
+    ActionRan = {},
 }
 
 local L = {}
@@ -688,7 +689,7 @@ local do_set_key_map = function(map_mode, ls, rs, options)
     local _mode = L.get_real_mode(map_mode)
     if map == nil then
         table.insert(mode_mappings, {
-            m = map_mode, ls = ls, rs = rs, options = options, real_mode = _mode,
+            m = map_mode, ls = ls, rs = rs, options = options, real_mode = _mode, action = options.action
         })
     else
         map.m = map_mode
@@ -696,6 +697,7 @@ local do_set_key_map = function(map_mode, ls, rs, options)
         map.rs = rs
         map.options = options
         map.real_mode = _mode
+        map.action = options.action
     end
 end
 
@@ -1592,6 +1594,9 @@ M.run_map = function(m)
     elseif m.rs ~= nil then
         M.feedkeys(m.rs, m.real_mode)
     end
+    if m.action ~= nil then
+        trigger_event('ActionRan', {m.action})
+    end
 end
 
 M.cancel_modifier = function()
@@ -1608,6 +1613,15 @@ M.is_modifier_mode = function(m)
     end
 
     return (workflow == 'tmux' and m == 'n') or (workflow == 'azul' and m == 't')
+end
+
+M.on_action = function(action, callback)
+    M.on('ActionRan', function(args)
+        if args[1] ~= action then
+            return
+        end
+        callback(args[1])
+    end)
 end
 
 return M

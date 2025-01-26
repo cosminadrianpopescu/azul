@@ -394,6 +394,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 callback(opts)
             end,
             desc = "Select a " .. what,
+            action = action,
         })
     end
 
@@ -423,6 +424,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 azul.open()
             end,
             desc = 'Creates a new tab',
+            action = action,
         })
     elseif action == 'tab_select' then
         map(mode, shortcut, '', {
@@ -438,7 +440,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
                     end
                 end)
             end,
-            desc = 'Go to tab ' .. arg
+            desc = 'Go to tab ' .. arg,
+            action = action,
         })
     elseif action == 'toggle_floats' then
         map(mode, shortcut, '', {
@@ -448,6 +451,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 end)
             end,
             desc = "Toggle floats visibility",
+            action = action,
         })
     elseif action == 'enter_mode' then
         local mapping = {
@@ -478,7 +482,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
                     start_insert()
                 end
             end,
-            desc = "Enter " .. mapping[arg] .. " mode"
+            desc = "Enter " .. mapping[arg] .. " mode",
+            action = action,
         })
     elseif action == 'create_float' then
         map(mode, shortcut, '', {
@@ -487,12 +492,14 @@ local set_shortcut = function(action, shortcut, mode, arg)
                     azul.open_float(float_group())
                 end)
             end,
-            desc = "Create float"
+            desc = "Create float",
+            action = action,
         })
     elseif action == 'disconnect' then
         map(mode, shortcut, '', {
             callback = azul.disconnect,
             desc = "Disconnect",
+            action = action,
         })
     elseif action == 'resize_left' or action == 'resize_right' or action == 'resize_down' or action == 'resize_up' then
         local where = action:gsub('resize_', '')
@@ -500,7 +507,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 azul.resize(where)
             end,
-            desc = "Resize " .. where
+            desc = "Resize " .. where,
+            action = action,
         })
     elseif action == 'select_left' or action == 'select_right' or action == 'select_down' or action == 'select_up' then
         local dir = action:gsub('select_', '')
@@ -508,7 +516,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 azul.select_next_pane(dir, float_group())
             end,
-            desc = 'Select a pane ' .. dir
+            desc = 'Select a pane ' .. dir,
+            action = action,
         })
     elseif action == 'move_left' or action == 'move_right' or action == 'move_up' or action == 'move_down' then
         local dir = action:gsub('move_', '')
@@ -516,7 +525,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 azul.move_current_float(dir, arg)
             end,
-            desc = 'Move a panel to ' .. dir
+            desc = 'Move a panel to ' .. dir,
+            action = action,
         })
     elseif action == 'split_left' or action == 'split_right' or action == 'split_up' or action == 'split_down' then
         local dir = action:gsub('split_', '')
@@ -524,7 +534,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 azul.split(dir)
             end,
-            desc = 'Split ' .. dir
+            desc = 'Split ' .. dir,
+            action = action,
         })
     elseif action == 'move_top' or action == 'move_bottom' or action == 'move_start' or action == 'move_end' then
         local dir = action:gsub('move_', '')
@@ -532,7 +543,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 azul.position_current_float(dir)
             end,
-            desc = 'Move current pane to ' .. dir
+            desc = 'Move current pane to ' .. dir,
+            action = action,
         })
     elseif action == 'tab_select_first' or action == 'tab_select_last' or action == 'tab_select_previous' or action == 'tab_select_next' then
         local args = {
@@ -543,7 +555,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 vim.api.nvim_command(args[action])
             end,
-            desc = "Select " .. where .. " tab"
+            desc = "Select " .. where .. " tab",
+            action = action,
         })
     elseif action == 'copy' then
         if wf ~= 'emacs' and mode ~= 'v' then
@@ -566,19 +579,22 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
                 azul.toggle_passthrough()
             end,
-            desc = 'Toggle passthrough mode'
+            desc = 'Toggle passthrough mode',
+            action = action,
         })
     elseif action == 'rotate_panel' then
         map(mode, shortcut, '', {
             callback = function()
                 azul.rotate_panel()
             end,
-            desc = 'Rotates the current panel'
+            desc = 'Rotates the current panel',
+            action = action,
         })
     elseif action == 'rename_tab' then
         map(mode, shortcut, '', {
             callback = azul.rename_current_tab,
             desc = 'Renames the current tab',
+            action = action,
         })
     elseif action == 'edit_scrollback' then
         map(mode, shortcut, '', {
@@ -587,6 +603,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 azul.enter_mode('t')
             end,
             desc = 'Edits the scrollback buffer',
+            action = action,
         })
     elseif action == 'edit_scrollback_log' then
         map(mode, shortcut, '', {
@@ -595,6 +612,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 azul.enter_mode('t')
             end,
             desc = 'Edits the scrollback log',
+            action = action,
         })
     elseif action == 'show_mode_cheatsheet' then
         map(mode, shortcut, '', {
@@ -602,7 +620,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 print("TOGGLE ALL")
             end,
             desc = "All shortcuts",
-            action = "show_mode_cheatsheet"
+            action = action,
         })
     end
 end
