@@ -174,7 +174,6 @@ local cheatsheet_content = function(mappings, height, full)
         max_shortcut_width = max_shortcut_width,
         pref_max_width = column_width - max_shortcut_width - 3,
     })
-    funcs.log("GOT WIDTHS " .. vim.inspect(widths) .. " FOR " .. vim.inspect(column_width))
     local col_idx = 1
     -- Now, calculate the max widths for descriptions
     for i, map in ipairs(mappings) do
@@ -190,7 +189,6 @@ local cheatsheet_content = function(mappings, height, full)
         end
     end
     widths[col_idx].max_desc_width = max_desc_width
-    funcs.log("GOT WIDTHS " .. vim.inspect(widths) .. " FOR " .. vim.inspect(column_width))
 
     col_idx = 1
     for i, map in ipairs(mappings) do
@@ -293,7 +291,7 @@ azul.on('ModeChanged', function(args)
     local new_mode = args[2]
     local mappings = get_mappings_for_mode(new_mode)
     close_window()
-    if azul.is_modifier_mode(new_mode) or #mappings == 0 then
+    if azul.is_modifier_mode(new_mode) or #mappings == 0 or new_mode == 't' then
         close_mode_window()
         return
     end

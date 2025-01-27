@@ -938,6 +938,10 @@ M.set_workflow = function(w, _use_cheatsheet, m)
     if workflow == 'azul' or workflow == 'tmux' then
         vim.api.nvim_set_keymap('t', mod, '', {
             callback = function()
+                if M.current_mode() ~= 't' then
+                    M.send_to_current(mod, true)
+                    return
+                end
                 if is_modifier then
                     M.send_to_current(mod, true)
                     is_modifier = false
