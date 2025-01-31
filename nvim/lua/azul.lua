@@ -9,6 +9,8 @@ local is_modifier = false
 local updating_tab_titles = false
 local azul_started = false
 
+local ev_id = 0
+
 local M = {
     --- If set to true, then list all buffers
     list_buffers = false,
@@ -49,7 +51,6 @@ local get_modifier_mode = function()
     return (workflow == 'azul' and 't') or 'n'
 end
 
-
 local events = {
     FloatClosed = {},
     ModeChanged = {},
@@ -68,6 +69,12 @@ local events = {
     AzulStarted = {},
     ActionRan = {},
 }
+
+local persistent_events = {}
+
+for k in pairs(events) do
+    persistent_events[k] = {}
+end
 
 local L = {}
 
@@ -91,11 +98,11 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    if not vim.tbl_contains(vim.tbl_keys(events), ev) then
-        return
+    for _, callback in ipairs(persistent_events[ev] or {}) do
+        callback(args)
     end
 
-    for _, callback in ipairs(events[ev]) do
+    for _, callback in ipairs(events[ev] or {}) do
         callback(args)
     end
 end
@@ -506,13 +513,13 @@ cmd('TermEnter', {
 
 cmd({'FileType'}, {
     pattern = "*", callback = function()
-        if vim.o.filetype ~= 'DressingInput' then
+        if vim.o.filetype ~= 'DressingInput' or vim.fn.mode() == 'i' then
             return
         end
-        -- vim.fn.timer_start(1, function()
-        --     M.feedkeys('i', 'n')
-        --     trigger_event('ModeChanged', {'t', 'n'})
-        -- end)
+        vim.fn.timer_start(100, function()
+            vim.api.nvim_command('startinsert')
+            -- trigger_event('ModeChanged', {'t', 'n'})
+        end)
     end
 })
 
@@ -1399,7 +1406,7 @@ M.rotate_panel = function()
     vim.api.nvim_command('wincmd x')
 end
 
-M.on = function(ev, callback)
+local add_event = function(ev, callback, where)
     local to_add = (type(ev) == 'string' and {ev}) or ev
 
     for _, e in ipairs(to_add) do
@@ -1407,8 +1414,12 @@ M.on = function(ev, callback)
             L.error(e .. " event does not exists", nil)
         end
 
-        table.insert(events[e], callback)
+        table.insert(where[e], callback)
     end
+end
+
+M.on = function(ev, callback)
+    add_event(ev, callback, events)
 end
 
 M.clear_event = function(ev, callback)
@@ -1516,17 +1527,6 @@ M.rename_current_tab = function()
     M.rename_tab(vim.fn.tabpagenr())
 end
 
-M.on('AzulStarted', function()
-    vim.fn.timer_start(200, update_tab_titles)
-end)
-
-M.on('ModeChanged', function(args)
-    local old_mode = args[1]
-    if M.is_modifier_mode(old_mode) and is_modifier then
-        M.cancel_modifier()
-    end
-end)
-
 M.edit = function(t, file, on_finish)
     if t.editing_buf ~= nil then
         L.error('The current terminal is already displaying an editor')
@@ -1627,5 +1627,20 @@ M.on_action = function(action, callback)
         callback(args[1])
     end)
 end
+
+M.persistent_on = function(ev, callback)
+    add_event(ev, callback, persistent_events)
+end
+
+M.persistent_on('AzulStarted', function()
+    vim.fn.timer_start(200, update_tab_titles)
+end)
+
+M.persistent_on('ModeChanged', function(args)
+    local old_mode = args[1]
+    if M.is_modifier_mode(old_mode) and is_modifier then
+        M.cancel_modifier()
+    end
+end)
 
 return M

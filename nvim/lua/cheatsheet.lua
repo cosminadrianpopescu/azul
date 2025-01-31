@@ -287,7 +287,7 @@ azul.on_action('show_mode_cheatsheet', function()
     mode_win_id = create_window(mappings, false)
 end)
 
-azul.on('ModeChanged', function(args)
+azul.persistent_on('ModeChanged', function(args)
     local new_mode = args[2]
     local mappings = get_mappings_for_mode(new_mode)
     close_window()
@@ -309,11 +309,11 @@ azul.on('ModeChanged', function(args)
     win_id = create_window(mappings, false)
 end)
 
-azul.on('ModifierFinished', function()
+azul.persistent_on('ModifierFinished', function()
     close_window()
 end)
 
-azul.on('ModifierTrigger', function(args)
+azul.persistent_on('ModifierTrigger', function(args)
     local mode = args[1]
     win_id = create_window(get_mappings_for_mode(mode))
     if cfg.default_config.options.blocking_cheatsheet then

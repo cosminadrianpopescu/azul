@@ -49,7 +49,7 @@ local remap_all = function(mode)
     end
 end
 
-azul.on('ModifierTrigger', function(args)
+azul.persistent_on('ModifierTrigger', function(args)
     local mode = args[1]
     local modifier = args[2]
     if cfg.default_config.options.blocking_cheatsheet and cfg.default_config.options.use_cheatsheet then
@@ -61,7 +61,7 @@ azul.on('ModifierTrigger', function(args)
     set_cancel_shortcut('<C-c>', mode)
 end)
 
-azul.on('ModifierFinished', function(args)
+azul.persistent_on('ModifierFinished', function(args)
     local mode = args[1]
     local modifier = args[2]
     if cfg.default_config.options.blocking_cheatsheet and cfg.default_config.options.use_cheatsheet then
@@ -71,7 +71,7 @@ azul.on('ModifierFinished', function(args)
     restore_previous_mappings(mode, modifier)
 end)
 
-azul.on('ModeChanged', function(args)
+azul.persistent_on('ModeChanged', function(args)
     local old_mode = args[1]
     local new_mode = args[2]
 
