@@ -617,7 +617,6 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'show_mode_cheatsheet' then
         map(mode, shortcut, '', {
             callback = function()
-                print("TOGGLE ALL")
             end,
             desc = "All shortcuts",
             action = action,
