@@ -529,6 +529,49 @@ Edits the scrollback buffer log of the current terminal. If the logging is not
 started for the current terminal (by calling `AzulStartLogging`), an error
 message is thrown.
 
+#### get_current_modifier
+
+Returns the current modifier (for `tmux` or `azul` workflows)
+
+#### run_map
+
+**Parameters**:
+
+* m The azul map to run
+
+Executes the callback of a given map, triggering in the process `ActionRan`
+event.
+
+#### cancel_modifier
+
+Will trigger the `ModifierFinished` event, which will make sure that the next
+key you send will be sent to your command interpreter.
+
+#### is_modifier_mode
+
+**Parameters**:
+
+* m The mode to check
+
+Returns true if the indicated mode is a mode that requires a modifier (`n` for
+`tmux` workflow or `t` for `azul`). It will return false for all the other
+modes and workflows.
+
+#### on_action
+
+**Parameters**:
+
+* action The action to react to
+* callback The callback to be executed
+
+Execute the callback `callback` whenever the action `actions` is triggered.
+See all the possible actions in the main page.
+
+#### persistent_on
+
+Just as `on`, but the callback will not be removed by clear functions. The
+callback will be called for all the duration of the azul session.
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will
@@ -622,6 +665,19 @@ Triggered every time the tab titles are updated.
 #### AzulStarted
 
 Triggered only once, after azul loaded and it's ready to process input.
+
+#### ActionRan
+
+**Parameters**:
+
+* `args[1]` The action that has just been ran
+
+Triggered everytime a shortcut action has been ran.
+
+#### ModifierFinished
+
+Triggered everytime the modifier is finished (an action is selected after the
+modifier is triggered or `<Esc>` or `<C-c>` are pressed)
 
 ### Configuring via init.lua
 

@@ -3,11 +3,7 @@ local funcs = require('functions')
 local cfg = require('config')
 
 local win_id = nil
-local mappings = {
-    modifier = nil,
-    esc = nil,
-    cc = nil,
-}
+local mode_win_id = nil
 local timer = nil
 local timer_set = false
 
@@ -18,27 +14,24 @@ local COL_PAD = 2
 local WIN_PAD = 4
 local ARROW = '➜'
 
-local close_window = function(win_id)
-    vim.api.nvim_win_close(win_id, true)
+local close_window = function()
+    if win_id ~= nil then
+        vim.api.nvim_win_close(win_id, true)
+    end
+    win_id = nil
     if timer ~= nil then
         vim.fn.timer_stop(timer)
     end
 end
 
-local select = function(m, mode, win_id)
-    local err
-    if m.options.callback ~= nil then
-        _, err = pcall(function() m.options.callback() end)
-    elseif m.rs ~= nil then
-        _, err = pcall(function() azul.feedkeys(m.rs, mode) end)
+local close_mode_window = function()
+    if mode_win_id ~= nil then
+        vim.api.nvim_win_close(mode_win_id, true)
     end
-    close_window(win_id)
-    if err then
-        error(err)
-    end
+    mode_win_id = nil
 end
 
-local try_select = function(collection, c, mode, win_id)
+local try_select = function(collection, c)
     local map = funcs.find(function(x) return funcs.get_sensitive_ls(x.ls) == funcs.get_sensitive_ls(c) end, collection)
     if map == nil then
         if azul.get_current_workflow() == 'tmux' then
@@ -46,31 +39,35 @@ local try_select = function(collection, c, mode, win_id)
         else
             azul.send_to_current('<C-s>' .. c, true)
         end
-        close_window(win_id)
+        azul.cancel_modifier()
         return false
     else
-        select(map, mode, win_id)
+        azul.run_map(map)
         return true
     end
 end
 
 local get_mappings_for_mode = function(mode)
-    return vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
+    local result = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
+    table.sort(result, function(m1, m2)
+        if m1.options.action == 'show_mode_cheatsheet' then
+            return false
+        end
+        if m2.options.action == 'show_mode_cheatsheet' then
+            return true
+        end
+        if type(m1) == 'table' and type(m2) == 'table' then
+            return (m1.options.desc or 'No description') < (m2.options.desc or 'No description')
+        end
+        if type(m2) == 'string' then
+            return true
+        end
+        return false
+    end)
+    return result
 end
 
-local find_map = function(which, mode)
-    return funcs.find(function(m) return m.lhs == which end, vim.api.nvim_get_keymap(mode))
-end
-
-local restore_map = function(mode, which, map)
-    vim.api.nvim_set_keymap(mode, which, map.rhs or '', {
-        nowait = map.nowait, silent = map.silent, expr = map.expr,
-        unique = map.unique, callback = map.callback or nil,
-        noremap = map.noremap, desc = map.desc,
-    })
-end
-
-local wait_input = function(mode, win_id)
+local wait_input = function(mode)
     local collection = get_mappings_for_mode(mode)
     local c = ''
     local before_c = ''
@@ -78,11 +75,11 @@ local wait_input = function(mode, win_id)
     while true do
         -- Prevent Keyboard interrupt error when pressing <C-c>. 
         -- See https://github.com/neovim/neovim/issues/16416
-        local cc_map = find_map('<C-C>', 'n')
+        local cc_map = funcs.find_map('<C-C>', 'n')
         vim.api.nvim_set_keymap('n', '<C-c>', '<Esc>', {})
         local trans = azul.block_input()
         if cc_map ~= nil then
-            restore_map('n', '<C-c>', cc_map)
+            funcs.restore_map('n', '<C-c>', cc_map)
         else
             vim.api.nvim_del_keymap('n', '<C-c>')
         end
@@ -96,32 +93,36 @@ local wait_input = function(mode, win_id)
         if timer ~= nil then
             local new_char = funcs.get_sensitive_ls(trans)
             if new_char == "<c-c>" or new_char == '<Esc>' then
-                close_window(win_id)
+                azul.cancel_modifier()
                 return
             end
             if new_char == '<cr>' then
-                try_select(collection, c, mode, win_id)
+                try_select(collection, c)
                 return
             end
             if new_char == '<c-s>' and c == '' then
                 azul.send_to_current('<c-s>', true)
-                close_window(win_id)
+                azul.cancel_modifier()
                 return
             end
             before_c = c
             c = c .. new_char
-            collection = vim.tbl_filter(function(x) return funcs.get_sensitive_ls(x.ls):match("^" .. c) end, collection)
+            collection = vim.tbl_filter(function(x)
+                local s = funcs.get_sensitive_ls(x.ls)
+                return string.sub(s, 1, string.len(c)) == c
+            end, collection)
+            -- collection = vim.tbl_filter(function(x) return funcs.get_sensitive_ls(x.ls):match("^" .. c) end, collection)
         end
         if timer == nil then
-            try_select(collection, c, mode, win_id)
+            try_select(collection, c)
             return
         end
         if #collection == 1 and funcs.get_sensitive_ls(collection[1].ls) == c then
-            select(collection[1], mode, win_id)
+            azul.run_map(collection[1])
             return
         end
         if #collection == 0 then
-            local result = try_select(vim.tbl_filter(function(x) return x.m == mode end, get_mappings_for_mode(mode)), before_c, mode, win_id)
+            local result = try_select(vim.tbl_filter(function(x) return x.m == mode end, get_mappings_for_mode(mode)), before_c)
             local after = c:gsub("^" .. before_c, "")
             if not result and azul.get_current_workflow() ~= 'tmux' then
                 azul.send_to_current(after, true)
@@ -133,47 +134,125 @@ local wait_input = function(mode, win_id)
     end
 end
 
-local cheatsheet_content = function(mode, height)
-    local maps = get_mappings_for_mode(mode)
-    table.sort(maps, function(m1, m2) return m1.ls < m2.ls end)
+local cheatsheet_content = function(mappings, height, full)
     -- A first empty line
-    local result = {""}
+    local result = {}
+    if full then
+        table.insert(result, "")
+    end
 
-    for i, map in ipairs(maps) do
-        local line_idx = math.fmod(i - 1, height) + 2
-        local s = string.rep(" ", COL_PAD) .. map.ls .. " " .. ARROW .. " " .. (map.options.desc or 'No description')
-        if s:len() > COL_LEN - COL_PAD then
-            s = s:sub(1, COL_LEN - COL_PAD - 3) .. "..."
-        else
-            s = s .. string.rep(" ", COL_LEN - COL_PAD - s:len())
+    local cut_text = function(s, width)
+        if string.len(s) <= width then
+            return s
         end
+        return s:sub(1, width - 3) .. "..."
+    end
+
+    local pad = (full and 2) or 1
+
+    local column_width = COL_LEN - COL_PAD
+    local widths = {}
+    local spaces = string.rep(" ", COL_PAD)
+    local max_desc_width = 0
+    local max_shortcut_width = 0
+    -- Calculate max widths for shortcuts
+    for i, map in ipairs(mappings) do
+        if max_shortcut_width < string.len(map.ls) then
+            max_shortcut_width = string.len(map.ls)
+        end
+
+        if math.fmod(i, height) == 0 and i <#mappings then
+            table.insert(widths, {
+                max_shortcut_width = max_shortcut_width,
+                -- three represents the space, arrow space before the shortcut
+                pref_max_width = column_width - max_shortcut_width - 3,
+            })
+            max_shortcut_width = 0
+        end
+    end
+    table.insert(widths, {
+        max_shortcut_width = max_shortcut_width,
+        pref_max_width = column_width - max_shortcut_width - 3,
+    })
+    local col_idx = 1
+    -- Now, calculate the max widths for descriptions
+    for i, map in ipairs(mappings) do
+        local txt = cut_text(map.options.desc or 'No description', widths[col_idx].pref_max_width)
+        if max_desc_width < string.len(txt) then
+            max_desc_width = string.len(txt)
+        end
+
+        if math.fmod(i, height) == 0 and i < #mappings then
+            widths[col_idx].max_desc_width = max_desc_width
+            max_desc_width = 0
+            col_idx = col_idx + 1
+        end
+    end
+    widths[col_idx].max_desc_width = max_desc_width
+
+    col_idx = 1
+    for i, map in ipairs(mappings) do
+        local line_idx = math.fmod(i - 1, height) + pad
+        local s = ''
+        if type(map) == 'string' then
+            s = spaces .. s .. cut_text(map, column_width)
+        else
+            -- s = s .. map.ls .. " " .. ARROW .. " " .. (map.options.desc or 'No description')
+            local pref = cut_text(map.options.desc or 'No description', widths[col_idx].max_desc_width)
+            local pref_len = string.len(pref)
+            pref = pref .. string.rep(" ", widths[col_idx].max_desc_width - pref_len)
+            s = spaces .. pref .. " " .. ARROW .. " " .. string.rep(" ", widths[col_idx].max_shortcut_width - string.len(map.ls)) .. map.ls
+            s = s .. string.rep(" ", column_width - string.len(s))
+            -- s = s .. (map.options.desc or 'No description') .. " " .. ARROW .. " " .. map.ls
+        end
+
         if result[line_idx] == nil then
             result[line_idx] = string.rep(" ", WIN_PAD)
         end
+
         result[line_idx] = result[line_idx] .. s
+        if math.fmod(i, height) == 0 then
+            col_idx = col_idx + 1
+        end
     end
 
     for i, line in ipairs(result) do
         result[i] = line .. string.rep(" ", WIN_PAD)
     end
 
-    table.insert(result, "")
-    local footer = "<esc> <C-c> " .. ARROW .. " Cancel"
-    local spaces = math.ceil((vim.o.columns - math.ceil(footer:len())) / 2)
-    local pads = string.rep(" ", spaces)
-    table.insert(result, pads .. footer .. pads)
+    if full then
+        table.insert(result, "")
+        local footer = "<esc> <C-c> " .. ARROW .. " Cancel"
+        local spaces = math.ceil((vim.o.columns - math.ceil(footer:len())) / 2)
+        local pads = string.rep(" ", spaces)
+        table.insert(result, pads .. footer .. pads)
+    end
 
     return result
 end
 
-local create_window = function(mode)
+local get_cols_number = function()
+    return math.floor((vim.o.columns - (WIN_PAD * 2)) / COL_LEN)
+end
+
+local create_window = function(mappings, full)
+    local _full
+    if full == nil then
+        _full = true
+    else
+        _full = full
+    end
     local current_win = vim.api.nvim_get_current_win()
-    local cols = math.floor((vim.o.columns - (WIN_PAD * 2)) / COL_LEN)
-    local height = math.ceil(#get_mappings_for_mode(mode) / cols)
+    local cols = get_cols_number()
+    local height = math.ceil(#mappings / cols)
     azul.suspend()
     local buf = vim.api.nvim_create_buf(false, true)
+    local extra_lines = 0
+    if _full then
+        extra_lines = 4
+    end
     local win_id = vim.api.nvim_open_win(buf, true, {
-        width = vim.o.columns, height = height + 4, col = 0, row = vim.o.lines - height - 5,
+        width = vim.o.columns, height = height + extra_lines, col = 0, row = vim.o.lines - height - extra_lines - 1,
         focusable = false, zindex = 500, border = 'none', relative = 'editor', style = 'minimal',
     })
     vim.filetype.add({
@@ -185,90 +264,62 @@ local create_window = function(mode)
     vim.api.nvim_set_option_value('filetype', 'azul_cheatsheet', {buf = buf})
     vim.api.nvim_command("syn match AzulCheatsheetArrow '" .. ARROW .. "'")
     vim.api.nvim_set_current_win(current_win)
-    vim.api.nvim_buf_set_lines(buf, 0, height + 3, false, cheatsheet_content(mode, height))
+    vim.api.nvim_buf_set_lines(buf, 0, height + 3, false, cheatsheet_content(mappings, height, _full))
     azul.resume()
     return win_id
-end
-
-local restore_previous_mappings = function(mode, modifier)
-    vim.api.nvim_del_keymap('t', modifier)
-    vim.api.nvim_del_keymap(mode, '<esc>')
-    vim.api.nvim_del_keymap(mode, '<C-c>')
-    if mappings.modifier ~= nil then
-        restore_map('t', modifier, mappings.modifier)
-    end
-    if mappings.esc ~= nil then
-        restore_map(mode, '<esc>', mappings.esc)
-    end
-    if mappings.cc ~= nil then
-        restore_map(mode, '<C-c>', mappings.cc)
-    end
-end
-
-local unmap_all = function(mode, modifier)
-    restore_previous_mappings(mode, modifier)
-    for _, m in ipairs(get_mappings_for_mode(mode)) do
-        local cmd = m.real_mode .. 'unmap ' .. m.ls
-        local result = pcall(function() vim.api.nvim_command(cmd) end)
-        if not result then
-            print(cmd .. " failed")
-        end
-    end
-end
-
-local save_current_mappings = function(mode, modifier)
-    mappings.modifier = find_map(modifier:upper(), 't')
-    mappings.cc = find_map('<C-C>', mode)
-    mappings.esc = find_map('<Esc>', mode)
-end
-
-local cancel_cheatsheet = function(mode, modifier)
-    close_window(win_id)
-    unmap_all(mode, modifier)
-end
-
-local set_cancel_shortcut = function(which, mode, modifier)
-    vim.api.nvim_set_keymap(mode, which, '', {
-        callback = function()
-            cancel_cheatsheet(mode, modifier)
-        end
-    })
-end
-
-local map_all = function(mode, modifier)
-    save_current_mappings(mode, modifier)
-    vim.api.nvim_set_keymap('t', modifier, '', {
-        callback = function()
-            azul.send_to_current(modifier, true)
-            cancel_cheatsheet(mode, modifier)
-        end
-    })
-    set_cancel_shortcut('<esc>', mode, modifier)
-    set_cancel_shortcut('<C-c>', mode, modifier)
-    for _, m in ipairs(get_mappings_for_mode(mode)) do
-        vim.api.nvim_set_keymap(mode, m.ls, '', {
-            callback = function()
-                unmap_all(mode, modifier)
-                select(m, mode, win_id)
-            end,
-            desc = m.desc,
-        })
-    end
 end
 
 if not cfg.default_config.options.use_cheatsheet then
     return
 end
 
-azul.on('ModifierTrigger', function(args)
+azul.on_action('show_mode_cheatsheet', function()
+    close_window()
+    if mode_win_id ~= nil then
+        close_mode_window()
+        return
+    end
+    local mode = azul.current_mode()
+    local mappings = get_mappings_for_mode(mode)
+    if #mappings == 0 or azul.is_modifier_mode(mode) then
+        return
+    end
+    mode_win_id = create_window(mappings, false)
+end)
+
+azul.persistent_on('ModeChanged', function(args)
+    local new_mode = args[2]
+    local mappings = get_mappings_for_mode(new_mode)
+    close_window()
+    if azul.is_modifier_mode(new_mode) or #mappings == 0 or new_mode == 't' then
+        close_mode_window()
+        return
+    end
+    local cols = get_cols_number()
+    local x = #mappings
+    local more = #mappings >= cols * 2
+    while x >= cols * 2 do
+        table.remove(mappings, #mappings)
+        x = #mappings
+    end
+    if more then
+        local maps = funcs.map_by_action(new_mode, 'show_mode_cheatsheet', azul.get_mode_mappings())
+        table.insert(mappings, (#maps > 0 and maps[1]) or "etc.")
+    end
+    win_id = create_window(mappings, false)
+end)
+
+azul.persistent_on('ModifierFinished', function()
+    close_window()
+end)
+
+azul.persistent_on('ModifierTrigger', function(args)
     local mode = args[1]
-    local modifier = args[2]
-    win_id = create_window(mode)
+    win_id = create_window(get_mappings_for_mode(mode))
     if cfg.default_config.options.blocking_cheatsheet then
         vim.fn.timer_start(0, function()
-            wait_input(mode, win_id)
+            wait_input(mode)
         end)
-    else
-        map_all(mode, modifier)
+        return
     end
 end)

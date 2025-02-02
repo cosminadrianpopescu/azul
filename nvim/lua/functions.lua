@@ -1,3 +1,5 @@
+local mappings = {}
+
 local get_sensitive_ls = function(ls)
     if ls == nil then
         return ls
@@ -17,6 +19,10 @@ local find = function(callback, table)
     end
 
     return result[1]
+end
+
+local find_map = function(which, mode)
+    return find(function(m) return m.lhs == which end, vim.api.nvim_get_keymap(mode))
 end
 
 local log = function(msg, file)
@@ -47,10 +53,40 @@ local safe_del_tab_var = function(tab, name)
     end
 end
 
+local restore_map = function(mode, which, map)
+    vim.api.nvim_set_keymap(mode, which, map.rhs or '', {
+        nowait = map.nowait, silent = map.silent, expr = map.expr,
+        unique = map.unique, callback = map.callback or nil,
+        noremap = map.noremap, desc = map.desc,
+    })
+end
+
+local save_current_mapping = function(key, shortcut, mode)
+    mappings[key] = find_map(shortcut, mode)
+end
+
+local restore_previous_mapping = function(key, shortcut, mode)
+    pcall(function()
+        vim.api.nvim_del_keymap(mode, shortcut)
+    end)
+    if mappings[key] ~= nil then
+        restore_map(mode, shortcut, mappings[key])
+    end
+end
+
+local map_by_action = function(mode, action, mappings)
+    return vim.tbl_filter(function(m) return m.m == mode and ((m.options or {}).action or '') == action end, mappings)
+end
+
 return {
     get_sensitive_ls = get_sensitive_ls,
     find = find,
     log = log,
     safe_get_tab_var = safe_get_tab_var,
     safe_del_tab_var = safe_del_tab_var,
+    find_map = find_map,
+    restore_map = restore_map,
+    save_current_mapping = save_current_mapping,
+    restore_previous_mapping = restore_previous_mapping,
+    map_by_action = map_by_action,
 }

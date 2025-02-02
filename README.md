@@ -1206,6 +1206,25 @@ session
     + `zellij`: `pane.edit_scrollback = ge`
     + `emacs`: `edit_scrollback = <C-x>ge`
 
+* **show_mode_cheatsheet**: Toggles the cheatsheet of the azul shortcuts for
+  the current mode (not valid for `emacs` workflow)
+  - defaults:
+    + `azul`: `resize.show_mode_cheatsheet = <C-o>`
+    + `azul`: `pane.show_mode_cheatsheet = <C-o>`
+    + `azul`: `move.show_mode_cheatsheet = <C-o>`
+    + `azul`: `split.show_mode_cheatsheet = <C-o>`
+    + `azul`: `tabs.show_mode_cheatsheet = <C-o>`
+    + `tmux`: `resize.show_mode_cheatsheet = <C-o>`
+    + `tmux`: `pane.show_mode_cheatsheet = <C-o>`
+    + `tmux`: `move.show_mode_cheatsheet = <C-o>`
+    + `tmux`: `split.show_mode_cheatsheet = <C-o>`
+    + `tmux`: `tabs.show_mode_cheatsheet = <C-o>`
+    + `zellij`: `resize.show_mode_cheatsheet = <C-o>`
+    + `zellij`: `pane.show_mode_cheatsheet = <C-o>`
+    + `zellij`: `move.show_mode_cheatsheet = <C-o>`
+    + `zellij`: `split.show_mode_cheatsheet = <C-o>`
+    + `zellij`: `tabs.show_mode_cheatsheet = <C-o>`
+
 ## Copy/pasting
 
 In `azul`, you can copy paste by using the expected `<C-c>` and `<C-v>`

@@ -4,9 +4,12 @@ local funcs = require('functions')
 local FILES = require('files')
 
 local is_suspended = false
+local is_modifier = false
 
 local updating_tab_titles = false
 local azul_started = false
+
+local ev_id = 0
 
 local M = {
     --- If set to true, then list all buffers
@@ -44,6 +47,10 @@ local latest_float = {}
 local global_last_status = nil
 local quit_on_last = true
 
+local get_modifier_mode = function()
+    return (workflow == 'azul' and 't') or 'n'
+end
+
 local events = {
     FloatClosed = {},
     ModeChanged = {},
@@ -55,11 +62,19 @@ local events = {
     LayoutSaved = {},
     LayoutRestored = {},
     ModifierTrigger = {},
+    ModifierFinished = {},
     AboutToBeBlocked = {},
     WinConfigChanged = {},
     TabTitleChanged = {},
     AzulStarted = {},
+    ActionRan = {},
 }
+
+local persistent_events = {}
+
+for k in pairs(events) do
+    persistent_events[k] = {}
+end
 
 local L = {}
 
@@ -83,11 +98,11 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    if not vim.tbl_contains(vim.tbl_keys(events), ev) then
-        return
+    for _, callback in ipairs(persistent_events[ev] or {}) do
+        callback(args)
     end
 
-    for _, callback in ipairs(events[ev]) do
+    for _, callback in ipairs(events[ev] or {}) do
         callback(args)
     end
 end
@@ -104,7 +119,7 @@ local remove_term_buf = function(buf)
 end
 
 M.debug = function(ev)
-    print(vim.inspect(vim.tbl_filter(function(t) return M.is_float(t) end, M.get_terminals())))
+    -- print(vim.inspect(vim.tbl_filter(function(t) return M.is_float(t) end, M.get_terminals())))
     -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
     -- print("OPTIONS ARE " .. vim.inspect(M.options))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
@@ -114,7 +129,7 @@ M.debug = function(ev)
     -- print("TITLE IS ALREADY" .. vim.b.term_title)
     -- print("JOB ID IS " .. vim.b.terminal_job_id)
     -- print("LATEST FLOATS ARE " .. vim.inspect(latest_float))
-    -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MODE IS" .. mode)
 end
 
@@ -320,7 +335,11 @@ local OnTermClose = function(ev)
 end
 
 local session_child_file = function(for_parent)
-    return os.getenv('AZUL_RUN_DIR') .. '/' .. os.getenv((for_parent and 'AZUL_PARENT_SESSION') or 'AZUL_SESSION') .. '-child'
+    local name = os.getenv((for_parent and 'AZUL_PARENT_SESSION') or 'AZUL_SESSION')
+    if name == nil then
+        name = ''
+    end
+    return os.getenv('AZUL_RUN_DIR') .. '/' .. name .. '-child'
 end
 
 local has_child_sessions_in_passthrough = function()
@@ -353,7 +372,7 @@ end
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'
 M.enter_mode = function(new_mode)
     local old_mode = mode
-    L.unmap_all(mode)
+    -- L.unmap_all(mode)
     if mode == 'P' then
         if M.options.hide_in_passthrough then
             vim.o.laststatus = global_last_status
@@ -384,8 +403,9 @@ M.enter_mode = function(new_mode)
             end
         })
     end
-    trigger_event('ModeChanged', {old_mode, new_mode})
-    L.remap_all(new_mode)
+    if old_mode ~= new_mode then
+        trigger_event('ModeChanged', {old_mode, new_mode})
+    end
     if L.is_vim_mode(new_mode) then
         return
     end
@@ -436,6 +456,9 @@ local update_tab_titles = function()
                 vim.api.nvim_tabpage_set_var(t, 'azul_title_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
                 trigger_event('TabTitleChanged')
+                vim.fn.timer_start(1, function()
+                    vim.api.nvim_command('startinsert')
+                end)
             end
         )
     end
@@ -490,12 +513,12 @@ cmd('TermEnter', {
 
 cmd({'FileType'}, {
     pattern = "*", callback = function()
-        if vim.o.filetype ~= 'DressingInput' then
+        if vim.o.filetype ~= 'DressingInput' or vim.fn.mode() == 'i' then
             return
         end
-        vim.fn.timer_start(1, function()
-            M.feedkeys('i', 'n')
-            trigger_event('ModeChanged', {'t', 'n'})
+        vim.fn.timer_start(100, function()
+            vim.api.nvim_command('startinsert')
+            -- trigger_event('ModeChanged', {'t', 'n'})
         end)
     end
 })
@@ -663,7 +686,7 @@ L.is_vim_mode = function(m)
 end
 
 L.get_real_mode = function(m)
-    return (L.is_vim_mode(m) and m) or ((workflow == 'tmux' and 'n') or 't')
+    return (L.is_vim_mode(m) and m) or (workflow == 'tmux' and 'n') or 't'
 end
 
 local do_set_key_map = function(map_mode, ls, rs, options)
@@ -673,7 +696,7 @@ local do_set_key_map = function(map_mode, ls, rs, options)
     local _mode = L.get_real_mode(map_mode)
     if map == nil then
         table.insert(mode_mappings, {
-            m = map_mode, ls = ls, rs = rs, options = options, real_mode = _mode
+            m = map_mode, ls = ls, rs = rs, options = options, real_mode = _mode, action = options.action
         })
     else
         map.m = map_mode
@@ -681,6 +704,7 @@ local do_set_key_map = function(map_mode, ls, rs, options)
         map.rs = rs
         map.options = options
         map.real_mode = _mode
+        map.action = options.action
     end
 end
 
@@ -704,17 +728,6 @@ L.unmap_all = function(mode)
             end
             table.insert(cmds, cmd)
         end
-    end
-end
-
-L.remap_all = function(mode)
-    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and M.options.use_cheatsheet then
-        return
-    end
-    local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
-    local pref = (workflow == 'azul' and mode == 't' and mod) or ''
-    for _, m in ipairs(collection) do
-        vim.api.nvim_set_keymap(m.real_mode, pref .. m.ls, m.rs, m.options)
     end
 end
 
@@ -929,16 +942,19 @@ M.set_workflow = function(w, _use_cheatsheet, m)
     local cheatsheet = (_use_cheatsheet == nil) or _use_cheatsheet
     mod = m or '<C-s>'
     workflow = w
-    if workflow == 'tmux' and not cheatsheet then
+    if workflow == 'azul' or workflow == 'tmux' then
         vim.api.nvim_set_keymap('t', mod, '', {
             callback = function()
-                M.enter_mode('n')
-                M.feedkeys('<C-\\><C-n>', 't')
-            end
-        })
-    elseif (workflow == 'azul' or workflow == 'tmux') and cheatsheet then
-        vim.api.nvim_set_keymap('t', mod, '', {
-            callback = function()
+                if M.current_mode() ~= 't' then
+                    M.send_to_current(mod, true)
+                    return
+                end
+                if is_modifier then
+                    M.send_to_current(mod, true)
+                    is_modifier = false
+                    trigger_event('ModifierFinished', {get_modifier_mode(), mod})
+                    return
+                end
                 if mode == 'P' then
                     M.send_to_current(mod, true)
                     return
@@ -947,7 +963,8 @@ M.set_workflow = function(w, _use_cheatsheet, m)
                     M.enter_mode('n')
                     M.feedkeys('<C-\\><C-n>', 't')
                 end
-                trigger_event('ModifierTrigger', {(workflow == 'azul' and 't') or 'n', mod})
+                trigger_event('ModifierTrigger', {get_modifier_mode(), mod})
+                is_modifier = true
             end,
             desc = '',
         })
@@ -1389,7 +1406,7 @@ M.rotate_panel = function()
     vim.api.nvim_command('wincmd x')
 end
 
-M.on = function(ev, callback)
+local add_event = function(ev, callback, where)
     local to_add = (type(ev) == 'string' and {ev}) or ev
 
     for _, e in ipairs(to_add) do
@@ -1397,8 +1414,12 @@ M.on = function(ev, callback)
             L.error(e .. " event does not exists", nil)
         end
 
-        table.insert(events[e], callback)
+        table.insert(where[e], callback)
     end
+end
+
+M.on = function(ev, callback)
+    add_event(ev, callback, events)
 end
 
 M.clear_event = function(ev, callback)
@@ -1506,10 +1527,6 @@ M.rename_current_tab = function()
     M.rename_tab(vim.fn.tabpagenr())
 end
 
-M.on('AzulStarted', function()
-    vim.fn.timer_start(200, update_tab_titles)
-end)
-
 M.edit = function(t, file, on_finish)
     if t.editing_buf ~= nil then
         L.error('The current terminal is already displaying an editor')
@@ -1566,5 +1583,64 @@ end
 M.edit_current_scrollback_log = function()
     M.edit_scrollback_log(M.get_current_terminal())
 end
+
+M.get_current_modifier = function()
+    return mod
+end
+
+M.run_map = function(m)
+    if M.is_modifier_mode(m.m) then
+        trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
+        is_modifier = false
+    end
+    if m.options.callback ~= nil then
+        m.options.callback()
+    elseif m.rs ~= nil then
+        M.feedkeys(m.rs, m.real_mode)
+    end
+    if m.action ~= nil then
+        trigger_event('ActionRan', {m.action})
+    end
+end
+
+M.cancel_modifier = function()
+    if not is_modifier then
+        return
+    end
+    trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
+    is_modifier = false
+end
+
+M.is_modifier_mode = function(m)
+    if workflow ~= 'tmux' and workflow ~= 'azul' then
+        return false
+    end
+
+    return (workflow == 'tmux' and m == 'n') or (workflow == 'azul' and m == 't')
+end
+
+M.on_action = function(action, callback)
+    M.on('ActionRan', function(args)
+        if args[1] ~= action then
+            return
+        end
+        callback(args[1])
+    end)
+end
+
+M.persistent_on = function(ev, callback)
+    add_event(ev, callback, persistent_events)
+end
+
+M.persistent_on('AzulStarted', function()
+    vim.fn.timer_start(200, update_tab_titles)
+end)
+
+M.persistent_on('ModeChanged', function(args)
+    local old_mode = args[1]
+    if M.is_modifier_mode(old_mode) and is_modifier then
+        M.cancel_modifier()
+    end
+end)
 
 return M
