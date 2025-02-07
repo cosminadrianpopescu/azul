@@ -1263,8 +1263,8 @@ will send the control back to the host main session.
 ## Session restore
 
 `Azul` has very powerfull options to save and restore a session. By invoking
-azul command `AzulSaveLayout`, your layout will be saved in the selected file.
-This means all the floats and the splits and the tabs. 
+the azul command `AzulSaveLayout`, your layout will be saved in the selected
+file. This means all the floats and the splits and the tabs. 
 
 By calling `AzulRestoreLayout`, the current layout will be overriten by the
 layout saved in the file. This means all your current tabs, splits and floats
@@ -1275,7 +1275,7 @@ If you also want to save the commands running in a pane, you have two options.
 
 #### AzulSetCmd
 
-You can call the function `AzulSetCmd`. This variable will be saved together
+You can call the command `AzulSetCmd`. This variable will be saved together
 with the layout. When `AzulRestoreLayout` is called, then the command saved in
 the `AzulSetCmd` will be sent to the same pane (float or not, in a split or
 not)
@@ -1289,7 +1289,7 @@ selected pane that will be saved together with the layout.
 To restore the layout, instead of calling the `AzulRestoreLayout` command, you
 can call in a lua file the `azul.restore_layout` function, which takes as a
 first argument the file where the layout is saved and as a second argument a
-callback with 2 parameters: the azul terminal structure and the this id. This
+callback with 2 parameters: the azul terminal structure and this id. This
 gives you a much more flexibility to set up your pane upon a layout restore.
 
 For example: `:AzulSaveLayout<cr>`, and then

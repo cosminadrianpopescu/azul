@@ -86,6 +86,7 @@ M.default_config = {
         opacity = 0,
         use_lualine = true,
         auto_start_logging = false,
+        modes_cheatsheet_position = 'bottom',
     },
     shortcuts = {
         azul = {

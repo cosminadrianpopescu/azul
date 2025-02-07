@@ -6,6 +6,7 @@ local win_id = nil
 local mode_win_id = nil
 local timer = nil
 local timer_set = false
+local position_timer = nil
 
 vim.api.nvim_command('highlight AzulCheatsheetArrow guifg=#565f89')
 
@@ -15,6 +16,10 @@ local WIN_PAD = 4
 local ARROW = '➜'
 
 local close_window = function()
+    if position_timer ~= nil then
+        vim.fn.timer_stop(position_timer)
+        position_timer = nil
+    end
     if win_id ~= nil then
         vim.api.nvim_win_close(win_id, true)
     end
@@ -235,7 +240,29 @@ local get_cols_number = function()
     return math.floor((vim.o.columns - (WIN_PAD * 2)) / COL_LEN)
 end
 
-local create_window = function(mappings, full)
+local get_top_position = function(height, position)
+    local _position = position or cfg.default_config.options.modes_cheatsheet_position
+    local win_top_pos = vim.o.lines - height - 1
+    local row = win_top_pos
+    local win_height = height
+    if _position == 'top' then
+        row = 0
+    elseif _position == 'auto' then
+        local start_line = vim.fn.line('w0')
+        local end_line = vim.fn.line('w$')
+        local pos = vim.api.nvim_win_get_cursor(0)
+        funcs.log("GOT " .. start_line .. ", " .. end_line .. ", " .. vim.inspect(pos))
+        if end_line - pos[1] < win_height then
+            row = 0
+        elseif pos[1] - start_line < win_height then
+            row = win_top_pos
+        end
+    end
+
+    return row
+end
+
+local create_window = function(mappings, full, position)
     local _full
     if full == nil then
         _full = true
@@ -251,8 +278,9 @@ local create_window = function(mappings, full)
     if _full then
         extra_lines = 4
     end
+    local win_height = height + extra_lines
     local win_id = vim.api.nvim_open_win(buf, true, {
-        width = vim.o.columns, height = height + extra_lines, col = 0, row = vim.o.lines - height - extra_lines - 1,
+        width = vim.o.columns, height = win_height, col = 0, row = get_top_position(win_height, position),
         focusable = false, zindex = 500, border = 'none', relative = 'editor', style = 'minimal',
     })
     vim.filetype.add({
@@ -266,6 +294,20 @@ local create_window = function(mappings, full)
     vim.api.nvim_set_current_win(current_win)
     vim.api.nvim_buf_set_lines(buf, 0, height + 3, false, cheatsheet_content(mappings, height, _full))
     azul.resume()
+    if position == nil and cfg.default_config.options.modes_cheatsheet_position == 'auto' then
+        position_timer = vim.fn.timer_start(100, function()
+            if win_id == nil then
+                return
+            end
+
+            local config = vim.api.nvim_win_get_config(win_id)
+            local row = get_top_position(win_height, 'auto')
+            if config.row ~= row then
+                config.row = row
+                vim.api.nvim_win_set_config(win_id, config)
+            end
+        end, {['repeat'] = -1})
+    end
     return win_id
 end
 
@@ -315,7 +357,7 @@ end)
 
 azul.persistent_on('ModifierTrigger', function(args)
     local mode = args[1]
-    win_id = create_window(get_mappings_for_mode(mode))
+    win_id = create_window(get_mappings_for_mode(mode), true)
     if cfg.default_config.options.blocking_cheatsheet then
         vim.fn.timer_start(0, function()
             wait_input(mode)

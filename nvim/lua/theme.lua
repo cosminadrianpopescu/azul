@@ -221,7 +221,11 @@ require('lualine').setup {
         lualine_c = {
             {current_name}
         },
-        lualine_x = {modifier, 'encoding', 'fileformat', 'filetype'},
+        lualine_x = {{
+            modifier,
+            separator = { right = '', left = ''},
+            color = {bg = colors.terminal.a.bg, fg = colors.terminal.a.fg},
+        }, 'encoding', 'fileformat', 'filetype'},
         lualine_y = {'progress'},
         lualine_z = {'location'}
     },
