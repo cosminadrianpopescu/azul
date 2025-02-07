@@ -357,7 +357,7 @@ end)
 
 azul.persistent_on('ModifierTrigger', function(args)
     local mode = args[1]
-    win_id = create_window(get_mappings_for_mode(mode), true)
+    win_id = create_window(get_mappings_for_mode(mode), true, 'bottom')
     if cfg.default_config.options.blocking_cheatsheet then
         vim.fn.timer_start(0, function()
             wait_input(mode)
