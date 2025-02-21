@@ -9,8 +9,6 @@ local is_modifier = false
 local updating_tab_titles = false
 local azul_started = false
 
-local ev_id = 0
-
 local M = {
     --- If set to true, then list all buffers
     list_buffers = false,
@@ -27,6 +25,7 @@ local M = {
 --- @field term_id number The current neovim channel id
 --- @field panel_id number The panel assigned number (to be used for session restore)
 --- @field tab_id number The tab assigned number (to be used for session restore)
+--- @field azul_win_id string The custom azul windows id
 --- @field win_config table The current neovim window config
 local terminals = {}
 local tab_id = 0
@@ -1189,6 +1188,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         if t == nil then
             L.error("Error found loading the layout file", h)
         end
+        M.select_pane(t.buf)
         M.resize(h.params[1])
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, nil, 0)
