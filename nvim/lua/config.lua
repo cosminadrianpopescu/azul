@@ -431,14 +431,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 wrap_for_insert(function()
-                    local hidden = azul.are_floats_hidden(float_group())
-                    if not hidden then
-                        azul.hide_floats()
-                    end
-                    vim.api.nvim_command('tabn ' .. arg)
-                    if not hidden then
-                        azul.show_floats(float_group())
-                    end
+                    azul.select_tab(arg, float_group())
                 end)
             end,
             desc = 'Go to tab ' .. arg,

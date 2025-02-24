@@ -27,6 +27,7 @@ local M = {
 --- @field tab_id number The tab assigned number (to be used for session restore)
 --- @field azul_win_id string The custom azul windows id
 --- @field win_config table The current neovim window config
+--- @field current_split boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
 local terminals = {}
 local tab_id = 0
 local azul_win_id = 0
@@ -67,6 +68,7 @@ local events = {
     TabTitleChanged = {},
     AzulStarted = {},
     ActionRan = {},
+    ExitAzul = {},
 }
 
 local persistent_events = {}
@@ -113,6 +115,7 @@ end
 local remove_term_buf = function(buf)
     terminals = vim.tbl_filter(function(t) return t.buf ~= buf end, terminals)
     if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
+        trigger_event("ExitAzul", {})
         vim.api.nvim_command('quit!')
     end
 end
@@ -175,10 +178,39 @@ local get_visible_floatings = function()
     return vim.tbl_filter(function(t) return M.is_float(t) and t.win_id ~= nil end, terminals)
 end
 
+local select_current_split = function(tab_id)
+    local t = funcs.find(function(t) return t.current_split end, L.terms_by_tab_id(tab_id))
+    if t == nil then
+        return
+    end
+    funcs.log("SELECT CURRENT SPLIT " .. vim.inspect(t))
+    vim.api.nvim_command(vim.fn.bufwinnr(t.buf) .. "wincmd w")
+end
+
+local set_current_split = function(tab_id)
+    for _, t in ipairs(L.terms_by_tab_id(tab_id)) do
+        t.current_split = false
+    end
+
+    local t = M.get_current_terminal()
+    if t == nil then
+        return
+    end
+    funcs.log("SET CURRENT SPLIT " .. vim.inspect(t))
+    t.current_split = true
+end
+
 local close_float = function(float)
     refresh_win_config(float)
     vim.api.nvim_win_close(float.win_id, true)
     float.win_id = nil
+    vim.fn.timer_start(1, function()
+        local t = M.get_current_terminal()
+        if t == nil then
+            return
+        end
+        select_current_split(t.tab_id)
+    end)
 end
 
 --- Returns the current selected terminal
@@ -189,6 +221,8 @@ M.get_current_terminal = function()
 end
 
 --- Hides all the floats
+--- 
+--- @return nil
 M.hide_floats = function()
     local crt = M.get_current_terminal()
     if crt ~= nil and M.is_float(crt) then
@@ -219,6 +253,7 @@ local OnEnter = function(ev)
     crt.last_access = os.time(os.date("!*t"))
 
     local is_current_terminal = (M.get_current_terminal() and M.get_current_terminal().buf) or nil
+    local old = funcs.find(function(t) return t.is_current end, M.get_terminals())
 
     for _, t in ipairs(terminals) do
         if not M.list_buffers then
@@ -226,7 +261,7 @@ local OnEnter = function(ev)
         end
         t.is_current = _buf(t) == ev.buf
         if t.is_current and _buf(t) ~= is_current_terminal then
-            trigger_event('PaneChanged', {t})
+            trigger_event('PaneChanged', {t, old})
         end
         if t.is_current and M.options.auto_start_logging and not L.is_logging_started(t.buf) then
             M.start_logging(os.tmpname())
@@ -462,6 +497,13 @@ local update_tab_titles = function()
         )
     end
 end
+
+cmd({"VimLeave"},{
+    desc = "launch ExitAzul event",
+    callback = function()
+        trigger_event("ExitAzul", {})
+    end,
+})
 
 cmd({'TabNew', 'TermClose', 'TabEnter'}, {
     pattern= '*', callback = function()
@@ -1007,6 +1049,10 @@ end
 
 L.term_by_buf_id = function(id)
     return funcs.find(function(t) return _buf(t) == 1 * id end, terminals)
+end
+
+L.terms_by_tab_id = function(id)
+    return vim.tbl_filter(function(x) return x.tab_id == id end, M.get_terminals())
 end
 
 local get_custom_values = function()
@@ -1619,6 +1665,17 @@ M.is_modifier_mode = function(m)
     return (workflow == 'tmux' and m == 'n') or (workflow == 'azul' and m == 't')
 end
 
+M.select_tab = function(n, float_group)
+    local hidden = M.are_floats_hidden(float_group)
+    if not hidden then
+        M.hide_floats()
+    end
+    vim.api.nvim_command('tabn ' .. n)
+    if not hidden then
+        M.show_floats(float_group)
+    end
+end
+
 M.on_action = function(action, callback)
     M.on('ActionRan', function(args)
         if args[1] ~= action then
@@ -1641,6 +1698,16 @@ M.persistent_on('ModeChanged', function(args)
     if M.is_modifier_mode(old_mode) and is_modifier then
         M.cancel_modifier()
     end
+end)
+
+M.persistent_on('PaneChanged', function(args)
+    local t = args[1]
+    local old = args[2]
+    if M.is_float(old) or M.is_float(t) then
+        return
+    end
+
+    set_current_split(t.tab_id)
 end)
 
 return M

@@ -120,9 +120,9 @@ return {
         end, {desc = "Edits a file", complete = "file", nargs = "?"})
         vim.api.nvim_create_user_command('AzulEditScrollback', function()
             azul.edit_current_scrollback()
-        end, {desc = "Renames the current tab"})
+        end, {desc = "Edits the current scrollback"})
         vim.api.nvim_create_user_command('AzulEditScrollbackLog', function()
             azul.edit_current_scrollback_log()
-        end, {desc = "Renames the current tab"})
+        end, {desc = "Edits the current scrollback log"})
     end
 }

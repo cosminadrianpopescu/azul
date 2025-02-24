@@ -707,6 +707,8 @@ without asking for user input:
 * **:is_current:** will be replaced with the `*` character, if the current tab
   is selected, giving you the possibility to mark the currently selected tab
   as in `tmux`.
+* **:azul_win_id:** will be replaced by the custom win id given using
+  `:AzulSetWinId` command
 
 ### Shortcuts
 
