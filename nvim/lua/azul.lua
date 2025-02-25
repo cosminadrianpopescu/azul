@@ -183,7 +183,6 @@ local select_current_split = function(tab_id)
     if t == nil then
         return
     end
-    funcs.log("SELECT CURRENT SPLIT " .. vim.inspect(t))
     vim.api.nvim_command(vim.fn.bufwinnr(t.buf) .. "wincmd w")
 end
 
@@ -196,7 +195,6 @@ local set_current_split = function(tab_id)
     if t == nil then
         return
     end
-    funcs.log("SET CURRENT SPLIT " .. vim.inspect(t))
     t.current_split = true
 end
 
@@ -1665,14 +1663,30 @@ M.is_modifier_mode = function(m)
     return (workflow == 'tmux' and m == 'n') or (workflow == 'azul' and m == 't')
 end
 
+local just_close_windows = function(floats)
+    M.suspend()
+    for _, f in ipairs(floats) do
+        vim.api.nvim_win_close(f.win_id, true)
+    end
+    M.resume()
+end
+
+local just_open_windows = function(floats)
+    M.suspend()
+    for _, f in ipairs(floats) do
+        f.win_id = vim.api.nvim_open_win(f.buf, true, f.win_config)
+    end
+end
+
 M.select_tab = function(n, float_group)
     local hidden = M.are_floats_hidden(float_group)
+    local floats = get_visible_floatings()
     if not hidden then
-        M.hide_floats()
+        just_close_windows(floats)
     end
     vim.api.nvim_command('tabn ' .. n)
     if not hidden then
-        M.show_floats(float_group)
+        just_open_windows(floats)
     end
 end
 
