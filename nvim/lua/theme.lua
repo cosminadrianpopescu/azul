@@ -235,17 +235,17 @@ require('lualine').setup {
     extensions = {}
 }
 
-mx.on('ModifierTrigger', function()
+mx.persistent_on('ModifierTrigger', function()
     is_modifier = true
     require('lualine').refresh()
 end)
 
-mx.on('ModifierFinished', function()
+mx.persistent_on('ModifierFinished', function()
     is_modifier = false
     require('lualine').refresh()
 end)
 
-mx.on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function(args)
+mx.persistent_on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function(args)
     if is_disabled and mx.current_mode() ~= 'P' then
         require('lualine').setup({options = {theme = theme}})
         is_disabled = false
@@ -259,7 +259,7 @@ mx.on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function(args)
     require('lualine').refresh()
 end)
 
-mx.on({'PaneChanged'}, function(args)
+mx.persistent_on({'PaneChanged'}, function(args)
     local crt = args[1]
     local what = (mx.is_float(crt) and 'FloatBorder') or 'WinSeparator'
     local repl = (mx.is_float(crt) and 'AzulCurrentFloat') or 'AzulInactiveWin'

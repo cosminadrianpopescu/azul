@@ -6,8 +6,9 @@ local FILES = require('files')
 local is_suspended = false
 local is_modifier = false
 
-local updating_tab_titles = false
+local updating_tab_titles = true
 local azul_started = false
+local last_access = 0
 
 local M = {
     --- If set to true, then list all buffers
@@ -27,7 +28,7 @@ local M = {
 --- @field tab_id number The tab assigned number (to be used for session restore)
 --- @field azul_win_id string The custom azul windows id
 --- @field win_config table The current neovim window config
---- @field current_split boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
+--- @field current_selected_pane boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
 local terminals = {}
 local tab_id = 0
 local azul_win_id = 0
@@ -152,6 +153,9 @@ local refresh_win_config = function(t)
     if t.win_config['width'] == nil then
         t.win_config.width = vim.api.nvim_win_get_width(t.win_id)
     end
+    vim.fn.timer_start(1, function()
+        t.win_config.title = funcs.safe_get_buf_var(t.buf, 'term_title')
+    end)
     if old_config == nil or old_config.col ~= t.win_config.col or old_config.height ~= t.win_config.height
         or old_config.row ~= t.win_config.row or old_config.width ~= t.win_config.width then
         vim.fn.timer_start(1, function()
@@ -178,24 +182,24 @@ local get_visible_floatings = function()
     return vim.tbl_filter(function(t) return M.is_float(t) and t.win_id ~= nil end, terminals)
 end
 
-local select_current_split = function(tab_id)
-    local t = funcs.find(function(t) return t.current_split end, L.terms_by_tab_id(tab_id))
+local select_current_pane = function(tab_id)
+    local t = funcs.find(function(t) return t.current_selected_pane end, L.terms_by_tab_id(tab_id))
     if t == nil then
         return
     end
     vim.api.nvim_command(vim.fn.bufwinnr(t.buf) .. "wincmd w")
 end
 
-local set_current_split = function(tab_id)
+local set_current_panel = function(tab_id)
     for _, t in ipairs(L.terms_by_tab_id(tab_id)) do
-        t.current_split = false
+        t.current_selected_pane = false
     end
 
     local t = M.get_current_terminal()
     if t == nil then
         return
     end
-    t.current_split = true
+    t.current_selected_pane = true
 end
 
 local close_float = function(float)
@@ -207,7 +211,7 @@ local close_float = function(float)
         if t == nil then
             return
         end
-        select_current_split(t.tab_id)
+        select_current_pane(t.tab_id)
     end)
 end
 
@@ -218,21 +222,14 @@ M.get_current_terminal = function()
     return funcs.find(function(t) return t.is_current end, terminals)
 end
 
---- Hides all the floats
---- 
---- @return nil
-M.hide_floats = function()
-    local crt = M.get_current_terminal()
-    if crt ~= nil and M.is_float(crt) then
-        latest_float[crt.group] = crt
-    end
-
+local rebuild_zindex_floats = function()
     local floats = get_visible_floatings()
-    for _, float in ipairs(floats) do
-        close_float(float)
-    end
-    if #floats > 0 then
-        trigger_event('FloatClosed')
+    table.sort(floats, function(a, b) return a.last_access < b.last_access end)
+    for i, f in ipairs(floats) do
+        f.win_config.zindex = i
+        if f.win_id ~= nil then
+            vim.api.nvim_win_set_config(f.win_id, f.win_config)
+        end
     end
 end
 
@@ -248,7 +245,9 @@ local OnEnter = function(ev)
     if M.is_float(crt) == false then
         M.hide_floats()
     end
-    crt.last_access = os.time(os.date("!*t"))
+    crt.last_access = last_access
+    last_access = last_access + 1
+    rebuild_zindex_floats()
 
     local is_current_terminal = (M.get_current_terminal() and M.get_current_terminal().buf) or nil
     local old = funcs.find(function(t) return t.is_current end, M.get_terminals())
@@ -471,9 +470,20 @@ local update_tab_titles = function()
     local tabs_updated = 0
     local current_tab_page = vim.fn.tabpagenr()
     for i, t in ipairs(vim.api.nvim_list_tabpages()) do
-        local tab_placeholders = funcs.safe_get_tab_var(t, 'azul_title_placeholders')
+        local tab_placeholders = funcs.safe_get_tab_var(t, 'azul_placeholders')
+        local current_pane = funcs.find(function(t) return t.tab_page == i and t.current_selected_pane end, M.get_terminals())
+        local azul_win_id = (current_pane and current_pane.azul_win_id) or ''
+        local azul_cmd = (current_pane and current_pane.azul_cmd) or ''
+        local term_title = ''
+        if current_pane ~= nil then
+            term_title = current_pane.win_config.title or funcs.safe_get_buf_var(current_pane.buf, 'term_title') or ''
+        end
         local placeholders = vim.tbl_extend(
-            'keep', { tab_n = i, term_title = vim.b.term_title, is_current = (i == current_tab_page and '*') or '' },
+            'keep', {
+                tab_n = i, term_title = term_title,
+                is_current = (i == current_tab_page and '*') or '', azul_win_id = azul_win_id,
+                azul_cmd = azul_cmd
+            },
             tab_placeholders or {}
         )
         M.parse_custom_title(
@@ -485,7 +495,7 @@ local update_tab_titles = function()
                 if tabs_updated >= tabs_to_update then
                     updating_tab_titles = false
                 end
-                vim.api.nvim_tabpage_set_var(t, 'azul_title_placeholders', placeholders)
+                vim.api.nvim_tabpage_set_var(t, 'azul_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
                 trigger_event('TabTitleChanged')
                 vim.fn.timer_start(1, function()
@@ -494,6 +504,25 @@ local update_tab_titles = function()
             end
         )
     end
+end
+
+--- Hides all the floats
+--- 
+--- @return nil
+M.hide_floats = function()
+    local crt = M.get_current_terminal()
+    if crt ~= nil and M.is_float(crt) then
+        latest_float[crt.group] = crt
+    end
+
+    local floats = get_visible_floatings()
+    for _, float in ipairs(floats) do
+        close_float(float)
+    end
+    if #floats > 0 then
+        trigger_event('FloatClosed')
+    end
+    vim.fn.timer_start(1, update_tab_titles)
 end
 
 cmd({"VimLeave"},{
@@ -644,6 +673,7 @@ L.do_show_floats = function(floatings, idx, after_callback)
     if idx > #floatings then
         if after_callback ~= nil then
             after_callback()
+            vim.fn.timer_start(1, update_tab_titles)
         end
         trigger_event('FloatsVisible')
         return
@@ -862,6 +892,7 @@ M.select_next_pane = function(dir, group)
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('wincmd ' .. which)
+            vim.fn.timer_start(1, update_tab_titles)
         end)
         return
     end
@@ -945,6 +976,7 @@ M.split = function(dir)
 
     vim.api.nvim_command(cmd)
     M.open(false)
+    vim.fn.timer_start(1, update_tab_titles)
     vim.o.splitright = splitright
     vim.o.splitbelow = splitbelow
 end
@@ -1075,7 +1107,7 @@ M.save_layout = function(where)
     local title_overrides = {}
     for _, id in ipairs(vim.api.nvim_list_tabpages()) do
         table.insert(history_to_save, L.histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), history))
-        table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_title_placeholders') or {})
+        table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_placeholders') or {})
         table.insert(title_overrides, funcs.safe_get_tab_var(id, 'azul_tab_title_overriden') or '')
     end
     local f = io.open(where, "w")
@@ -1083,7 +1115,7 @@ M.save_layout = function(where)
         floats = vim.tbl_filter(function(x) return M.is_float(x) end, terminals),
         history = history_to_save,
         customs = get_custom_values(),
-        azul_title_placeholders = placeholders,
+        azul_placeholders = placeholders,
         title_overrides = title_overrides,
     }))
     f:close()
@@ -1139,7 +1171,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     end
 
     if idx > #histories.floats then
-        L.restore_ids(histories.azul_title_placeholders, histories.title_overrides)
+        L.restore_ids(histories.azul_placeholders or histories.azul_title_placeholders, histories.title_overrides)
         return
     end
 
@@ -1268,7 +1300,7 @@ L.restore_ids = function(title_placeholders, title_overrides)
     panel_id = panel_id + 1
     tab_id = tab_id + 1
     for i, p in ipairs(title_placeholders or {}) do
-        vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_title_placeholders', p)
+        vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_placeholders', p)
     end
     for i, o in ipairs(title_overrides or {}) do
         if o ~= '' then
@@ -1300,7 +1332,7 @@ M.restore_layout = function(where, callback)
     local h = deserialize(f:read("*a"))
     h.callback = callback
     updating_tab_titles = true
-    funcs.safe_del_tab_var(0, 'azul_title_placeholders')
+    funcs.safe_del_tab_var(0, 'azul_placeholders')
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
 end
@@ -1308,6 +1340,7 @@ end
 M.set_win_id = function(id)
     local t = L.term_by_buf_id(vim.fn.bufnr('%'))
     t.azul_win_id = id
+    update_tab_titles()
 end
 
 M.set_tab_variable = function(key, value)
@@ -1317,6 +1350,7 @@ end
 M.set_cmd = function(cmd)
     local t = L.term_by_buf_id(vim.fn.bufnr('%'))
     t.azul_cmd = cmd
+    update_tab_titles()
 end
 
 M.get_current_workflow = function()
@@ -1560,7 +1594,7 @@ M.rename_tab = function(tab)
         if result == '' then
             funcs.safe_del_tab_var(tab_id, 'azul_tab_title_overriden')
         elseif result ~= nil then
-            funcs.safe_del_tab_var(tab_id, 'azul_title_placeholders')
+            funcs.safe_del_tab_var(tab_id, 'azul_placeholders')
             vim.api.nvim_tabpage_set_var(tab_id, 'azul_tab_title_overriden', result)
         end
         update_tab_titles()
@@ -1667,26 +1701,32 @@ local just_close_windows = function(floats)
     M.suspend()
     for _, f in ipairs(floats) do
         vim.api.nvim_win_close(f.win_id, true)
+        f.win_id = nil
     end
     M.resume()
 end
 
 local just_open_windows = function(floats)
     M.suspend()
+    table.sort(floats, function(a, b) return a.last_access < b.last_access end)
     for _, f in ipairs(floats) do
         f.win_id = vim.api.nvim_open_win(f.buf, true, f.win_config)
     end
+    M.resume()
 end
 
-M.select_tab = function(n, float_group)
-    local hidden = M.are_floats_hidden(float_group)
+M.select_tab = function(n)
+    local hidden = M.are_floats_hidden(funcs.current_float_group())
     local floats = get_visible_floatings()
     if not hidden then
         just_close_windows(floats)
     end
     vim.api.nvim_command('tabn ' .. n)
+    floats = vim.tbl_filter(function(t) return M.is_float(t) and t.group == funcs.current_float_group() end, terminals)
     if not hidden then
         just_open_windows(floats)
+    else
+        select_current_pane(vim.api.nvim_tabpage_get_var(0, 'azul_tab_id'))
     end
 end
 
@@ -1704,7 +1744,10 @@ M.persistent_on = function(ev, callback)
 end
 
 M.persistent_on('AzulStarted', function()
-    vim.fn.timer_start(200, update_tab_titles)
+    vim.fn.timer_start(200, function()
+        updating_tab_titles = false
+        update_tab_titles()
+    end)
 end)
 
 M.persistent_on('ModeChanged', function(args)
@@ -1721,7 +1764,7 @@ M.persistent_on('PaneChanged', function(args)
         return
     end
 
-    set_current_split(t.tab_id)
+    set_current_panel(t.tab_id)
 end)
 
 return M

@@ -1,3 +1,5 @@
+local funcs = require('functions')
+
 local get_file_if_missing = function(opts, callback)
     local azul = require('azul')
     local file = opts.fargs[1]
@@ -27,18 +29,18 @@ return {
         end, {nargs = 1, desc = 'Enters an azul mode'})
 
         vim.api.nvim_create_user_command('AzulShowFloats', function()
-            azul.show_floats(vim.t.float_group or nil)
+            azul.show_floats(funcs.current_float_group())
         end, {desc = 'Show floats'})
 
         vim.api.nvim_create_user_command('AzulOpenFloat', function()
-            azul.open_float(vim.t.float_group or nil)
+            azul.open_float(funcs.current_float_group())
             if azul.get_current_workflow() ~= 'azul' then
                 vim.api.nvim_command('startinsert')
             end
         end, {desc = 'Creates a new float'})
 
         vim.api.nvim_create_user_command('AzulToggleFloats', function()
-            azul.toggle_floats(vim.t.float_group or nil)
+            azul.toggle_floats(funcs.current_float_group())
         end, {desc = 'Toggles the floats visibility'})
 
         vim.api.nvim_create_user_command('AzulMoveCurrentFloat', function(opts)
@@ -48,7 +50,7 @@ return {
         end, {nargs = "+", desc = 'Moves the currently selected float'})
 
         vim.api.nvim_create_user_command('AzulSelectPane', function(opts)
-            azul.select_next_pane(opts.fargs[1], vim.t.float_group or nil)
+            azul.select_next_pane(opts.fargs[1], funcs.current_float_group())
         end, {nargs = 1, desc = "Selects the next pane in the given direction"})
 
         vim.api.nvim_create_user_command('AzulSendToCurrentPane', function(opts)

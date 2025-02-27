@@ -47,6 +47,21 @@ local safe_get_tab_var = function(tab, name)
     return result
 end
 
+local safe_get_buf_var = function(buf, name)
+    local safe, result = pcall(function() return vim.api.nvim_buf_get_var(buf, name) end)
+    if not safe then
+        return nil
+    end
+
+    return result
+end
+
+local safe_del_buf_var = function(buf, name)
+    if safe_get_buf_var(buf, name) ~= nil then
+        vim.api.nvim_buf_del_var(buf, name)
+    end
+end
+
 local safe_del_tab_var = function(tab, name)
     if safe_get_tab_var(tab, name) ~= nil then
         vim.api.nvim_tabpage_del_var(tab, name)
@@ -78,10 +93,18 @@ local map_by_action = function(mode, action, mappings)
     return vim.tbl_filter(function(m) return m.m == mode and ((m.options or {}).action or '') == action end, mappings)
 end
 
+local current_float_group = function()
+    return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
+                                          -- then all the floats on that tab
+                                          -- will be assigned to the t:float_group group
+end
+
 return {
     get_sensitive_ls = get_sensitive_ls,
     find = find,
     log = log,
+    safe_get_buf_var = safe_get_buf_var,
+    safe_del_buf_var = safe_del_buf_var,
     safe_get_tab_var = safe_get_tab_var,
     safe_del_tab_var = safe_del_tab_var,
     find_map = find_map,
@@ -89,4 +112,5 @@ return {
     save_current_mapping = save_current_mapping,
     restore_previous_mapping = restore_previous_mapping,
     map_by_action = map_by_action,
+    current_float_group = current_float_group,
 }

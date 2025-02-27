@@ -694,7 +694,7 @@ this in the `config.ini`:
 tab_title = :app: - :tab_n:
 ```
 
-will make azul asking for the a value for the `app` parameter, everytime a new
+will make azul asking for a value for the `app` parameter, everytime a new
 tab is created. The newly created tab will have the `:app:` value replaced
 with the input from the user. 
 
@@ -708,7 +708,9 @@ without asking for user input:
   is selected, giving you the possibility to mark the currently selected tab
   as in `tmux`.
 * **:azul_win_id:** will be replaced by the custom win id given using
-  `:AzulSetWinId` command
+  `:AzulSetWinId` command of the currently selected embedded pane in the tab
+* **:azul_cmd:** will be replaced by the custom command given using
+  `:AzulSetCmd` command of the currently selected embedded pane in the tab
 
 ### Shortcuts
 

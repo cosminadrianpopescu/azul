@@ -2,14 +2,9 @@ local M = {}
 
 local files = require('files')
 local split = require('split')
+local funcs = require('functions')
 local cmd = vim.api.nvim_create_autocmd
 local tabs = 0
-
-local float_group = function()
-    return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
-                                          -- then all the floats on that tab
-                                          -- will be assigned to the t:float_group group
-end
 
 cmd('TermClose', {
     pattern = "*", callback = function()
@@ -431,7 +426,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 wrap_for_insert(function()
-                    azul.select_tab(arg, float_group())
+                    azul.select_tab(arg)
                 end)
             end,
             desc = 'Go to tab ' .. arg,
@@ -441,7 +436,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 wrap_for_insert(function()
-                    azul.toggle_floats(float_group())
+                    azul.toggle_floats(funcs.current_float_group())
                 end)
             end,
             desc = "Toggle floats visibility",
@@ -483,7 +478,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 wrap_for_insert(function()
-                    azul.open_float(float_group())
+                    azul.open_float(funcs.current_float_group())
                 end)
             end,
             desc = "Create float",
@@ -508,7 +503,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('select_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.select_next_pane(dir, float_group())
+                azul.select_next_pane(dir, funcs.current_float_group())
             end,
             desc = 'Select a pane ' .. dir,
             action = action,
