@@ -44,7 +44,6 @@ local mode_mappings = {
 }
 local workflow = 'azul'
 local mod = nil
-local latest_float = {}
 local global_last_status = nil
 local quit_on_last = true
 
@@ -131,7 +130,6 @@ M.debug = function(ev)
     -- print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
     -- print("TITLE IS ALREADY" .. vim.b.term_title)
     -- print("JOB ID IS " .. vim.b.terminal_job_id)
-    -- print("LATEST FLOATS ARE " .. vim.inspect(latest_float))
     print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MODE IS" .. mode)
 end
@@ -510,11 +508,6 @@ end
 --- 
 --- @return nil
 M.hide_floats = function()
-    local crt = M.get_current_terminal()
-    if crt ~= nil and M.is_float(crt) then
-        latest_float[crt.group] = crt
-    end
-
     local floats = get_visible_floatings()
     for _, float in ipairs(floats) do
         close_float(float)
@@ -669,30 +662,14 @@ local restore_float = function(t)
     end
 end
 
-L.do_show_floats = function(floatings, idx, after_callback)
-    if idx > #floatings then
-        if after_callback ~= nil then
-            after_callback()
-            vim.fn.timer_start(1, update_tab_titles)
-        end
-        trigger_event('FloatsVisible')
-        return
-    end
-    restore_float(floatings[idx])
-    vim.fn.timer_start(10, function()
-        L.do_show_floats(floatings, idx + 1, after_callback)
-    end)
-end
-
 --- Shows all the floats
-M.show_floats = function(group, after_callback)
+M.show_floats = function(group)
     local g = group or 'default'
-    local floatings = vim.tbl_filter(function(t) return M.is_float(t) and t ~= latest_float[g] and t.group == g end, terminals)
+    local floatings = vim.tbl_filter(function(t) return M.is_float(t) and t.group == g end, terminals)
     table.sort(floatings, function(a, b) return a.last_access < b.last_access end)
-    if latest_float[g] ~= nil then
-        floatings[#floatings + 1] = latest_float[g]
+    for _, f in ipairs(floatings) do
+        restore_float(f)
     end
-    L.do_show_floats(floatings, 1, after_callback)
 end
 
 local get_all_floats = function(group)
@@ -711,29 +688,25 @@ end
 --- @param group string The group in which to open a float
 --- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
 M.open_float = function(group, opts)
-    local after = function()
-        local buf = vim.api.nvim_create_buf(true, false)
-        local factor = 4
-        local w = (vim.o.columns - factor) / 2
-        local h = (vim.o.lines - factor) / 2
-        local x = (vim.o.columns - w) / 2
-        local y = (vim.o.lines - h) / 2
-        local _opts = {
-            width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
-            focusable = true, zindex = 1, border = 'rounded', title = vim.b.term_title, relative = 'editor', style = 'minimal'
-        }
-        for k, v in pairs(opts or {}) do
-            _opts[k] = v
-        end
-        vim.api.nvim_open_win(buf, true, _opts)
-        trigger_event('FloatOpened', {L.term_by_buf_id(buf)})
-    end
     L.current_group = group or 'default'
     if #get_all_floats(group) > 0 and M.are_floats_hidden(group) then
-        M.show_floats(group, after)
-    else
-        after()
+        M.show_floats(group)
     end
+    local buf = vim.api.nvim_create_buf(true, false)
+    local factor = 4
+    local w = (vim.o.columns - factor) / 2
+    local h = (vim.o.lines - factor) / 2
+    local x = (vim.o.columns - w) / 2
+    local y = (vim.o.lines - h) / 2
+    local _opts = {
+        width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
+        focusable = true, zindex = 1, border = 'rounded', title = vim.b.term_title, relative = 'editor', style = 'minimal'
+    }
+    for k, v in pairs(opts or {}) do
+        _opts[k] = v
+    end
+    vim.api.nvim_open_win(buf, true, _opts)
+    trigger_event('FloatOpened', {L.term_by_buf_id(buf)})
 end
 
 --- Toggles the visibility of the floating windows
