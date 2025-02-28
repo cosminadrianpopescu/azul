@@ -245,7 +245,7 @@ mx.persistent_on('ModifierFinished', function()
     require('lualine').refresh()
 end)
 
-mx.persistent_on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function(args)
+mx.persistent_on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function()
     if is_disabled and mx.current_mode() ~= 'P' then
         require('lualine').setup({options = {theme = theme}})
         is_disabled = false

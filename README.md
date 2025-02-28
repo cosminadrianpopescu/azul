@@ -658,9 +658,10 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **float_pane_title** The default float pane title. See the
   [placeholders](#placeholders) section (default `:term_title:`)
 * **use_lualine** If true, then use the current lunaline theme for the
-  statusbar. In case you want to use your own statusbar nvim plugin, or a
+  statusbar. In case you want to use your own statusbar `nvim` plugin, or a
   tabline plugin, just set this option to false and load your statusline or
-  tabline plugin via `init.lua`
+  tabline plugin via `init.lua`. You can check the `theme.lua` file as an
+  inspiration on how to create your own statusbar.
 * **auto_start_logging** If true, then start logging automatically when
   opening a new pane. This option allows you to have as many lines in your
   current scrollback, that you can see at anytime by invoking

@@ -49,7 +49,7 @@ local actions = {
     'split_left', 'split_right', 'split_up', 'split_down',
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
     'copy', 'paste', 'rotate_panel',
-    'rename_tab', 'edit_scrollback', 'edit_scrollback_log',
+    'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
     'show_mode_cheatsheet',
 }
 
@@ -128,6 +128,7 @@ M.default_config = {
                 rotate_panel = 'x',
                 edit_scrollback = 'e', edit_scrollback_log = 'ge',
                 show_mode_cheatsheet = '<C-o>',
+                rename_float = 'r',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -210,6 +211,7 @@ M.default_config = {
                 rotate_panel = 'x',
                 edit_scrollback = 'e', edit_scrollback_log = 'ge',
                 show_mode_cheatsheet = '<C-o>',
+                rename_float = 'r',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -277,6 +279,7 @@ M.default_config = {
                 rotate_panel = 'x',
                 edit_scrollback = 'e', edit_scrollback_log = 'ge',
                 show_mode_cheatsheet = '<C-o>',
+                rename_float = 'r',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -370,6 +373,7 @@ M.default_config = {
                 paste = '<C-v>',
                 rotate_panel = '<C-x>x',
                 rename_tab = '<C-x><C-r>',
+                rename_float = '<C-x><C-f>',
                 edit_scrollback = '<C-x><C-e>',
                 edit_scrollback_log = '<C-x>ge',
             },
@@ -583,6 +587,12 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = azul.rename_current_tab,
             desc = 'Renames the current tab',
+            action = action,
+        })
+    elseif action == 'rename_float' then
+        map(mode, shortcut, '', {
+            callback = azul.rename_current_pane,
+            desc = 'Renames the current floating pane',
             action = action,
         })
     elseif action == 'edit_scrollback' then

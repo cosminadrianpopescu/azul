@@ -734,7 +734,8 @@ end
 --- Opens a new float
 --- @param group string The group in which to open a float
 --- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
-M.open_float = function(group, opts, title_placeholders)
+--- @param to_restore terminals The float terminal to restore (optional)
+M.open_float = function(group, opts, to_restore)
     L.current_group = group or 'default'
     if #get_all_floats(group) > 0 and M.are_floats_hidden(group) then
         M.show_floats(group)
@@ -756,7 +757,10 @@ M.open_float = function(group, opts, title_placeholders)
     vim.fn.timer_start(1, function()
         local opened = L.term_by_buf_id(buf)
         trigger_event('FloatOpened', {opened})
-        opened.azul_placeholders = title_placeholders or {}
+        if to_restore ~= nil then
+            opened.azul_placeholders = to_restore.azul_placeholders or {}
+            opened.overriden_title = to_restore.overriden_title
+        end
         update_titles()
     end)
 end
@@ -1204,7 +1208,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     local f = histories.floats[idx]
 
     panel_id = f.panel_id
-    M.open_float(f.group, f.win_config, f.azul_placeholders or {})
+    M.open_float(f.group, f.win_config, f)
 
     L.restore_floats(histories, idx + 1, f.panel_id, 0)
 end
@@ -1627,8 +1631,33 @@ M.rename_tab = function(tab)
     end, true)
 end
 
+M.rename_floating_pane = function(pane)
+    if pane == nil then
+        return
+    end
+    if not M.is_float(pane) then
+        L.error('You can only rename floating panes')
+    end
+    local def = get_float_title(pane)
+    M.user_input({propmt = "Pane new name: ", default = def}, function(result)
+        if result == '' then
+            pane.overriden_title = nil
+            funcs.safe_del_tab_var(tab_id, 'azul_tab_title_overriden')
+        elseif result ~= nil then
+            pane.azul_placeholders = nil
+            pane.overriden_title = result
+        end
+        update_titles()
+    end, true)
+end
+
 M.rename_current_tab = function()
     M.rename_tab(vim.fn.tabpagenr())
+end
+
+M.rename_current_pane = function()
+    local buf = vim.fn.bufnr()
+    M.rename_floating_pane(funcs.find(function(t) return _buf(t) == buf end, terminals))
 end
 
 M.edit = function(t, file, on_finish)
