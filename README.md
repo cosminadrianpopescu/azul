@@ -655,6 +655,8 @@ or the action directly, for the `emacs` workflow. For more info see the
   (default true)
 * **tab_title** The default tab title. See the [placeholders](#placeholders)
   section (default `Tab :tab_n:`)
+* **float_pane_title** The default float pane title. See the
+  [placeholders](#placeholders) section (default `:term_title:`)
 * **use_lualine** If true, then use the current lunaline theme for the
   statusbar. In case you want to use your own statusbar nvim plugin, or a
   tabline plugin, just set this option to false and load your statusline or
@@ -701,16 +703,20 @@ with the input from the user.
 There are some standard placeholders which `azul` will replace automatically,
 without asking for user input: 
 
-* **:tab_n:** will be replaced with the current tab number
+* **:tab_n:** will be replaced with the current tab number (not applied to
+  floating pane titles)
 * **:term_title:** will be replaced with the current terminal title as
   suggested by the running terminal in the pane.
 * **:is_current:** will be replaced with the `*` character, if the current tab
   is selected, giving you the possibility to mark the currently selected tab
-  as in `tmux`.
+  as in `tmux` (not applied to floating pane titles).
 * **:azul_win_id:** will be replaced by the custom win id given using
   `:AzulSetWinId` command of the currently selected embedded pane in the tab
 * **:azul_cmd:** will be replaced by the custom command given using
   `:AzulSetCmd` command of the currently selected embedded pane in the tab
+* **:azul_cmd_or_win_id** will be replaced with the custom command given by
+  `:AzulSetCmd` if it exists, if not with the window id set by `:AzulSetWinId`
+  or with the automatic default `azul_win_id` set by azul.
 
 ### Shortcuts
 
