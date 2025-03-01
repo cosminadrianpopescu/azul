@@ -588,6 +588,21 @@ Edits the current terminal's scrollback log in the editor set by the `$EDITOR`
 variable on your system. If the logging is not started using
 `AzulStartLogging` command, an error message is thrown.
 
+#### AzulRenameCurrentFloat
+
+Renames the currently selected pane float. If the currently selected pane is
+an embedded pane, it will throw an error.
+
+#### AzulSelectTab
+
+**Parameters**:
+
+* The tab to select
+
+Select the tab indicated by the number in parameter. If the tab does not
+exists (for example you are trying to select the 5th tab, but only have 4
+tabs) it will throw an error.
+
 ## Configuration
 
 Azul can be configured in several ways. For
@@ -1235,6 +1250,13 @@ session
     + `zellij`: `move.show_mode_cheatsheet = <C-o>`
     + `zellij`: `split.show_mode_cheatsheet = <C-o>`
     + `zellij`: `tabs.show_mode_cheatsheet = <C-o>`
+
+* **rename_float**: Renames the currently selected floating pane
+  - defaults:
+    + `azul`: `pane.rename_float = r`
+    + `tmux`: `pane.rename_float = r`
+    + `zellij`: `pane.rename_float = r`
+    + `emacs`: `rename_float = <C-x><C-f>`
 
 ## Copy/pasting
 
