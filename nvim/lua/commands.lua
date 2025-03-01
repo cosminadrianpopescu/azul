@@ -129,5 +129,8 @@ return {
         vim.api.nvim_create_user_command('AzulEditScrollbackLog', function()
             azul.edit_current_scrollback_log()
         end, {desc = "Edits the current scrollback log"})
+        vim.api.nvim_create_user_command('AzulSelectTab', function(opts)
+            azul.select_tab(opts.fargs[1])
+        end, {desc = "Selects a tab", nargs = 1})
     end
 }
