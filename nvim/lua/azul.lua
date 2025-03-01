@@ -1407,7 +1407,7 @@ local snapshot = function(buf)
     return lines
 end
 
-local snapshotEquals = function(new_lines, existing_lines)
+local snapshot_equals = function(new_lines, existing_lines)
     local i = 1;
     while i <= #new_lines do
         if new_lines[i] ~= existing_lines[i] then
@@ -1420,7 +1420,7 @@ local snapshotEquals = function(new_lines, existing_lines)
 end
 
 local function diff(new_lines, existing_lines)
-    if snapshotEquals(new_lines, existing_lines) then
+    if snapshot_equals(new_lines, existing_lines) then
         local result = {}
         local j = #new_lines + 1
         while j <= #existing_lines do
