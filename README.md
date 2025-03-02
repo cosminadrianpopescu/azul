@@ -588,6 +588,21 @@ Edits the current terminal's scrollback log in the editor set by the `$EDITOR`
 variable on your system. If the logging is not started using
 `AzulStartLogging` command, an error message is thrown.
 
+#### AzulRenameCurrentFloat
+
+Renames the currently selected pane float. If the currently selected pane is
+an embedded pane, it will throw an error.
+
+#### AzulSelectTab
+
+**Parameters**:
+
+* The tab to select
+
+Select the tab indicated by the number in parameter. If the tab does not
+exists (for example you are trying to select the 5th tab, but only have 4
+tabs) it will throw an error.
+
 ## Configuration
 
 Azul can be configured in several ways. For
@@ -655,10 +670,13 @@ or the action directly, for the `emacs` workflow. For more info see the
   (default true)
 * **tab_title** The default tab title. See the [placeholders](#placeholders)
   section (default `Tab :tab_n:`)
+* **float_pane_title** The default float pane title. See the
+  [placeholders](#placeholders) section (default `:term_title:`)
 * **use_lualine** If true, then use the current lunaline theme for the
-  statusbar. In case you want to use your own statusbar nvim plugin, or a
+  statusbar. In case you want to use your own statusbar `nvim` plugin, or a
   tabline plugin, just set this option to false and load your statusline or
-  tabline plugin via `init.lua`
+  tabline plugin via `init.lua`. You can check the `theme.lua` file as an
+  inspiration on how to create your own statusbar.
 * **auto_start_logging** If true, then start logging automatically when
   opening a new pane. This option allows you to have as many lines in your
   current scrollback, that you can see at anytime by invoking
@@ -694,19 +712,27 @@ this in the `config.ini`:
 tab_title = :app: - :tab_n:
 ```
 
-will make azul asking for the a value for the `app` parameter, everytime a new
+will make azul asking for a value for the `app` parameter, everytime a new
 tab is created. The newly created tab will have the `:app:` value replaced
 with the input from the user. 
 
 There are some standard placeholders which `azul` will replace automatically,
 without asking for user input: 
 
-* **:tab_n:** will be replaced with the current tab number
+* **:tab_n:** will be replaced with the current tab number (not applied to
+  floating pane titles)
 * **:term_title:** will be replaced with the current terminal title as
   suggested by the running terminal in the pane.
 * **:is_current:** will be replaced with the `*` character, if the current tab
   is selected, giving you the possibility to mark the currently selected tab
-  as in `tmux`.
+  as in `tmux` (not applied to floating pane titles).
+* **:azul_win_id:** will be replaced by the custom win id given using
+  `:AzulSetWinId` command of the currently selected embedded pane in the tab
+* **:azul_cmd:** will be replaced by the custom command given using
+  `:AzulSetCmd` command of the currently selected embedded pane in the tab
+* **:azul_cmd_or_win_id** will be replaced with the custom command given by
+  `:AzulSetCmd` if it exists, if not with the window id set by `:AzulSetWinId`
+  or with the automatic default `azul_win_id` set by azul.
 
 ### Shortcuts
 
@@ -1224,6 +1250,13 @@ session
     + `zellij`: `move.show_mode_cheatsheet = <C-o>`
     + `zellij`: `split.show_mode_cheatsheet = <C-o>`
     + `zellij`: `tabs.show_mode_cheatsheet = <C-o>`
+
+* **rename_float**: Renames the currently selected floating pane
+  - defaults:
+    + `azul`: `pane.rename_float = r`
+    + `tmux`: `pane.rename_float = r`
+    + `zellij`: `pane.rename_float = r`
+    + `emacs`: `rename_float = <C-x><C-f>`
 
 ## Copy/pasting
 

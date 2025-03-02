@@ -1,5 +1,6 @@
 local t = require('test-env')
 local azul = require('azul')
+local funcs = require('functions')
 
 local by_state = function(state)
     return (state and 'floating') or 'embedded'
@@ -21,7 +22,7 @@ t.simulate_keys('<C-s>f', {PaneChanged = 1}, function()
         assert_current_terminal(false)
         assert_terminals_for_floating(1, true)
         assert_terminals_for_floating(1, false)
-        t.simulate_keys('<C-s>f', {PaneChanged = 2}, function()
+        t.simulate_keys('<C-s>f', {PaneChanged = 1}, function()
             assert_current_terminal(true)
             assert_terminals_for_floating(2, true)
             assert_terminals_for_floating(1, false)

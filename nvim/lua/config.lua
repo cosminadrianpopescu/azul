@@ -2,14 +2,9 @@ local M = {}
 
 local files = require('files')
 local split = require('split')
+local funcs = require('functions')
 local cmd = vim.api.nvim_create_autocmd
 local tabs = 0
-
-local float_group = function()
-    return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
-                                          -- then all the floats on that tab
-                                          -- will be assigned to the t:float_group group
-end
 
 cmd('TermClose', {
     pattern = "*", callback = function()
@@ -54,7 +49,7 @@ local actions = {
     'split_left', 'split_right', 'split_up', 'split_down',
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
     'copy', 'paste', 'rotate_panel',
-    'rename_tab', 'edit_scrollback', 'edit_scrollback_log',
+    'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
     'show_mode_cheatsheet',
 }
 
@@ -80,7 +75,7 @@ M.default_config = {
         modifer_timeout = 500,
         use_cheatsheet = true,
         blocking_cheatsheet = true,
-        pane_title = ':term_title:',
+        float_pane_title = ':term_title:',
         tab_title = 'Tab :tab_n:',
         use_dressing = true,
         opacity = 0,
@@ -133,6 +128,7 @@ M.default_config = {
                 rotate_panel = 'x',
                 edit_scrollback = 'e', edit_scrollback_log = 'ge',
                 show_mode_cheatsheet = '<C-o>',
+                rename_float = 'r',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -215,6 +211,7 @@ M.default_config = {
                 rotate_panel = 'x',
                 edit_scrollback = 'e', edit_scrollback_log = 'ge',
                 show_mode_cheatsheet = '<C-o>',
+                rename_float = 'r',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -282,6 +279,7 @@ M.default_config = {
                 rotate_panel = 'x',
                 edit_scrollback = 'e', edit_scrollback_log = 'ge',
                 show_mode_cheatsheet = '<C-o>',
+                rename_float = 'r',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -375,6 +373,7 @@ M.default_config = {
                 paste = '<C-v>',
                 rotate_panel = '<C-x>x',
                 rename_tab = '<C-x><C-r>',
+                rename_float = '<C-x><C-f>',
                 edit_scrollback = '<C-x><C-e>',
                 edit_scrollback_log = '<C-x>ge',
             },
@@ -431,14 +430,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 wrap_for_insert(function()
-                    local hidden = azul.are_floats_hidden(float_group())
-                    if not hidden then
-                        azul.hide_floats()
-                    end
-                    vim.api.nvim_command('tabn ' .. arg)
-                    if not hidden then
-                        azul.show_floats(float_group())
-                    end
+                    azul.select_tab(arg)
                 end)
             end,
             desc = 'Go to tab ' .. arg,
@@ -448,7 +440,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 wrap_for_insert(function()
-                    azul.toggle_floats(float_group())
+                    azul.toggle_floats(funcs.current_float_group())
                 end)
             end,
             desc = "Toggle floats visibility",
@@ -490,7 +482,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 wrap_for_insert(function()
-                    azul.open_float(float_group())
+                    azul.open_float(funcs.current_float_group())
                 end)
             end,
             desc = "Create float",
@@ -515,7 +507,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('select_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.select_next_pane(dir, float_group())
+                azul.select_next_pane(dir, funcs.current_float_group())
             end,
             desc = 'Select a pane ' .. dir,
             action = action,
@@ -595,6 +587,12 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = azul.rename_current_tab,
             desc = 'Renames the current tab',
+            action = action,
+        })
+    elseif action == 'rename_float' then
+        map(mode, shortcut, '', {
+            callback = azul.rename_current_pane,
+            desc = 'Renames the current floating pane',
             action = action,
         })
     elseif action == 'edit_scrollback' then

@@ -109,7 +109,6 @@ Enters a new `azul` mode
 **Parameters**:
 
 * group The group for which to display the floats (default 'default')
-* callback A callback to be called after all the floats have been shown
 
 Shows the floating panes of the current tab (if `link_floats_with_tabs` is set
 to `true`) or of all the tabs.
@@ -129,6 +128,8 @@ floats are shown
 
 * group The group for which to open a new float
 * config The win_config to pass (see `vim.api.nvim_win_get_config`)
+* to_restore If the opened float is a restored float from a layout, it
+  contains the float saved in the layout file
 
 Opens a new floating pane either in the center of the screen (if not config is
 passed) or at the coordonates indicated by config, for the indicated group. If
@@ -572,6 +573,30 @@ See all the possible actions in the main page.
 Just as `on`, but the callback will not be removed by clear functions. The
 callback will be called for all the duration of the azul session.
 
+#### rename_floating_pane
+
+**Parameters**:
+
+* pane The pane to rename
+
+Renames the floating pane in arguments. If the pane passed is not a floating
+pane, it will throw an error.
+
+#### rename_current_pane
+
+Renames the currently selected floating pane. If the currently selected pane
+is an embedded pane and not a floating one, it will throw an error.
+
+#### select_tab
+
+**Parameters**:
+
+* n The number of the tab
+
+Selects the tab indicated by the number (starting with 1). If the tab does not
+exists (for example you want to select the 5th tab, but you only have 4 tabs
+opened) it will throw an error.
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will
@@ -678,6 +703,18 @@ Triggered everytime a shortcut action has been ran.
 
 Triggered everytime the modifier is finished (an action is selected after the
 modifier is triggered or `<Esc>` or `<C-c>` are pressed)
+
+#### ExitAzul
+
+Triggered once before azul quits.
+
+#### FloatTitleChanged 
+
+**Parameters**:
+
+* `args[1]` The float whose title just changed
+
+Triggered every time a float title changes
 
 ### Configuring via init.lua
 
