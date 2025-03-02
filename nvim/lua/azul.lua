@@ -525,8 +525,6 @@ local update_titles = function()
         local placeholders = vim.tbl_extend(
             'keep', default_placeholders, float_placeholders or {}
         )
-        funcs.log("GOT PLACEHOLDERS " .. vim.inspect(placeholders) .. " FOR " .. vim.inspect(f))
-        funcs.log("DEFAULT TITLE IS " .. vim.inspect(get_float_title(f)))
         M.parse_custom_title(
             get_float_title(f),
             placeholders,
@@ -716,6 +714,9 @@ M.show_floats = function(group)
     for _, f in ipairs(floatings) do
         restore_float(f)
     end
+    vim.fn.timer_start(1, function()
+        trigger_event('FloatsVisible')
+    end)
     update_titles()
 end
 
