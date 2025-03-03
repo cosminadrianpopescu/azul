@@ -100,6 +100,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGER " .. vim.inspect(ev), "/tmp/azul-log-test")
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -509,9 +510,15 @@ local update_titles = function()
                 if titles_updated >= titles_to_update then
                     updating_titles = false
                 end
+                local trigger = false
+                if funcs.safe_get_tab_var(t, 'azul_tab_title') ~= title then
+                    trigger = true
+                end
                 vim.api.nvim_tabpage_set_var(t, 'azul_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
-                trigger_event('TabTitleChanged', {t})
+                if trigger then
+                    trigger_event('TabTitleChanged', {t})
+                end
                 vim.fn.timer_start(1, function()
                     vim.api.nvim_command('startinsert')
                 end)

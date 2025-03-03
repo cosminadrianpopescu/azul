@@ -130,6 +130,30 @@ local check_trigger_after = function(events, ran)
     return true
 end
 
+local wait_events = function(events, after)
+    local ran = {}
+    local after_ran = false
+    for ev, _ in pairs(events or {}) do
+        azul.on(ev, function()
+            if ran[ev] == nil then
+                ran[ev] = 0
+            end
+            ran[ev] = ran[ev] + 1
+
+            if not check_trigger_after(events, ran) then
+                return
+            end
+
+            azul.clear_event(ev)
+            if after_ran then
+                return
+            end
+            after()
+            after_ran = true
+        end)
+    end
+end
+
 return {
     set_env = function(uid, test)
         file_copy("./" .. test .. ".spec.lua", "/tmp/" .. uid .. "/nvim/" .. test .. "lua")
@@ -144,26 +168,10 @@ return {
     end,
     feedkeys = feedkeys,
     simulate_keys = function(what, events, after)
-        if events ~= nil then
-            local ran = {}
-            for ev, _ in pairs(events) do
-                azul.on(ev, function()
-                    if ran[ev] == nil then
-                        ran[ev] = 0
-                    end
-                    ran[ev] = ran[ev] + 1
-
-                    if not check_trigger_after(events, ran) then
-                        return
-                    end
-
-                    azul.clear_event(ev)
-                    after()
-                end)
-            end
-        end
+        wait_events(events, after)
         L.simulate_keys('t', extract_chars(what), 1, (events == nil and after) or nil)
     end,
+    wait_events = wait_events,
     single_shot = single_shot,
     set_test_running = function(which)
         test_running = which
