@@ -1,11 +1,11 @@
 local mx = require('azul')
-local cfg = require('config')
+local options = require('options')
 
 local dressing_opts = {
     input = {enabled = false},
     select = {enabled = false},
 }
-if cfg.default_config.options.use_dressing then
+if options.use_dressing then
     local opts = {
         enabled = true,
         title_pos = 'center',
@@ -18,12 +18,12 @@ if cfg.default_config.options.use_dressing then
 end
 require('dressing').setup(dressing_opts)
 
-if not cfg.default_config.options.use_lualine then
+if not options.use_lualine then
     return
 end
 
 local is_modifier = false
-local theme = cfg.default_config.options.theme
+local theme = options.theme
 local disabled = require('disabled-theme')
 local is_disabled = false
 local wf = mx.get_current_workflow()

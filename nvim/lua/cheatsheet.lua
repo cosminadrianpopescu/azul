@@ -1,6 +1,6 @@
 local azul = require('azul')
 local funcs = require('functions')
-local cfg = require('config')
+local options = require('options')
 
 local win_id = nil
 local win_buffer = nil
@@ -94,7 +94,7 @@ local wait_input = function(mode)
             vim.api.nvim_del_keymap('n', '<C-c>')
         end
         if not timer_set then
-            timer = vim.fn.timer_start(cfg.default_config.options.modifer_timeout, function()
+            timer = vim.fn.timer_start(options.modifer_timeout, function()
                 timer = nil
                 azul.feedkeys("<esc>", mode)
             end)
@@ -246,7 +246,7 @@ local get_cols_number = function()
 end
 
 local get_top_position = function(height, position)
-    local _position = position or cfg.default_config.options.modes_cheatsheet_position
+    local _position = position or options.modes_cheatsheet_position
     local win_top_pos = vim.o.lines - height - 1
     local row = win_top_pos
     local win_height = height
@@ -298,7 +298,7 @@ local create_window = function(mappings, full, position)
     vim.api.nvim_set_current_win(current_win)
     vim.api.nvim_buf_set_lines(win_buffer, 0, height + 3, false, cheatsheet_content(mappings, height, _full))
     azul.resume()
-    if position == nil and cfg.default_config.options.modes_cheatsheet_position == 'auto' then
+    if position == nil and options.modes_cheatsheet_position == 'auto' then
         position_timer = vim.fn.timer_start(100, function()
             if win_id == nil then
                 return
@@ -315,7 +315,7 @@ local create_window = function(mappings, full, position)
     return win_id
 end
 
-if not cfg.default_config.options.use_cheatsheet then
+if not options.use_cheatsheet then
     return
 end
 
@@ -362,7 +362,7 @@ end)
 azul.persistent_on('ModifierTrigger', function(args)
     local mode = args[1]
     win_id = create_window(get_mappings_for_mode(mode), true, 'bottom')
-    if cfg.default_config.options.blocking_cheatsheet then
+    if options.blocking_cheatsheet then
         vim.fn.timer_start(0, function()
             wait_input(mode)
         end)

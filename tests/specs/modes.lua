@@ -1,6 +1,6 @@
 local t = require('test-env')
 local azul = require('azul')
-local cfg = require('config')
+local options = require('options')
 
 -- This test case has some timeouts of 100 ms, because we need to give
 -- time to bash to adjust. If this test fails and it should not, try to 
@@ -21,7 +21,7 @@ vim.fn.timer_start(TIMEOUT, function()
         assert_first_line("j")
         t.simulate_keys("<C-s>pk", {ModeChanged = 1}, function()
             assert_first_line("j")
-            vim.fn.timer_start(cfg.default_config.options.modifer_timeout + 10, function()
+            vim.fn.timer_start(options.modifer_timeout + 10, function()
                 t.simulate_keys("<esc>k", {ModeChanged = 1}, function()
                     vim.fn.timer_start(TIMEOUT, function()
                         assert_first_line("k")

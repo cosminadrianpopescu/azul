@@ -50,6 +50,7 @@ function init_test_env() {
     console.log('Initializing the test environment');
     copyFileSync('../test-env.lua', `${base_path}/config/lua/test-env.lua`)
     copyFileSync('../init.lua', `${base_path}/config/init.lua`)
+    copyFileSync('../../examples/azul.ini', `${base_path}/config/config.ini`)
     writeFileSync(`${base_path}/config/lua/uuid.lua`, `
 return {
     uuid = '${UUID}'
@@ -67,7 +68,12 @@ async function run_test(t: TestCaseDesc) {
     console.log(`${t.desc || t.luaFile} test case`);
     init_test_env();
     console.log('Running...')
-    t.init && await t.init();
+    if (!!t.init) {
+        const init_result = t.init(base_path);
+        if (init_result?.then) {
+            await init_result;
+        }
+    }
     if (existsSync(running_last_result(t))) {
         rmSync(running_last_result(t));
     }
@@ -112,6 +118,7 @@ async function loop_tests(idx: number) {
     await new_install();
     if (TESTS.length == 0) {
         console.log("There are no defined tests. Exiting");
+        process.exit(0)
     }
     const arr = TESTS.filter(t => t.single);
     TO_RUN = arr.length > 0 ? arr : TESTS;

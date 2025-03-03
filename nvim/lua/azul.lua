@@ -2,6 +2,7 @@ local cmd = vim.api.nvim_create_autocmd
 local map = vim.api.nvim_set_keymap
 local funcs = require('functions')
 local FILES = require('files')
+local options = require('options')
 
 local is_suspended = false
 local is_modifier = false
@@ -13,7 +14,6 @@ local last_access = 0
 local M = {
     --- If set to true, then list all buffers
     list_buffers = false,
-    options = nil,
 }
 
 --- @class terminals
@@ -70,6 +70,7 @@ local events = {
     ActionRan = {},
     ExitAzul = {},
     FloatTitleChanged = {},
+    ConfigReloaded = {},
 }
 
 local persistent_events = {}
@@ -124,7 +125,7 @@ end
 M.debug = function(ev)
     -- print(vim.inspect(vim.tbl_filter(function(t) return M.is_float(t) end, M.get_terminals())))
     -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
-    -- print("OPTIONS ARE " .. vim.inspect(M.options))
+    -- print("OPTIONS ARE " .. vim.inspect(options))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
     -- print("EV IS " .. vim.inspect(ev))
     -- print("WIN IS " .. vim.fn.winnr())
@@ -256,7 +257,7 @@ local OnEnter = function(ev)
         if t.is_current and _buf(t) ~= is_current_terminal then
             trigger_event('PaneChanged', {t, old})
         end
-        if t.is_current and M.options.auto_start_logging and not L.is_logging_started(t.buf) then
+        if t.is_current and options.auto_start_logging and not L.is_logging_started(t.buf) then
             M.start_logging(os.tmpname())
         end
     end
@@ -401,11 +402,11 @@ M.enter_mode = function(new_mode)
     local old_mode = mode
     -- L.unmap_all(mode)
     if mode == 'P' then
-        if M.options.hide_in_passthrough then
+        if options.hide_in_passthrough then
             vim.o.laststatus = global_last_status
         end
         recall_passthrough()
-        vim.api.nvim_command('tunmap ' .. (L.passthrough_escape or M.options.passthrough_escape))
+        vim.api.nvim_command('tunmap ' .. (L.passthrough_escape or options.passthrough_escape))
         L.passthrough_escape = nil
     end
     mode = new_mode
@@ -414,13 +415,13 @@ M.enter_mode = function(new_mode)
             if workflow == 'tmux' then
                 vim.api.nvim_command('startinsert')
             end
-            if M.options.hide_in_passthrough then
+            if options.hide_in_passthrough then
                 global_last_status = vim.o.laststatus
                 vim.o.laststatus = 0
             end
         end)
         anounce_passthrough()
-        map('t', (L.passthrough_escape or M.options.passthrough_escape), '', {
+        map('t', (L.passthrough_escape or options.passthrough_escape), '', {
             callback = function()
                 if has_child_sessions_in_passthrough() then
                     M.send_to_current('<C-\\><C-s>', true)
@@ -454,11 +455,11 @@ cmd({'TabNew', 'VimEnter'}, {
 
 local get_tab_title = function(t)
     local overriden_title = funcs.safe_get_tab_var(t, 'azul_tab_title_overriden')
-    return overriden_title or M.options.tab_title
+    return overriden_title or options.tab_title
 end
 
 local get_float_title = function(t)
-    return t.overriden_title or M.options.float_pane_title
+    return t.overriden_title or options.float_pane_title
 end
 
 local get_default_placeholders = function(t)
@@ -509,12 +510,18 @@ local update_titles = function()
                 if titles_updated >= titles_to_update then
                     updating_titles = false
                 end
+                local trigger = false
+                if funcs.safe_get_tab_var(t, 'azul_tab_title') ~= title then
+                    trigger = true
+                end
                 vim.api.nvim_tabpage_set_var(t, 'azul_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
-                trigger_event('TabTitleChanged', {t})
-                vim.fn.timer_start(1, function()
-                    vim.api.nvim_command('startinsert')
-                end)
+                if trigger then
+                    trigger_event('TabTitleChanged', {t})
+                    vim.fn.timer_start(1, function()
+                        vim.api.nvim_command('startinsert')
+                    end)
+                end
             end
         )
     end
@@ -812,7 +819,7 @@ M.remove_key_map = function(m, ls)
 end
 
 L.unmap_all = function(mode)
-    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and M.options.use_cheatsheet then
+    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and options.use_cheatsheet then
         return
     end
     local cmds = {}
@@ -1565,7 +1572,7 @@ M.user_input = function(opts, callback, force)
 end
 
 M.get_file = function(callback)
-    M.user_input({prompt = "Select a file:" .. ((M.options.use_dressing and '') or ' '), completion = "file"}, callback);
+    M.user_input({prompt = "Select a file:" .. ((options.use_dressing and '') or ' '), completion = "file"}, callback);
 end
 
 L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, prompt_ctx, when_finished)
@@ -1784,6 +1791,15 @@ M.select_tab = function(n)
     else
         select_current_pane(vim.api.nvim_tabpage_get_var(0, 'azul_tab_id'))
     end
+end
+
+M.anounce_config_reloaded = function()
+    update_titles()
+    trigger_event('ConfigReloaded')
+end
+
+M.clear_mappings = function()
+    mode_mappings = {}
 end
 
 M.on_action = function(action, callback)

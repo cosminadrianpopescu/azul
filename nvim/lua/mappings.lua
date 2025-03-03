@@ -1,6 +1,8 @@
 local azul = require('azul')
-local cfg = require('config')
 local funcs = require('functions')
+local options = require('options')
+
+local M = {}
 
 local save_current_mappings = function(mode, modifier)
     funcs.save_current_mapping('modifier', modifier:upper(), 't')
@@ -22,26 +24,31 @@ local set_cancel_shortcut = function(which, mode)
     })
 end
 
-local unmap_all = function(mode)
-    local collection = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
+local get_mappings = function(mode)
+    local all_mappings = azul.get_mode_mappings()
+    return (mode == nil and all_mappings) or vim.tbl_filter(function(x) return x.m == mode end, all_mappings)
+end
+
+M.unmap_all = function(mode)
+    local collection = get_mappings(mode)
     for _, m in ipairs(collection) do
         local cmd = m.real_mode .. 'unmap ' .. m.ls
         local result = pcall(function() vim.api.nvim_command(cmd) end)
-        if not result then
+        if not result and mode ~= nil then
             print(cmd .. " failed")
         end
     end
 end
 
-local remap_all = function(mode)
-    local collection = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
+M.remap_all = function(mode)
+    local collection = get_mappings(mode)
     -- for _, m in ipairs(collection) do
     --     vim.api.nvim_set_keymap(m.real_mode, m.ls, m.rs, m.options)
     -- end
     for _, m in ipairs(collection) do
         vim.api.nvim_set_keymap(m.real_mode, m.ls, '', {
             callback = function()
-                -- unmap_all(mode, modifier)
+                -- M.unmap_all(mode, modifier)
                 azul.run_map(m)
             end,
             desc = m.desc,
@@ -52,11 +59,11 @@ end
 azul.persistent_on('ModifierTrigger', function(args)
     local mode = args[1]
     local modifier = args[2]
-    if cfg.default_config.options.blocking_cheatsheet and cfg.default_config.options.use_cheatsheet then
+    if options.blocking_cheatsheet and options.use_cheatsheet then
         return
     end
     save_current_mappings(mode, modifier)
-    remap_all(mode)
+    M.remap_all(mode)
     set_cancel_shortcut('<esc>', mode)
     set_cancel_shortcut('<C-c>', mode)
 end)
@@ -64,10 +71,10 @@ end)
 azul.persistent_on('ModifierFinished', function(args)
     local mode = args[1]
     local modifier = args[2]
-    if cfg.default_config.options.blocking_cheatsheet and cfg.default_config.options.use_cheatsheet then
+    if options.blocking_cheatsheet and options.use_cheatsheet then
         return
     end
-    unmap_all(mode)
+    M.unmap_all(mode)
     restore_previous_mappings(mode, modifier)
 end)
 
@@ -76,10 +83,12 @@ azul.persistent_on('ModeChanged', function(args)
     local new_mode = args[2]
 
     if not azul.is_modifier_mode(old_mode) then
-        unmap_all(old_mode)
+        M.unmap_all(old_mode)
     end
 
     if not azul.is_modifier_mode(new_mode) then
-        remap_all(new_mode)
+        M.remap_all(new_mode)
     end
 end)
+
+return M
