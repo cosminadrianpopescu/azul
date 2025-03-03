@@ -132,5 +132,11 @@ return {
         vim.api.nvim_create_user_command('AzulSelectTab', function(opts)
             azul.select_tab(opts.fargs[1])
         end, {desc = "Selects a tab", nargs = 1})
+        vim.api.nvim_create_user_command('AzulReloadConfig', function()
+            require('config').reload_config()
+        end, {desc = "Reloads the current config"})
+        vim.api.nvim_create_user_command('AzulEditConfig', function()
+            require('config').edit_config()
+        end, {desc = "Edits the current config in the current selected pane"})
     end
 }

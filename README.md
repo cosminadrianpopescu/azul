@@ -603,6 +603,15 @@ Select the tab indicated by the number in parameter. If the tab does not
 exists (for example you are trying to select the 5th tab, but only have 4
 tabs) it will throw an error.
 
+#### AzulReloadConfig
+
+Reloads the current configuration
+
+#### AzulEditConfig
+
+Edits the current configuration in the currently selected pane (embedded or
+floating)
+
 ## Configuration
 
 Azul can be configured in several ways. For

@@ -1794,6 +1794,7 @@ M.select_tab = function(n)
 end
 
 M.anounce_config_reloaded = function()
+    update_titles()
     trigger_event('ConfigReloaded')
 end
 
