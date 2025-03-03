@@ -181,6 +181,9 @@ return {
     save_layout = function(name)
         azul.save_layout(base_path .. "/" .. name)
     end,
+    get_root = function()
+        return base_path
+    end,
     restore_layout = function(name)
         azul.restore_layout(base_path .. "/" .. name)
     end

@@ -1,0 +1,20 @@
+local t = require('test-env')
+local azul = require('azul')
+local files = require('files')
+
+local assert = function(n)
+    local terms = azul.get_terminals()
+    t.assert(#terms == n, "There should be " .. n .. " opened tabs")
+end
+
+t.simulate_keys('<C-s>c', {PaneChanged = 1}, function()
+    assert(2)
+    files.write_file(t.get_root() .. '/config/config.ini', '[Options]\n\nmodifier = <C-b>')
+    t.wait_events({ConfigReloaded = 1}, function()
+        t.simulate_keys('<C-s><C-b>c', {PaneChanged = 1}, function()
+            assert(3)
+            t.done()
+        end)
+    end)
+    require('config').reload_config()
+end)

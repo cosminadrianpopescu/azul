@@ -641,6 +641,7 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **theme** - The status line theme (default `dracula`). You can see a list of
   all the possible themes
   [here](https://github.com/nvim-lualine/lualine.nvim/blob/master/THEMES.md)
+  *Note*: to change this option, `azul` requires a restart
 * **termguicolors** - If true, then the 24-bit RGB colors are activated
   (default `true`). For more info, see
   [here](https://neovim.io/doc/user/options.html#'termguicolors')
@@ -654,7 +655,8 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **hide_in_passthrough** If true, then when in passthrough mode, hide the
   status line of the passed through session (default false)
 * **use_cheatsheet** If this is set to true, for `azul` and `tmux` workflows, a
-  cheatsheet will be displayed after you click the modifier key (default true)
+  cheatsheet will be displayed after you click the modifier key (default
+  true). *Note*: to change this option, `azul` requires a restart.
 * **modifer_timeout** The milliseconds to wait for a key sequence after the
   modifier has been clicked (for `azul` or `tmux` worklows and only if
   `use_cheatsheet` option is set to ``). In `azul` or `tmux` workflows, after
@@ -676,7 +678,8 @@ or the action directly, for the `emacs` workflow. For more info see the
   statusbar. In case you want to use your own statusbar `nvim` plugin, or a
   tabline plugin, just set this option to false and load your statusline or
   tabline plugin via `init.lua`. You can check the `theme.lua` file as an
-  inspiration on how to create your own statusbar.
+  inspiration on how to create your own statusbar. *Note*: to change this
+  option, `azul` requires a restart
 * **auto_start_logging** If true, then start logging automatically when
   opening a new pane. This option allows you to have as many lines in your
   current scrollback, that you can see at anytime by invoking

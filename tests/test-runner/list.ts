@@ -16,3 +16,4 @@ tab_title = :tab_n: :tab_name::is_current:
 });
 test('layout');
 test('custom-titles');
+test('reload-config');

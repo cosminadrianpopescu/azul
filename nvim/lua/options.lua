@@ -1,0 +1,27 @@
+local M = {
+    workflow = 'azul',
+    modifier = '<C-s>',
+    link_floats_with_tabs = false,
+    shell = nil,
+    mouse = "a",
+    cmdheight = 0,
+    theme = 'dracula',
+    termguicolors = true,
+    scrollback = 2000,
+    clipboard = "unnamedplus",
+    encoding = "utf-8",
+    hide_in_passthrough = false,
+    passthrough_escape = '<C-\\><C-s>',
+    modifer_timeout = 500,
+    use_cheatsheet = true,
+    blocking_cheatsheet = true,
+    float_pane_title = ':term_title:',
+    tab_title = 'Tab :tab_n:',
+    use_dressing = true,
+    opacity = 0,
+    use_lualine = true,
+    auto_start_logging = false,
+    modes_cheatsheet_position = 'bottom',
+}
+
+return M;

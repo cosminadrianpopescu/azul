@@ -5,6 +5,7 @@ local split = require('split')
 local funcs = require('functions')
 local cmd = vim.api.nvim_create_autocmd
 local tabs = 0
+local options = require('options')
 
 cmd('TermClose', {
     pattern = "*", callback = function()
@@ -21,7 +22,7 @@ cmd('TermClose', {
 cmd({'TabNew', 'VimEnter'}, {
     pattern = "*", callback = function()
         local azul = require('azul')
-        if not M.default_config.options.link_floats_with_tabs then
+        if not options.link_floats_with_tabs then
             azul.set_tab_variable('float_group', 'default')
             return
         end
@@ -58,31 +59,6 @@ local modes = {
 }
 
 M.default_config = {
-    options = {
-        workflow = 'azul',
-        modifier = '<C-s>',
-        link_floats_with_tabs = false,
-        shell = nil,
-        mouse = "a",
-        cmdheight = 0,
-        theme = 'dracula',
-        termguicolors = true,
-        scrollback = 2000,
-        clipboard = "unnamedplus",
-        encoding = "utf-8",
-        hide_in_passthrough = false,
-        passthrough_escape = '<C-\\><C-s>',
-        modifer_timeout = 500,
-        use_cheatsheet = true,
-        blocking_cheatsheet = true,
-        float_pane_title = ':term_title:',
-        tab_title = 'Tab :tab_n:',
-        use_dressing = true,
-        opacity = 0,
-        use_lualine = true,
-        auto_start_logging = false,
-        modes_cheatsheet_position = 'bottom',
-    },
     shortcuts = {
         azul = {
             terminal = {
@@ -634,11 +610,11 @@ M.load_config = function(where)
             elseif tonumber(value) ~= nil then
                 value = tonumber(value)
             end
-            M.default_config.options[key] = value
+            options[key] = value
         end
     end
 
-    local wf = M.default_config.options.workflow
+    local wf = options.workflow
 
     if t.shortcuts ~= nil then
         local collection = t.shortcuts
@@ -667,8 +643,13 @@ M.load_config = function(where)
 end
 
 M.apply_config = function(_config)
+    if files.exists(files.config_dir .. '/config.ini') then
+        M.load_config(files.config_dir .. '/config.ini')
+    end
+    require('azul').set_workflow(options.workflow, options.use_cheatsheet, options.modifier)
+
     local config = _config or M.default_config
-    local wf = config.options.workflow
+    local wf = options.workflow
     local do_setshortcut = function(shortcuts, mode)
         for action, keys in pairs(shortcuts) do
             if type(keys) ~= 'table' then
@@ -688,7 +669,6 @@ M.apply_config = function(_config)
     for mode, collection in pairs(config.shortcuts[wf]) do
         do_setshortcut(collection, modes[mode])
     end
-    require('azul').options = M.default_config.options
 end
 
 M.overwrite_default_action = function(action, wf, mode, shortcut)
@@ -702,6 +682,64 @@ M.overwrite_default_action = function(action, wf, mode, shortcut)
         error("There is no mode " .. mode)
     end
     M.default_config.shortcuts[wf][mode][action] = shortcut
+end
+
+M.set_vim_options = function()
+    vim.o.cmdheight = tonumber(options.cmdheight)
+    vim.o.scrollback = options.scrollback
+    vim.o.termguicolors = options.termguicolors
+    vim.o.mouse = options.mouse
+    if options.shell then
+        vim.o.shell = options.shell
+    end
+    vim.o.clipboard = options.clipboard
+    vim.o.encoding = options.encoding
+    vim.o.winblend = options.opacity
+    vim.o.number = false
+    vim.o.relativenumber = false
+    vim.o.belloff = "all"
+    vim.o.laststatus = 3
+    vim.o.bufhidden = "hide"
+    vim.o.hidden = true
+
+    -- vim.o.expandtab = true
+    -- vim.o.smarttab = true
+    vim.o.showtabline = 0
+    -- vim.o.completeopt = "menu,menuone,noselect"
+    -- vim.o.wildmode = "longest,list"
+    vim.o.timeout = true
+    vim.o.timeoutlen = 300
+end
+
+M.run_init_lua = function()
+    local config_file = files.config_dir .. '/init.lua'
+    if not files.try_load_config(config_file) then
+        files.try_load_config(files.config_dir .. '/init.vim')
+    end
+end
+
+M.reload_config = function()
+    if options.workflow == 'tmux' or options.workflow == 'azul' then
+        local cmd = 'tunmap ' .. options.modifier
+        pcall(function() vim.api.nvim_command(cmd) end)
+    end
+    require('mappings').unmap_all()
+    require('azul').clear_mappings()
+    M.apply_config()
+    M.set_vim_options()
+    M.run_init_lua()
+    vim.fn.timer_start(1, function()
+        vim.api.nvim_command('startinsert')
+        require('azul').anounce_config_reloaded()
+    end)
+end
+
+M.edit_config = function()
+    if not files.exists(files.config_dir .. '/config.ini') then
+        return
+    end
+    local azul = require('azul')
+    azul.edit(azul.get_current_terminal(), files.config_dir .. '/config.ini', M.reload_config)
 end
 
 return M
