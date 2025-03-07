@@ -7,6 +7,8 @@ local cmd = vim.api.nvim_create_autocmd
 local tabs = 0
 local options = require('options')
 
+M.ini_shortcuts = {}
+
 cmd('TermClose', {
     pattern = "*", callback = function()
         local azul = require('azul')
@@ -14,7 +16,7 @@ cmd('TermClose', {
             return
         end
         vim.fn.timer_start(1, function()
-            vim.fn.feedkeys('i')
+            -- vim.fn.feedkeys('i')
         end)
     end
 })
@@ -358,6 +360,7 @@ M.default_config = {
 }
 
 local set_shortcut = function(action, shortcut, mode, arg)
+    table.insert(M.ini_shortcuts, {action = action, shortcut = shortcut, mode = mode, arg = arg})
     local azul = require('azul')
     local map = azul.set_key_map
     local map2 = vim.api.nvim_set_keymap
@@ -371,6 +374,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = "Select a " .. what,
             action = action,
+            arg = arg,
         })
     end
 
@@ -394,13 +398,11 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'create_tab' then
         map(mode, shortcut, '', {
             callback = function()
-                if mode ~= 't' then
-                    azul.enter_mode('t')
-                end
-                azul.open()
+                azul.create_tab()
             end,
             desc = 'Creates a new tab',
             action = action,
+            arg = arg,
         })
     elseif action == 'tab_select' then
         map(mode, shortcut, '', {
@@ -411,6 +413,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Go to tab ' .. arg,
             action = action,
+            arg = arg,
         })
     elseif action == 'toggle_floats' then
         map(mode, shortcut, '', {
@@ -421,6 +424,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = "Toggle floats visibility",
             action = action,
+            arg = arg,
         })
     elseif action == 'enter_mode' then
         local mapping = {
@@ -453,6 +457,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = "Enter " .. mapping[arg] .. " mode",
             action = action,
+            arg = arg,
         })
     elseif action == 'create_float' then
         map(mode, shortcut, '', {
@@ -463,12 +468,14 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = "Create float",
             action = action,
+            arg = arg,
         })
     elseif action == 'disconnect' then
         map(mode, shortcut, '', {
             callback = azul.disconnect,
             desc = "Disconnect",
             action = action,
+            arg = arg,
         })
     elseif action == 'resize_left' or action == 'resize_right' or action == 'resize_down' or action == 'resize_up' then
         local where = action:gsub('resize_', '')
@@ -478,6 +485,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = "Resize " .. where,
             action = action,
+            arg = arg,
         })
     elseif action == 'select_left' or action == 'select_right' or action == 'select_down' or action == 'select_up' then
         local dir = action:gsub('select_', '')
@@ -487,6 +495,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Select a pane ' .. dir,
             action = action,
+            arg = arg,
         })
     elseif action == 'move_left' or action == 'move_right' or action == 'move_up' or action == 'move_down' then
         local dir = action:gsub('move_', '')
@@ -496,6 +505,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Move a panel to ' .. dir,
             action = action,
+            arg = arg,
         })
     elseif action == 'split_left' or action == 'split_right' or action == 'split_up' or action == 'split_down' then
         local dir = action:gsub('split_', '')
@@ -505,6 +515,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Split ' .. dir,
             action = action,
+            arg = arg,
         })
     elseif action == 'move_top' or action == 'move_bottom' or action == 'move_start' or action == 'move_end' then
         local dir = action:gsub('move_', '')
@@ -514,6 +525,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Move current pane to ' .. dir,
             action = action,
+            arg = arg,
         })
     elseif action == 'tab_select_first' or action == 'tab_select_last' or action == 'tab_select_previous' or action == 'tab_select_next' then
         local args = {
@@ -526,6 +538,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = "Select " .. where .. " tab",
             action = action,
+            arg = arg,
         })
     elseif action == 'copy' then
         if wf ~= 'emacs' and mode ~= 'v' then
@@ -550,6 +563,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Toggle passthrough mode',
             action = action,
+            arg = arg,
         })
     elseif action == 'rotate_panel' then
         map(mode, shortcut, '', {
@@ -558,18 +572,21 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Rotates the current panel',
             action = action,
+            arg = arg,
         })
     elseif action == 'rename_tab' then
         map(mode, shortcut, '', {
             callback = azul.rename_current_tab,
             desc = 'Renames the current tab',
             action = action,
+            arg = arg,
         })
     elseif action == 'rename_float' then
         map(mode, shortcut, '', {
             callback = azul.rename_current_pane,
             desc = 'Renames the current floating pane',
             action = action,
+            arg = arg,
         })
     elseif action == 'edit_scrollback' then
         map(mode, shortcut, '', {
@@ -579,6 +596,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Edits the scrollback buffer',
             action = action,
+            arg = arg,
         })
     elseif action == 'edit_scrollback_log' then
         map(mode, shortcut, '', {
@@ -588,6 +606,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = 'Edits the scrollback log',
             action = action,
+            arg = arg,
         })
     elseif action == 'show_mode_cheatsheet' then
         map(mode, shortcut, '', {
@@ -595,6 +614,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             end,
             desc = "All shortcuts",
             action = action,
+            arg = arg,
         })
     end
 end
@@ -642,14 +662,8 @@ M.load_config = function(where)
     end
 end
 
-M.apply_config = function(_config)
-    if files.exists(files.config_dir .. '/config.ini') then
-        M.load_config(files.config_dir .. '/config.ini')
-    end
-    require('azul').set_workflow(options.workflow, options.use_cheatsheet, options.modifier)
-
-    local config = _config or M.default_config
-    local wf = options.workflow
+M.set_shortcuts = function(shortcuts)
+    M.ini_shortcuts = {}
     local do_setshortcut = function(shortcuts, mode)
         for action, keys in pairs(shortcuts) do
             if type(keys) ~= 'table' then
@@ -666,9 +680,20 @@ M.apply_config = function(_config)
         end
     end
 
-    for mode, collection in pairs(config.shortcuts[wf]) do
+    for mode, collection in pairs(shortcuts) do
         do_setshortcut(collection, modes[mode])
     end
+end
+
+M.apply_config = function(_config)
+    if files.exists(files.config_dir .. '/config.ini') then
+        M.load_config(files.config_dir .. '/config.ini')
+    end
+    require('azul').set_workflow(options.workflow, options.use_cheatsheet, options.modifier)
+
+    local config = _config or M.default_config
+    local wf = options.workflow
+    M.set_shortcuts(config.shortcuts[wf])
 end
 
 M.overwrite_default_action = function(action, wf, mode, shortcut)

@@ -110,6 +110,13 @@ local trigger_event = function(ev, args)
     end
 end
 
+local start_insert = function()
+    if options.workflow == 'tmux' and mode ~= 'n' and mode ~= 'T' and mode ~= 'P' and mode ~= nil then
+        return
+    end
+    vim.api.nvim_command('startinsert')
+end
+
 M.is_float = function(t)
     return t and t.win_config and t.win_config['zindex'] ~= nil
 end
@@ -261,9 +268,7 @@ local OnEnter = function(ev)
             M.start_logging(os.tmpname())
         end
     end
-    if workflow == 'emacs' or workflow == 'azul' then
-        vim.api.nvim_command('startinsert')
-    end
+    start_insert()
     if not azul_started then
         azul_started = true
         trigger_event('AzulStarted')
@@ -331,7 +336,7 @@ M.open = function(start_edit, force, callback)
     if type(start_edit) == 'boolean' and start_edit == false then
         return
     end
-    vim.api.nvim_command('startinsert')
+    start_insert()
 end
 
 local OnTermClose = function(ev)
@@ -413,7 +418,7 @@ M.enter_mode = function(new_mode)
     if mode == 'P' then
         vim.fn.timer_start(1, function()
             if workflow == 'tmux' then
-                vim.api.nvim_command('startinsert')
+                start_insert()
             end
             if options.hide_in_passthrough then
                 global_last_status = vim.o.laststatus
@@ -441,7 +446,7 @@ M.enter_mode = function(new_mode)
     local real_mode = L.get_real_mode(new_mode)
     if real_mode ~= new_mode and workflow ~= 'tmux' then
         M.suspend()
-        vim.api.nvim_command('startinsert')
+        start_insert()
         M.resume()
     end
 end
@@ -509,6 +514,7 @@ local update_titles = function()
                 titles_updated = titles_updated + 1
                 if titles_updated >= titles_to_update then
                     updating_titles = false
+                    start_insert()
                 end
                 local trigger = false
                 if funcs.safe_get_tab_var(t, 'azul_tab_title') ~= title then
@@ -517,10 +523,7 @@ local update_titles = function()
                 vim.api.nvim_tabpage_set_var(t, 'azul_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
                 if trigger then
-                    trigger_event('TabTitleChanged', {t})
-                    vim.fn.timer_start(1, function()
-                        vim.api.nvim_command('startinsert')
-                    end)
+                    trigger_event('TabTitleChanged', {t, title})
                 end
             end
         )
@@ -540,16 +543,20 @@ local update_titles = function()
                 titles_updated = titles_updated + 1
                 if titles_updated >= titles_to_update then
                     updating_titles = false
+                    start_insert()
+                end
+                local trigger = false
+                if f.win_config.title ~= title then
+                    trigger = true
                 end
                 f.azul_placeholders = placeholders
                 f.win_config.title = title
                 if f.win_id ~= nil then
                     vim.api.nvim_win_set_config(f.win_id, f.win_config)
                 end
-                trigger_event('FloatTitleChanged', {f})
-                vim.fn.timer_start(1, function()
-                    vim.api.nvim_command('startinsert')
-                end)
+                if trigger then
+                    trigger_event('FloatTitleChanged', {f})
+                end
             end
         )
     end
@@ -629,7 +636,7 @@ cmd({'FileType'}, {
             return
         end
         vim.fn.timer_start(100, function()
-            vim.api.nvim_command('startinsert')
+            start_insert()
             -- trigger_event('ModeChanged', {'t', 'n'})
         end)
     end
@@ -698,7 +705,7 @@ cmd({'UiEnter'}, {
         -- M.feedkeys('<C-\\><C-n>i', 't')
         -- vim.fn.timer_start(1, function()
         --     M.enter_mode('')
-        --     vim.api.nvim_command('startinsert')
+        --     start_insert()
         -- end)
     end
 })
@@ -994,6 +1001,7 @@ M.split = function(dir)
     local t = M.get_current_terminal()
     if M.is_float(t) then
         L.error("You can only split an embeded pane", nil)
+        return
     end
     add_to_history(vim.fn.bufnr("%"), "split", {dir}, t.tab_id)
     local cmd = 'new'
@@ -1166,7 +1174,12 @@ L.error = function(msg, h)
         _m = _m .. " at " .. vim.inspect(h)
     end
     trigger_event("Error", {_m})
-    error(_m)
+    -- The test environment will disable the throwing of errors
+    if vim.g.azul_errors_log ~= nil then
+        funcs.log(vim.inspect(_m), vim.g.azul_errors_log)
+    else
+        error(_m)
+    end
 end
 
 local post_restored = function(t, customs, callback)
@@ -1563,6 +1576,7 @@ M.user_input = function(opts, callback, force)
     M.suspend()
     vim.fn.timer_start(1, function()
         M.resume()
+        start_insert()
     end)
     vim.ui.input(opts, function(input)
         if (input ~= nil and input ~= '') or force then
@@ -1698,7 +1712,7 @@ M.edit = function(t, file, on_finish)
     }
     vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
     M.resume()
-    vim.api.nvim_command('startinsert')
+    start_insert()
 end
 
 M.edit_scrollback = function(t)
@@ -1800,6 +1814,11 @@ end
 
 M.clear_mappings = function()
     mode_mappings = {}
+end
+
+M.create_tab = function()
+    M.open()
+    vim.fn.timer_start(1, start_insert)
 end
 
 M.on_action = function(action, callback)

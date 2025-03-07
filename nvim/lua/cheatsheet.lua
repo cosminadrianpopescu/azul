@@ -355,7 +355,7 @@ azul.persistent_on('ModeChanged', function(args)
     win_id = create_window(mappings, false)
 end)
 
-azul.persistent_on('ModifierFinished', function()
+azul.persistent_on({'ModifierFinished', 'Error'}, function()
     close_window()
 end)
 

@@ -1,6 +1,7 @@
 local t = require('test-env')
 local azul = require('azul')
 local funcs = require('functions')
+local options = require('options')
 
 local L = {}
 
@@ -19,11 +20,36 @@ end
 
 local file = "test.layout"
 
-t.simulate_keys("<C-s>sljjhk", {ModeChanged = 2, PaneChanged = 5}, function()
-    t.simulate_keys("<cr>", {ModeChanged = 1}, function()
-        t.simulate_keys("<C-s>f", {PaneChanged = 1}, function()
+local tab_shortcut = function(which)
+    local pref = ''
+    if options.workflow == 'zellij' then
+        pref = t.action_shortcut('enter_mode', nil, 'T') .. ' '
+    end
+    return pref .. t.action_shortcut('tab_select' .. ((options.workflow == 'zellij' and '_first') or ''), (options.workflow == 'zellij' and 'T') or nil, (options.workflow ~= 'zellij' and which) or nil)
+end
+
+local second_tab_shortcut = function()
+    local result = tab_shortcut('2')
+    if options.workflow ~= 'zellij' then
+        return result
+    end
+    return result .. ' ' .. t.action_shortcut('tab_select_next', 'T')
+end
+
+local x = t.action_shortcut('split_down', 's') .. ' '
+local s = t.action_shortcut('enter_mode', nil, 's') .. ' '
+    .. t.action_shortcut('split_right', 's') .. ' ' .. x .. x
+    .. t.action_shortcut('split_left', 's') .. ' ' .. t.action_shortcut('split_up', 's')
+
+t.simulate_keys(s, {ModeChanged = 2, PaneChanged = 5}, function()
+    local events = {ModeChanged = 1}
+    if options.workflow == 'emacs' then
+        events = nil
+    end
+    t.simulate_keys("<cr>", events, function()
+        t.simulate_keys(t.action_shortcut('create_float'), {PaneChanged = 1}, function()
             vim.fn.timer_start(1, function()
-                t.simulate_keys("<C-s>c", {PaneChanged = 1}, function()
+                t.simulate_keys(t.action_shortcut('create_tab'), {PaneChanged = 1}, function()
                     vim.fn.timer_start(1, function()
                         local terminals = azul.get_terminals()
                         local term = funcs.find(function(tt) return tt.azul_win_id == 4 end, terminals)
@@ -32,7 +58,7 @@ t.simulate_keys("<C-s>sljjhk", {ModeChanged = 2, PaneChanged = 5}, function()
                         term.azul_win_id = "with-ls"
                         terminals[#terminals].azul_win_id = "new-tab"
                         t.save_layout(file)
-                        t.simulate_keys("<C-s>w", {PaneChanged = 1}, function()
+                        t.simulate_keys(t.action_shortcut('toggle_floats'), {PaneChanged = 1}, function()
                             term = azul.get_current_terminal()
                             t.single_shot('PaneChanged', function()
                                 L.close_all_panes(function()
@@ -50,10 +76,10 @@ t.simulate_keys("<C-s>sljjhk", {ModeChanged = 2, PaneChanged = 5}, function()
                                             local ls_line = funcs.find(function(l) return l:match('ls$') end, lines)
                                             t.assert(ls_line ~= nil, "There should be a line ending in ls")
                                             azul.hide_floats()
-                                            t.simulate_keys("<C-s>1", {PaneChanged = 2}, function()
+                                            t.simulate_keys(tab_shortcut('1'), {PaneChanged = 2}, function()
                                                 term = azul.get_current_terminal()
                                                 t.assert(term.azul_win_id ~= "new-tab", "The first tab should not have the new-tab id")
-                                                t.simulate_keys("<C-s>2", {PaneChanged = 1}, function()
+                                                t.simulate_keys(second_tab_shortcut(), {PaneChanged = 1}, function()
                                                     term = azul.get_current_terminal()
                                                     t.assert(term.azul_win_id == "new-tab", "Second tab should have the id new-tab")
                                                     t.done()
