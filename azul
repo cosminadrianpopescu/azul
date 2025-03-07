@@ -5,6 +5,7 @@ usage() {
     echo "Options: "
     echo "    -a <session-name> Attach to an existing session or create it if it does not exists"
     echo "    -l                List the existing sessions"
+    echo "    -r                Start in server mode"
     echo "    -s <cmd>          Send the command to an existing session (only together with -a)"
     echo "    -c <config-path>  Load the config from the <config-path> location"
     echo "    -h --help         Displays this help and exists"
@@ -62,7 +63,7 @@ export AZUL_SESSION=""
 export AZUL_LIST=""
 AZUL_CMD=""
 
-while getopts "a:lhs:c:" o
+while getopts "a:lrhs:c:" o
 do
     case "${o}" in
         a)
@@ -77,6 +78,9 @@ do
             ;;
         c)
             export AZUL_CONFIG_HOME=$OPTARG
+            ;;
+        r)
+            export AZUL_IS_REMOTE="1"
             ;;
         h)
             usage

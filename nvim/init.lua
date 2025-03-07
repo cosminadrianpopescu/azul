@@ -6,17 +6,24 @@ vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
 vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
 
 files.init()
-local cfg = require('config')
-cfg.apply_config()
 
-require('cheatsheet')
-require('commands').setup()
+if os.getenv('AZUL_IS_REMOTE') ~= '1' then
+    local cfg = require('config')
+    cfg.apply_config()
 
-cfg.set_vim_options()
+    require('cheatsheet')
+    require('commands').setup()
 
-require('theme')
+    cfg.set_vim_options()
 
-cfg.run_init_lua()
+    require('theme')
+
+    cfg.run_init_lua()
+else
+    azul.set_workflow('emacs')
+    vim.o.laststatus = 0
+    vim.o.cmdheight = 0
+end
 
 vim.o.shadafile = files.config_dir .. '/nvim/shada'
 

@@ -10,6 +10,7 @@ local is_modifier = false
 local updating_titles = true
 local azul_started = false
 local last_access = 0
+local remote_connection = nil
 
 local M = {
     --- If set to true, then list all buffers
@@ -331,6 +332,9 @@ M.open = function(start_edit, force, callback)
         opts['on_stderr'] = function(chan, data, _)
             on_chan_input(callback, 'err', chan, data)
         end
+    end
+    if remote_connection ~= nil then
+
     end
     vim.fn.termopen(vim.o.shell, opts)
     if type(start_edit) == 'boolean' and start_edit == false then
