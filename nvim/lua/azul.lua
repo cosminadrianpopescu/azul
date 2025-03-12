@@ -4,18 +4,16 @@ local funcs = require('functions')
 local FILES = require('files')
 local options = require('options')
 
+local M = {}
+
 local is_suspended = false
 local is_modifier = false
 
 local updating_titles = true
 local azul_started = false
 local last_access = 0
-local remote_connection = nil
-
-local M = {
-    --- If set to true, then list all buffers
-    list_buffers = false,
-}
+local remote_command = nil
+local to_save_remote_command = nil
 
 --- @class terminals
 --- @field is_current boolean If true, it means that this is the current terminal
@@ -30,6 +28,7 @@ local M = {
 --- @field azul_win_id string The custom azul windows id
 --- @field win_config table The current neovim window config
 --- @field current_selected_pane boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
+--- @field remote_command string The terminal's remote connection
 local terminals = {}
 local tab_id = 0
 local azul_win_id = 0
@@ -72,6 +71,7 @@ local events = {
     ExitAzul = {},
     FloatTitleChanged = {},
     ConfigReloaded = {},
+    RemoteDisconnected = {},
 }
 
 local persistent_events = {}
@@ -173,13 +173,15 @@ local _buf = function(t)
     return t.editing_buf or t.buf
 end
 
-local refresh_buf = function(buf)
+local refresh_buf = function(buf, with_win_id)
     local t = funcs.find(function(t) return _buf(t) == buf end, terminals)
     if t == nil then
         return nil
     end
-    t.win_id = vim.fn.win_getid(vim.fn.winnr())
-    refresh_win_config(t)
+    if with_win_id == nil or with_win_id == true then
+        t.win_id = vim.fn.win_getid(vim.fn.winnr())
+        refresh_win_config(t)
+    end
     return t
 end
 
@@ -258,9 +260,7 @@ local OnEnter = function(ev)
     local old = funcs.find(function(t) return t.is_current end, M.get_terminals())
 
     for _, t in ipairs(terminals) do
-        if not M.list_buffers then
-            vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
-        end
+        vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
         t.is_current = _buf(t) == ev.buf
         if t.is_current and _buf(t) ~= is_current_terminal then
             trigger_event('PaneChanged', {t, old})
@@ -322,6 +322,7 @@ M.open = function(start_edit, force, callback)
         env = {
             VIM = '',
             VIMRUNTIME='',
+            TERM='st-256color'
         },
     }
 
@@ -333,10 +334,10 @@ M.open = function(start_edit, force, callback)
             on_chan_input(callback, 'err', chan, data)
         end
     end
-    if remote_connection ~= nil then
-
-    end
-    vim.fn.termopen(vim.o.shell, opts)
+    funcs.log("OPENING " .. vim.inspect(remote_command))
+    to_save_remote_command = remote_command
+    vim.fn.termopen(remote_command or vim.o.shell, opts)
+    remote_command = nil
     if type(start_edit) == 'boolean' and start_edit == false then
         return
     end
@@ -349,6 +350,13 @@ local OnTermClose = function(ev)
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
     if t == nil then
+        return
+    end
+    if t.remote_command ~= nil then
+        trigger_event('RemoteDisconnected', {t})
+        vim.fn.timer_start(1, function()
+            refresh_buf(t.buf, false)
+        end)
         return
     end
     add_to_history(ev.buf, "close", nil, t.tab_id)
@@ -598,7 +606,7 @@ cmd('TermOpen',{
         if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
             return
         end
-        table.insert(terminals, {
+        local new_terminal = {
             is_current = false,
             buf = ev.buf,
             win_id = vim.fn.win_getid(vim.fn.winnr()),
@@ -608,7 +616,12 @@ cmd('TermOpen',{
             panel_id = panel_id,
             cwd = vim.fn.getcwd(),
             azul_win_id = azul_win_id,
-        })
+        }
+        funcs.log("TO SAVE IS " .. vim.inspect(to_save_remote_command))
+        if to_save_remote_command ~= nil then
+            new_terminal.remote_command = to_save_remote_command
+        end
+        table.insert(terminals, new_terminal)
         L.current_group = nil
         OnEnter(ev)
         if #history > 0 and history[#history].to == -1 then
@@ -641,7 +654,6 @@ cmd({'FileType'}, {
         end
         vim.fn.timer_start(100, function()
             start_insert()
-            -- trigger_event('ModeChanged', {'t', 'n'})
         end)
     end
 })
@@ -755,7 +767,7 @@ end
 --- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
 --- @param to_restore terminals The float terminal to restore (optional)
 M.open_float = function(group, opts, to_restore)
-    L.current_group = group or 'default'
+    L.current_group = group or funcs.current_float_group()
     if #get_all_floats(group) > 0 and M.are_floats_hidden(group) then
         M.show_floats(group)
     end
@@ -1141,6 +1153,7 @@ local get_custom_values = function()
         result[t.panel_id .. ""] = {
             azul_win_id = t.azul_win_id,
             azul_cmd = t.azul_cmd or nil,
+            remote_command = t.remote_command
         }
     end
 
@@ -1831,6 +1844,82 @@ M.on_action = function(action, callback)
             return
         end
         callback(args[1])
+    end)
+end
+
+local do_open_remote = function(force, callback)
+    local when_done = function(result)
+        remote_command = funcs.remote_command(result)
+        if remote_command == nil then
+            return
+        end
+        callback()
+    end
+    if force == true or os.getenv('AZUL_REMOTE_CONNECTION') == nil then
+        M.user_input({prompt = "Please enter a remote connection:"}, function(result)
+            if result == nil or result == '' then
+                return
+            end
+            when_done(result)
+        end)
+
+        return
+    end
+
+    when_done(os.getenv('AZUL_REMOTE_CONNECTION'))
+end
+
+--- Opens a new remote terminal in the current window
+---
+---@param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
+---@param start_edit boolean If true, then start editing automatically (default true)
+---@param callback function If set, then the callback will be called everytime for a new line in the terminal
+M.open_remote = function(force, start_edit, callback)
+    do_open_remote(force, function()
+        M.open(start_edit, false, callback)
+    end)
+end
+
+M.remote_reconnect = function(t)
+    if t.remote_command == nil then
+        L.error("The terminal " .. t.term_id .. " is not a remote terminal", nil)
+        return
+    end
+    local old_buf = t.buf
+    funcs.log("GOT OLD " .. vim.inspect(old_buf))
+    local id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
+    t.buf = vim.api.nvim_create_buf(false, false)
+    funcs.log("SET UP NEW " .. vim.inspect(t.buf))
+    vim.api.nvim_win_set_buf(t.win_id, t.buf)
+    funcs.log("DELETE OLD " .. vim.inspect(old_buf))
+    vim.api.nvim_buf_delete(old_buf, {force = true})
+    remote_command = t.remote_command
+    if id ~= nil then
+        funcs.log("SUSPEND")
+        M.suspend()
+        vim.fn.jobstop(id)
+        vim.fn.timer_start(1, function()
+            funcs.log("RESUME")
+            M.resume()
+        end)
+    end
+    M.open(true, true)
+end
+
+M.remote_quit = function(t)
+    t.remote_command = nil
+    vim.fn.jobstop(funcs.safe_get_buf_var(t.buf, 'terminal_job_id'))
+    funcs.log("REMOTE IS NOW " .. vim.inspect(remote_command))
+end
+
+--- Opens a new float
+--- @param group string The group in which to open a float
+--- @param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
+--- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
+--- @param to_restore terminals The float terminal to restore (optional)
+M.open_float_remote = function(group, force, opts, to_restore)
+    do_open_remote(force, function()
+        M.open_float(group, opts, to_restore)
     end)
 end
 

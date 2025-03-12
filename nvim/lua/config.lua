@@ -462,9 +462,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'create_float' then
         map(mode, shortcut, '', {
             callback = function()
-                wrap_for_insert(function()
-                    azul.open_float(funcs.current_float_group())
-                end)
+                wrap_for_insert(azul.open_float)
             end,
             desc = "Create float",
             action = action,

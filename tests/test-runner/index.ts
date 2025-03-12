@@ -33,6 +33,10 @@ async function wait_proc(cmd: string, args: Array<string> = [], options: Object 
         throw 'COULD_NOT_START_INSTALL';
     }
 
+    if (!!process.env['AZUL_WATCH_TESTS']) {
+        spawn(cmd, ['-a', process.env['AZUL_WATCH_TESTS'], '-c', `${base_path}/config`, '-s', ` ${cmd} ${args.join(' ')}<cr>`], {detached: true})
+    }
+
     let [result, err] = ['', ''];
     return new Promise(resolve => {
         proc.stdout.on('data', data => result += data.toString());

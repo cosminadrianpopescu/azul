@@ -1,4 +1,5 @@
 local mappings = {}
+math.randomseed()
 
 local get_sensitive_ls = function(ls)
     if ls == nil then
@@ -99,10 +100,61 @@ local current_float_group = function()
                                           -- will be assigned to the t:float_group group
 end
 
+local regexp_group = function(s, p, idx)
+    if string.match(s, p) == nil then
+        return nil
+    end
+    local i = 1
+    for g in string.gmatch(s, p) do
+        if i == idx then
+            return g
+        end
+        i = i + 1
+    end
+
+    return nil
+end
+
+local function uuid()
+    local random = math.random
+    local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+    return string.gsub(template, '[xy]', function (c)
+        local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
+        return string.format('%x', v)
+    end) .. ''
+end
+
+local join = function(t, delimiter)
+    local result = ''
+    for i, s in ipairs(t) do
+        if i > 1 then
+            result = result .. delimiter
+        end
+        result = result .. s
+    end
+    return result
+end
+
+local remote_command = function(connection)
+    local ssh_p = 'ssh://([^/]+)(/.*)$'
+    local local_p = 'file://(.*)$'
+    if string.match(connection, ssh_p) then
+        local host, exe = string.gmatch(connection, ssh_p)()
+        return table.concat({'ssh', host, '-t', exe .. ' -a ' .. uuid() .. ' -r'}, ' ')
+    elseif string.match(connection, local_p) then
+        return table.concat({string.gmatch(connection, local_p)(), '-a', uuid(), '-r'}, ' ')
+    end
+
+    return nil
+end
+
 return {
+    remote_command = remote_command,
     get_sensitive_ls = get_sensitive_ls,
     find = find,
+    uuid = uuid,
     log = log,
+    join = join,
     safe_get_buf_var = safe_get_buf_var,
     safe_del_buf_var = safe_del_buf_var,
     safe_get_tab_var = safe_get_tab_var,
@@ -113,4 +165,5 @@ return {
     restore_previous_mapping = restore_previous_mapping,
     map_by_action = map_by_action,
     current_float_group = current_float_group,
+    regexp_group = regexp_group,
 }
