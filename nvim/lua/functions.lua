@@ -136,16 +136,24 @@ local join = function(t, delimiter)
 end
 
 local remote_command = function(connection)
-    local ssh_p = 'ssh://([^/]+)(/.*)$'
-    local local_p = 'file://(.*)$'
-    if string.match(connection, ssh_p) then
-        local host, exe = string.gmatch(connection, ssh_p)()
-        return table.concat({'ssh', host, '-t', exe .. ' -a ' .. uuid() .. ' -r'}, ' ')
-    elseif string.match(connection, local_p) then
-        return table.concat({string.gmatch(connection, local_p)(), '-a', uuid(), '-r'}, ' ')
+    local p = '([a-z]+)://([^@]+)@?(.*)$'
+    if not string.match(connection, p) then
+        return nil
     end
-
-    return nil
+    local proto, bin, host = string.gmatch(connection, p)()
+    log("FOUND " .. vim.inspect(proto) .. " AND " .. vim.inspect(bin) .. " AND " .. vim.inspect(host))
+    local cmd = ''
+    if proto == 'azul' then
+        cmd = bin .. ' -a ' .. uuid() .. ' -r'
+    elseif proto == 'dtach' then
+        cmd = bin .. ' -A ' .. uuid() .. ' ' .. vim.o.shell
+    elseif proto == 'abduco' then
+        cmd = bin .. ' -A ' .. uuid()
+    end
+    if host ~= '' and host ~= nil then
+        return 'ssh ' .. host .. " -t '" .. cmd .. "'"
+    end
+    return cmd
 end
 
 return {

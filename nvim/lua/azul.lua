@@ -334,7 +334,6 @@ M.open = function(start_edit, force, callback)
             on_chan_input(callback, 'err', chan, data)
         end
     end
-    funcs.log("OPENING " .. vim.inspect(remote_command))
     to_save_remote_command = remote_command
     vim.fn.termopen(remote_command or vim.o.shell, opts)
     remote_command = nil
@@ -617,10 +616,10 @@ cmd('TermOpen',{
             cwd = vim.fn.getcwd(),
             azul_win_id = azul_win_id,
         }
-        funcs.log("TO SAVE IS " .. vim.inspect(to_save_remote_command))
         if to_save_remote_command ~= nil then
             new_terminal.remote_command = to_save_remote_command
         end
+        funcs.log("ADDED " .. vim.inspect(new_terminal))
         table.insert(terminals, new_terminal)
         L.current_group = nil
         OnEnter(ev)
@@ -1122,6 +1121,7 @@ M.resize = function(direction)
         down = 'res +5',
     }
     vim.api.nvim_command(args[direction])
+    refresh_win_config(t)
 end
 
 --- Disconnects the current session.
@@ -1208,6 +1208,9 @@ local post_restored = function(t, customs, callback)
     if c.azul_cmd ~= nil then
         t.azul_cmd = c.azul_cmd
     end
+    if c.remote_command ~= nil then
+        t.remote_command = c.remote_command
+    end
 
     if callback ~= nil then
         callback(t, t.azul_win_id)
@@ -1249,6 +1252,18 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     M.open_float(f.group, f.win_config, f)
 
     L.restore_floats(histories, idx + 1, f.panel_id, 0)
+end
+
+L.restore_remotes = function()
+    local remotes = vim.tbl_filter(function(t) return t.remote_command ~= nil end, M.get_terminals())
+    funcs.log("BEFORE RESTORE, WE HAVE " .. vim.inspect(M.get_terminals()) .. " AND " .. vim.inspect(vim.api.nvim_list_wins()))
+    for _, r in ipairs(remotes) do
+        vim.fn.jobstop(r.term_id)
+    end
+    updating_titles = false
+    update_titles()
+    trigger_event("LayoutRestored")
+    start_insert()
 end
 
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
@@ -1375,9 +1390,8 @@ L.restore_ids = function(title_placeholders, title_overrides)
             vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_tab_title_overriden', o)
         end
     end
-    updating_titles = false
-    update_titles()
-    trigger_event("LayoutRestored")
+
+    vim.fn.timer_start(1, L.restore_remotes)
 end
 
 L.histories_by_tab_id = function(tab_id, history)
@@ -1886,20 +1900,15 @@ M.remote_reconnect = function(t)
         return
     end
     local old_buf = t.buf
-    funcs.log("GOT OLD " .. vim.inspect(old_buf))
     local id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
     t.buf = vim.api.nvim_create_buf(false, false)
-    funcs.log("SET UP NEW " .. vim.inspect(t.buf))
     vim.api.nvim_win_set_buf(t.win_id, t.buf)
-    funcs.log("DELETE OLD " .. vim.inspect(old_buf))
     vim.api.nvim_buf_delete(old_buf, {force = true})
     remote_command = t.remote_command
     if id ~= nil then
-        funcs.log("SUSPEND")
         M.suspend()
         vim.fn.jobstop(id)
         vim.fn.timer_start(1, function()
-            funcs.log("RESUME")
             M.resume()
         end)
     end
@@ -1909,7 +1918,6 @@ end
 M.remote_quit = function(t)
     t.remote_command = nil
     vim.fn.jobstop(funcs.safe_get_buf_var(t.buf, 'terminal_job_id'))
-    funcs.log("REMOTE IS NOW " .. vim.inspect(remote_command))
 end
 
 --- Opens a new float
@@ -1920,6 +1928,12 @@ end
 M.open_float_remote = function(group, force, opts, to_restore)
     do_open_remote(force, function()
         M.open_float(group, opts, to_restore)
+    end)
+end
+
+M.split_remote = function(force, dir)
+    do_open_remote(force, function()
+        M.split(dir)
     end)
 end
 

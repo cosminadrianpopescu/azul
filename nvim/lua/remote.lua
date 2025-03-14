@@ -14,22 +14,25 @@ local remote_disconnected = function(t)
             VIMRUNTIME='',
         },
         on_exit = function()
-            funcs.log("EXIT MENU... REMOVE " .. vim.inspect(FILES.exists(file)))
             if FILES.exists(file) then
                 os.remove(file)
             end
         end
     }
     local old_buf = t.buf
+    funcs.log("OLD BUF IS " .. vim.inspect(old_buf))
     t.buf = vim.api.nvim_create_buf(true, false)
+    funcs.log("NEW BUF IS " .. vim.inspect(t.buf) .. " IN " .. vim.inspect(t.win_id))
     if t.win_id ~= nil then
         vim.api.nvim_win_set_buf(t.win_id, t.buf)
     end
     vim.api.nvim_buf_call(t.buf, function()
+        vim.inspect("OPEN EDITOR")
         vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
     end)
+    funcs.log("SET TERM ID TO " .. vim.inspect(t.term_id))
     t.term_id = vim.b.terminal_job_id
-    funcs.log("NEW CHANNEL ID IS " .. vim.b.terminal_job_id)
+    funcs.log("DELETE BUF " .. vim.inspect(old_buf))
     vim.api.nvim_buf_delete(old_buf, {force = true})
     vim.api.nvim_buf_set_keymap(t.buf, 't', 'r', '', {
         callback = function()
