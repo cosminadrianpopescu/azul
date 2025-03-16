@@ -53,7 +53,7 @@ local actions = {
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
     'copy', 'paste', 'rotate_panel',
     'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
-    'show_mode_cheatsheet',
+    'show_mode_cheatsheet', 'remote_scroll',
 }
 
 local modes = {
@@ -93,6 +93,7 @@ M.default_config = {
                 create_float = 'f',
                 disconnect = 'd',
                 paste = 'pp$$$<C-v>',
+                remote_scroll = '[',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -176,6 +177,7 @@ M.default_config = {
                 },
                 create_float = 'f',
                 disconnect = 'd',
+                remote_scroll = '[',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -258,6 +260,7 @@ M.default_config = {
                 edit_scrollback = 'e', edit_scrollback_log = 'ge',
                 show_mode_cheatsheet = '<C-o>',
                 rename_float = 'r',
+                remote_scroll = '[',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -354,6 +357,7 @@ M.default_config = {
                 rename_float = '<C-x><C-f>',
                 edit_scrollback = '<C-x><C-e>',
                 edit_scrollback_log = '<C-x>ge',
+                remote_scroll = '<C-x>[',
             },
         }
     }
@@ -398,7 +402,11 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'create_tab' then
         map(mode, shortcut, '', {
             callback = function()
-                azul.create_tab()
+                if funcs.is_handling_remote() then
+                    azul.create_tab_remote()
+                else
+                    azul.create_tab()
+                end
             end,
             desc = 'Creates a new tab',
             action = action,
@@ -462,7 +470,13 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'create_float' then
         map(mode, shortcut, '', {
             callback = function()
-                wrap_for_insert(azul.open_float)
+                wrap_for_insert(function()
+                    if funcs.is_handling_remote() then
+                        azul.open_float_remote()
+                    else
+                        azul.open_float()
+                    end
+                end)
             end,
             desc = "Create float",
             action = action,
@@ -509,7 +523,11 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('split_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.split(dir)
+                if funcs.is_handling_remote() then
+                    azul.split_remote(false, dir)
+                else
+                    azul.split(dir)
+                end
             end,
             desc = 'Split ' .. dir,
             action = action,
@@ -611,6 +629,13 @@ local set_shortcut = function(action, shortcut, mode, arg)
             callback = function()
             end,
             desc = "All shortcuts",
+            action = action,
+            arg = arg,
+        })
+    elseif action == 'remote_scroll' then
+        map(mode, shortcut, '', {
+            callback = azul.remote_enter_scroll_mode,
+            desc = "Scroll a remote pane",
             action = action,
             arg = arg,
         })

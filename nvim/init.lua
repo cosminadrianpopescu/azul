@@ -1,5 +1,6 @@
 local azul = require('azul')
 local files = require('files')
+local funcs = require('functions')
 require('mappings')
 
 vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
@@ -7,7 +8,7 @@ vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
 
 files.init()
 
-if os.getenv('AZUL_IS_REMOTE') ~= '1' then
+if not funcs.is_marionette() then
     local cfg = require('config')
     cfg.apply_config()
 
@@ -42,10 +43,19 @@ else
     azul.persistent_on('ModeChanged', function(args)
         vim.o.laststatus = (args[2] == 'n' and 3) or 0
     end)
+
+    local config_file = files.config_dir .. '/init.lua'
+    if not files.try_load_config(config_file) then
+        files.try_load_config(files.config_dir .. '/init.vim')
+    end
 end
 
 vim.o.shadafile = files.config_dir .. '/nvim/shada'
 
 vim.fn.timer_start(1, function()
-    azul.open()
+    if not funcs.is_marionette() and funcs.is_handling_remote() then
+        azul.open_remote()
+    else
+        azul.open()
+    end
 end)

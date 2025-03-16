@@ -1216,7 +1216,7 @@ local post_restored = function(t, customs, callback)
         callback(t, t.azul_win_id)
     end
 
-    if t.azul_cmd ~= nil then
+    if t.azul_cmd ~= nil and t.remote_command == nil then
         local _cmd = t.azul_cmd .. '<cr>'
         vim.fn.timer_start(1000, function()
             M.send_to_buf(t.buf, _cmd, true)
@@ -1263,7 +1263,7 @@ L.restore_remotes = function()
     updating_titles = false
     update_titles()
     trigger_event("LayoutRestored")
-    start_insert()
+    vim.fn.timer_start(100, start_insert)
 end
 
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
@@ -1406,6 +1406,12 @@ end
 M.restore_layout = function(where, callback)
     if #terminals > 1 then
         L.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
+        return
+    end
+    local t = M.get_current_terminal()
+    if t.remote_command ~= nil then
+        L.error("The opened terminal is a remote terminal. You cannot overwrite a layout with a remote terminal in it", nil)
+        return
     end
     local f = io.open(where, "r")
     if f == nil then
@@ -1852,6 +1858,11 @@ M.create_tab = function()
     vim.fn.timer_start(1, start_insert)
 end
 
+M.create_tab_remote = function()
+    M.open_remote()
+    vim.fn.timer_start(1, start_insert)
+end
+
 M.on_action = function(action, callback)
     M.on('ActionRan', function(args)
         if args[1] ~= action then
@@ -1869,7 +1880,7 @@ local do_open_remote = function(force, callback)
         end
         callback()
     end
-    if force == true or os.getenv('AZUL_REMOTE_CONNECTION') == nil then
+    if force == true or not funcs.is_handling_remote() then
         M.user_input({prompt = "Please enter a remote connection:"}, function(result)
             if result == nil or result == '' then
                 return
@@ -1935,6 +1946,10 @@ M.split_remote = function(force, dir)
     do_open_remote(force, function()
         M.split(dir)
     end)
+end
+
+M.remote_enter_scroll_mode = function()
+    M.send_to_current('<C-\\><C-n>', true)
 end
 
 M.persistent_on = function(ev, callback)

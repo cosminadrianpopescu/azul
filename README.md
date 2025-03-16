@@ -1323,7 +1323,10 @@ If you also want to save the commands running in a pane, you have two options.
 You can call the command `AzulSetCmd`. This variable will be saved together
 with the layout. When `AzulRestoreLayout` is called, then the command saved in
 the `AzulSetCmd` will be sent to the same pane (float or not, in a split or
-not)
+not). 
+
+**Note**: The command will not be executed if the restored pane is a remote
+pane.
 
 #### AzulSetWinId
 
@@ -1361,6 +1364,12 @@ script, which in turn, for the pane with the id `vifm` (split, tab or float)
 will execute `vifm<cr>`, wait one second for `vifm` to open and then execute
 `:session my-vifm-session<cr>`. So, this should restore your `vifm` pane and
 inside this pane, should also restore your saved `vifm` session.
+
+**Note**: Be carefull when using the callback with a remote buffer. In case of
+a remote buffer, this callback will be called before the buffer is
+reconnected. So, you'll need probably to wait until the buffer is reconnected.
+You might want to send a `r` key to the pane if you are sure that the remote
+is still alive.
 
 ## Lua API
 

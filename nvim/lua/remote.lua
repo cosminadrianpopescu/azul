@@ -31,7 +31,7 @@ local remote_disconnected = function(t)
         vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
     end)
     funcs.log("SET TERM ID TO " .. vim.inspect(t.term_id))
-    t.term_id = vim.b.terminal_job_id
+    t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
     funcs.log("DELETE BUF " .. vim.inspect(old_buf))
     vim.api.nvim_buf_delete(old_buf, {force = true})
     vim.api.nvim_buf_set_keymap(t.buf, 't', 'r', '', {
@@ -47,14 +47,6 @@ local remote_disconnected = function(t)
     })
 end
 
-local remote_enter_scroll_mode = function()
-    azul.send_to_current('<C-\\><C-n>', true)
-end
-
 azul.persistent_on('RemoteDisconnected', function(args)
     remote_disconnected(args[1])
 end)
-
-return {
-    remote_enter_scroll_mode = remote_enter_scroll_mode,
-}

@@ -137,14 +137,14 @@ end
 
 local remote_command = function(connection)
     local p = '([a-z]+)://([^@]+)@?(.*)$'
-    if not string.match(connection, p) then
+    if connection == nil or not string.match(connection, p) then
         return nil
     end
     local proto, bin, host = string.gmatch(connection, p)()
     log("FOUND " .. vim.inspect(proto) .. " AND " .. vim.inspect(bin) .. " AND " .. vim.inspect(host))
     local cmd = ''
     if proto == 'azul' then
-        cmd = bin .. ' -a ' .. uuid() .. ' -r'
+        cmd = bin .. ' -a ' .. uuid() .. ' -m'
     elseif proto == 'dtach' then
         cmd = bin .. ' -A ' .. uuid() .. ' ' .. vim.o.shell
     elseif proto == 'abduco' then
@@ -156,7 +156,17 @@ local remote_command = function(connection)
     return cmd
 end
 
+local is_marionette = function()
+    return os.getenv('AZUL_IS_MARIONETTE') == '1'
+end
+
+local is_handling_remote = function()
+    return os.getenv('AZUL_REMOTE_CONNECTION') ~= nil
+end
+
 return {
+    is_handling_remote = is_handling_remote,
+    is_marionette = is_marionette,
     remote_command = remote_command,
     get_sensitive_ls = get_sensitive_ls,
     find = find,
