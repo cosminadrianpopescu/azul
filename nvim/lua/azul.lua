@@ -122,8 +122,12 @@ M.is_float = function(t)
     return t and t.win_config and t.win_config['zindex'] ~= nil
 end
 
-local remove_term_buf = function(buf)
+local do_remove_term_buf = function(buf)
     terminals = vim.tbl_filter(function(t) return t.buf ~= buf end, terminals)
+end
+
+local remove_term_buf = function(buf)
+    do_remove_term_buf(buf)
     if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
         trigger_event("ExitAzul", {})
         vim.api.nvim_command('quit!')
@@ -303,17 +307,17 @@ end
 --- Opens a new terminal in the current window
 ---
 ---@param start_edit boolean If true, then start editing automatically (default true)
----@param force boolean If true, then open the terminal without opening a new tab in the current place
+---@param buf number The buffer in which to open the terminal
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
-M.open = function(start_edit, force, callback)
-    if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and not force then
-        L.open_params = {start_edit, force, callback}
+M.open = function(start_edit, buf, callback)
+    if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and buf == nil then
+        L.open_params = {start_edit, buf, callback}
         vim.api.nvim_command('$tabnew')
         return
     end
     if L.open_params ~= nil then
         start_edit = L.open_params[1]
-        force = L.open_params[2]
+        buf = L.open_params[2]
         callback = L.open_params[3]
         L.open_params = nil
     end
@@ -334,8 +338,16 @@ M.open = function(start_edit, force, callback)
             on_chan_input(callback, 'err', chan, data)
         end
     end
+
+    local do_open = function()
+        vim.fn.termopen(remote_command or vim.o.shell, opts)
+    end
     to_save_remote_command = remote_command
-    vim.fn.termopen(remote_command or vim.o.shell, opts)
+    if buf == nil then
+        do_open()
+    else
+        vim.api.nvim_buf_call(buf, do_open)
+    end
     remote_command = nil
     if type(start_edit) == 'boolean' and start_edit == false then
         return
@@ -1104,10 +1116,12 @@ M.set_workflow = function(w, _use_cheatsheet, m)
 end
 
 M.suspend = function()
+    funcs.log("SUSPENDING")
     is_suspended = true
 end
 
 M.resume = function()
+    funcs.log("RESUMING")
     is_suspended = false
 end
 
@@ -1295,21 +1309,25 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
 
     local h = histories.history[i][j]
 
-    if h.operation == "create" and j == 1 and i == 1 then
-        history = {}
-        terminals[1].panel_id = h.to
-        terminals[1].tab_id = h.tab_id
-        post_restored(terminals[1], histories.customs, histories.callback)
-        vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', h.tab_id)
-        add_to_history(terminals[1].buf, "create", {}, h.tab_id)
-        L.restore_tab_history(histories, i, j + 1, nil, 0)
-        return
-    end
+    -- if h.operation == "create" and j == 1 and i == 1 then
+    --     history = {}
+    --     terminals[1].panel_id = h.to
+    --     terminals[1].tab_id = h.tab_id
+    --     post_restored(terminals[1], histories.customs, histories.callback)
+    --     vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', h.tab_id)
+    --     add_to_history(terminals[1].buf, "create", {}, h.tab_id)
+    --     L.restore_tab_history(histories, i, j + 1, nil, 0)
+    --     return
+    -- end
 
     if h.operation == "create" then
         panel_id = h.to
         tab_id = h.tab_id
-        M.open()
+        local buf = nil
+        if j == 1 and i == 1 then
+            buf = vim.fn.bufnr('%')
+        end
+        M.open(true, buf)
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)
@@ -1408,11 +1426,6 @@ M.restore_layout = function(where, callback)
         L.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
         return
     end
-    local t = M.get_current_terminal()
-    if t.remote_command ~= nil then
-        L.error("The opened terminal is a remote terminal. You cannot overwrite a layout with a remote terminal in it", nil)
-        return
-    end
     local f = io.open(where, "r")
     if f == nil then
         L.error("Could not open " .. where, nil)
@@ -1421,6 +1434,13 @@ M.restore_layout = function(where, callback)
     h.callback = callback
     updating_titles = true
     funcs.safe_del_tab_var(0, 'azul_placeholders')
+    local t = M.get_current_terminal()
+    local old_buf = t.buf
+    t.buf = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_win_set_buf(t.win_id, t.buf)
+    vim.fn.jobstop(t.term_id)
+    vim.api.nvim_buf_delete(old_buf, {force = true})
+    do_remove_term_buf(t.buf)
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
 end
@@ -1901,7 +1921,7 @@ end
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
 M.open_remote = function(force, start_edit, callback)
     do_open_remote(force, function()
-        M.open(start_edit, false, callback)
+        M.open(start_edit, nil, callback)
     end)
 end
 
@@ -1913,7 +1933,9 @@ M.remote_reconnect = function(t)
     local old_buf = t.buf
     local id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
     t.buf = vim.api.nvim_create_buf(false, false)
-    vim.api.nvim_win_set_buf(t.win_id, t.buf)
+    if t.win_id ~= nil then
+        vim.api.nvim_win_set_buf(t.win_id, t.buf)
+    end
     vim.api.nvim_buf_delete(old_buf, {force = true})
     remote_command = t.remote_command
     if id ~= nil then
@@ -1923,7 +1945,8 @@ M.remote_reconnect = function(t)
             M.resume()
         end)
     end
-    M.open(true, true)
+    M.open(true, t.buf)
+    t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
 end
 
 M.remote_quit = function(t)

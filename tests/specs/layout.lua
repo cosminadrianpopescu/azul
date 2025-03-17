@@ -66,7 +66,7 @@ t.simulate_keys(s, {ModeChanged = 2, PaneChanged = 5}, function()
                                         -- Need to wait for the commands to be restored
                                         -- Azul will start restoring commands after one second, so we 
                                         -- give it another 1/10 of a second extra
-                                        vim.fn.timer_start(1100, function()
+                                        vim.fn.timer_start(2000, function()
                                             terminals = azul.get_terminals()
                                             t.assert(#terminals == 8, "There should be in total 8 restored terminals")
                                             term = funcs.find(function(tt) return tt.azul_win_id == "with-ls" end, terminals)

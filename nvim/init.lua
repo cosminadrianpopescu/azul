@@ -53,7 +53,7 @@ end
 vim.o.shadafile = files.config_dir .. '/nvim/shada'
 
 vim.fn.timer_start(1, function()
-    if not funcs.is_marionette() and funcs.is_handling_remote() then
+    if not funcs.is_marionette() and funcs.is_handling_remote() and os.getenv('AZUL_START_REMOTE') == '1' then
         azul.open_remote()
     else
         azul.open()

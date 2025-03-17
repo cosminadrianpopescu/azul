@@ -5,7 +5,8 @@ usage() {
     echo "Options: "
     echo "    -a <session-name> Attach to an existing session or create it if it does not exists"
     echo "    -l                List the existing sessions"
-    echo "    -r                Start in server mode"
+    echo "    -m                Start in marionette mode"
+    echo "    -r                If AZUL_REMOTE_CONNECTION var is set, then the first tab will also be remote"
     echo "    -s <cmd>          Send the command to an existing session (only together with -a)"
     echo "    -c <config-path>  Load the config from the <config-path> location"
     echo "    -h --help         Displays this help and exists"
@@ -63,7 +64,7 @@ export AZUL_SESSION=""
 export AZUL_LIST=""
 AZUL_CMD=""
 
-while getopts "a:lmhs:c:" o
+while getopts "a:lrmhs:c:" o
 do
     case "${o}" in
         a)
@@ -81,6 +82,9 @@ do
             ;;
         m)
             export AZUL_IS_MARIONETTE="1"
+            ;;
+        r)
+            export AZUL_START_REMOTE="1"
             ;;
         h)
             usage
