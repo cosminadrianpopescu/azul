@@ -631,7 +631,6 @@ cmd('TermOpen',{
         if to_save_remote_command ~= nil then
             new_terminal.remote_command = to_save_remote_command
         end
-        funcs.log("ADDED " .. vim.inspect(new_terminal))
         table.insert(terminals, new_terminal)
         L.current_group = nil
         OnEnter(ev)
@@ -1116,12 +1115,10 @@ M.set_workflow = function(w, _use_cheatsheet, m)
 end
 
 M.suspend = function()
-    funcs.log("SUSPENDING")
     is_suspended = true
 end
 
 M.resume = function()
-    funcs.log("RESUMING")
     is_suspended = false
 end
 
@@ -1270,7 +1267,6 @@ end
 
 L.restore_remotes = function()
     local remotes = vim.tbl_filter(function(t) return t.remote_command ~= nil end, M.get_terminals())
-    funcs.log("BEFORE RESTORE, WE HAVE " .. vim.inspect(M.get_terminals()) .. " AND " .. vim.inspect(vim.api.nvim_list_wins()))
     for _, r in ipairs(remotes) do
         vim.fn.jobstop(r.term_id)
     end
@@ -1308,17 +1304,6 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 
     local h = histories.history[i][j]
-
-    -- if h.operation == "create" and j == 1 and i == 1 then
-    --     history = {}
-    --     terminals[1].panel_id = h.to
-    --     terminals[1].tab_id = h.tab_id
-    --     post_restored(terminals[1], histories.customs, histories.callback)
-    --     vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', h.tab_id)
-    --     add_to_history(terminals[1].buf, "create", {}, h.tab_id)
-    --     L.restore_tab_history(histories, i, j + 1, nil, 0)
-    --     return
-    -- end
 
     if h.operation == "create" then
         panel_id = h.to

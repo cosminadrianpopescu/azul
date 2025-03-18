@@ -1,5 +1,5 @@
 import { writeFileSync } from "fs";
-import { test } from "./test";
+import { test, test_single } from "./test";
 
 function test_workflow_factory(test_case: string, wf: string, other_options?: string, which = test) {
     which(test_case, (base_path: string) => {
@@ -49,3 +49,4 @@ test_workflow_factory('layout', 'emacs');
 test('custom-titles');
 test('reload-config');
 test_workflow_factory('reload-config', 'tmux');
+test_single('remotes');
