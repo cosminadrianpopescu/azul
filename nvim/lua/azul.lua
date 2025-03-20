@@ -72,6 +72,7 @@ local events = {
     FloatTitleChanged = {},
     ConfigReloaded = {},
     RemoteDisconnected = {},
+    RemoteReconnected = {},
 }
 
 local persistent_events = {}
@@ -111,6 +112,15 @@ local trigger_event = function(ev, args)
     end
 end
 
+local do_exit = function()
+    M.suspend()
+    local channels = vim.tbl_filter(function(c) return c.mode == 'terminal' end, vim.api.nvim_list_chans())
+    for _, c in ipairs(channels) do
+        vim.fn.jobstop(c.id)
+    end
+    trigger_event('ExitAzul')
+end
+
 local start_insert = function()
     if options.workflow == 'tmux' and mode ~= 'n' and mode ~= 'T' and mode ~= 'P' and mode ~= nil then
         return
@@ -129,7 +139,7 @@ end
 local remove_term_buf = function(buf)
     do_remove_term_buf(buf)
     if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
-        trigger_event("ExitAzul", {})
+        do_exit()
         vim.api.nvim_command('quit!')
     end
 end
@@ -340,7 +350,7 @@ M.open = function(start_edit, buf, callback)
     end
 
     local do_open = function()
-        vim.fn.termopen(remote_command or vim.o.shell, opts)
+        local result = vim.fn.termopen(remote_command or vim.o.shell, opts)
     end
     to_save_remote_command = remote_command
     if buf == nil then
@@ -599,11 +609,9 @@ M.hide_floats = function()
     vim.fn.timer_start(1, update_titles)
 end
 
-cmd({"VimLeave"},{
+cmd({"VimLeave", "QuitPre"},{
     desc = "launch ExitAzul event",
-    callback = function()
-        trigger_event("ExitAzul", {})
-    end,
+    callback = do_exit,
 })
 
 cmd({'TabNew', 'TermClose', 'TabEnter'}, {
@@ -1931,6 +1939,7 @@ M.remote_reconnect = function(t)
         end)
     end
     M.open(true, t.buf)
+    trigger_event('RemoteReconnected', {t})
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
 end
 

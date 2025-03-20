@@ -45,8 +45,9 @@ async function wait_proc(cmd: string, args: Array<string> = [], options: Object 
     })
 }
 
-async function run_azul() {
-    const [code, result, err] = await wait_proc(`${base_path}/bin/azul`, ['-a', UUID, '-c', `${base_path}/config`]);
+async function run_azul(azul_env = {}) {
+    const final_env = Object.assign({}, process.env, azul_env);
+    const [code, result, err] = await wait_proc(`${base_path}/bin/azul`, ['-a', UUID, '-c', `${base_path}/config`], {env: final_env});
     // console.log(`AZUL RAN ${code}, ${result}, ${err}`)
 }
 
@@ -72,10 +73,12 @@ async function run_test(t: TestCaseDesc) {
     console.log(`${t.desc || t.luaFile} test case`);
     init_test_env();
     console.log('Running...')
+    let azul_env = {};
     if (!!t.init) {
         const init_result = t.init(base_path);
-        if (init_result?.then) {
-            await init_result;
+        azul_env = init_result;
+        if ((init_result as Promise<Object>)?.then) {
+            azul_env = await init_result;
         }
     }
     if (existsSync(running_last_result(t))) {
@@ -90,7 +93,7 @@ require('test-env').set_test_running('${t.luaFile}')
 ${content}
 `;
     writeFileSync(`${base_path}/config/lua/spec.lua`, content);
-    await run_azul();
+    await run_azul(azul_env);
 }
 
 function assert_test_passed(t: TestCaseDesc) {

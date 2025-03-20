@@ -37,6 +37,8 @@ A nvim based terminal multiplexer.
   - [Shortcuts](#shortcuts)
     + [Possible actions](#possible-actions)
   - [Copy/Pasting](#copypasting)
+* [Remote panes](#remote-pane)
+  - [Remote providers](#remote-providers)
 * [Passthrough mode](#passthrough-mode)
 * [Session restore](#session-restore)
   - [AzulSetCmd](#azulsetcmd)
@@ -153,6 +155,14 @@ choose whatever you like.
 Again, you are in neovim. You can have whatever shortcuts neovim supports. You
 can have these shortcuts inside command mode, inside terminal mode (so inside
 the real terminal), in normal mode, in visual mode, you name it...
+
+### Remote panes
+
+You can have panes (embedded or floating) that are connected remotely to a
+server via ssh. For example, first tab represents a shell on your local
+machine, second tab the same, while the third tab can open a shell on a remote
+machine via ssh. and the fourth tab can be another remote shell on yet another
+machine. See the [Remote panes section](#remote-panes) for how this works.
 
 ### Passthrough mode
 
@@ -809,7 +819,8 @@ session
     + `zellij`: `pane.select_session = S`
     + `emacs`: `select_session = <C-S-s>`
 
-* **create_tab**: Creates a new tab
+* **create_tab**: Creates a new tab with a local shell, or with a shell from a
+  remote machine, if `AZUL_REMOTE_CONNECTION` variable is set
   - defaults: 
     + `azul`: `terminal.create_tab = c`
     + `azul`: `tabs.create_tab = c`
@@ -892,7 +903,8 @@ session
     + `zellij`: `tabs.enter_mode.t = <esc>`
     + `zellij`: `tabs.enter_mode.t = i`
 
-* **create_float**: Creates a new float
+* **create_float**: Creates a new float with a local shell, or with a shell
+  from a remote machine, if the `AZUL_REMOTE_CONNECTION` variable is set
   - defaults: 
     + `azul`: `terminal.create_float = f`
     + `tmux`: `azul.create_float = f`
@@ -1054,7 +1066,9 @@ session
     + `zellij`: `move.move_down.1 = <C-down>`
     + `emacs`: `move_down.5 = <C-A-down>`
 
-* **split_left**: Splits the currently selected tab to the left
+* **split_left**: Splits the currently selected tab to the left opening a
+  local shell, or a shell from a remote machine, if the
+  `AZUL_REMOTE_CONNECTION` variable is set
   - defaults:
     + `azul`: `pane.split_left = H`
     + `azul`: `pane.split_left = <S-left>`
@@ -1068,7 +1082,9 @@ session
     + `zellij`: `split.split_left = <left>`
     + `emacs`: `split_left = <C-left>`
 
-* **split_right**: Splits the currently selected tab to the right
+* **split_right**: Splits the currently selected tab to the right opening a
+  local shell, or a shell from a remote machine, if the
+  `AZUL_REMOTE_CONNECTION` variable is set
   - defaults:
     + `azul`: `pane.split_right = L`
     + `azul`: `pane.split_right = <S-right>`
@@ -1082,7 +1098,9 @@ session
     + `zellij`: `split.split_right = <right>`
     + `emacs`: `split_right = <C-right>`
 
-* **split_up**: Splits the currently selected tab upwards
+* **split_up**: Splits the currently selected tab upwards opening a local
+  shell, or a shell from a remote machine, if the `AZUL_REMOTE_CONNECTION`
+  variable is set
   - defaults:
     + `azul`: `pane.split_up = K`
     + `azul`: `pane.split_up = <S-up>`
@@ -1096,7 +1114,9 @@ session
     + `zellij`: `split.split_up = <up>`
     + `emacs`: `split_up = <C-up>`
 
-* **split_down**: Splits the currently selected tab downwards
+* **split_down**: Splits the currently selected tab downwards a local shell,
+  or a shell from a remote machine, if the `AZUL_REMOTE_CONNECTION` variable
+  is set
   - defaults:
     + `azul`: `pane.split_down = J`
     + `azul`: `pane.split_down = <S-down>`
@@ -1289,6 +1309,31 @@ Other than the mouse, a selection can be created using the keyboard. You can
 switch to `VISUAL` mode, via the default shortcuts (see the [shortcuts
 section](#shortcuts)) and then using `vim` movements (`h`, `j`, `k`, `l`) or
 the cursors and `<pgup>` or `<pgdown>`.
+
+## Remote panes
+
+By default, whenever you open a new pane, it will open a new shell on your
+local machine. However, you can call one of the following API functions, to
+open a new shell on a remote machine: `create_tab_remote`, `open_remote`,
+`open_float_remote` or `split_remote`.
+
+Whenever you call one of these functions, if the variable
+`AZUL_REMOTE_CONNECTION` is set, then a remote pane is opened using that
+connection. If the `AZUL_REMOTE_CONNECTION` variable is not set, or if the
+parameter `force` is set to `true`, then `azul` will ask the user for the
+connection to which he or she wants to connect.
+
+The remote connection has to respect the following format: 
+
+```
+<provider>://<path-to-executable>[@user@host]
+```
+
+* `provider` represents one of the possible providers (see
+  [bellow](#remote-providers))
+
+A remote pane has to be closed in 2 steps. Since the remote connection can be
+dropped, 
 
 ## Passthrough mode
 

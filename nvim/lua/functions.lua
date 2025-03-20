@@ -141,7 +141,6 @@ local remote_command = function(connection)
         return nil
     end
     local proto, bin, host = string.gmatch(connection, p)()
-    log("FOUND " .. vim.inspect(proto) .. " AND " .. vim.inspect(bin) .. " AND " .. vim.inspect(host))
     local cmd = ''
     if proto == 'azul' then
         cmd = bin .. ' -a ' .. uuid() .. ' -m'

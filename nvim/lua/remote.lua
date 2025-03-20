@@ -25,7 +25,6 @@ local remote_disconnected = function(t)
         vim.api.nvim_win_set_buf(t.win_id, t.buf)
     end
     vim.api.nvim_buf_call(t.buf, function()
-        vim.inspect("OPEN EDITOR")
         vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
     end)
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
