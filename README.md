@@ -38,6 +38,8 @@ A nvim based terminal multiplexer.
     + [Possible actions](#possible-actions)
   - [Copy/Pasting](#copypasting)
 * [Remote panes](#remote-pane)
+  - [Closing a remote pane](#closing-a-remote-pane)
+  - [Scrolling](#scrolling)
   - [Remote providers](#remote-providers)
 * [Passthrough mode](#passthrough-mode)
 * [Session restore](#session-restore)
@@ -1331,9 +1333,82 @@ The remote connection has to respect the following format:
 
 * `provider` represents one of the possible providers (see
   [bellow](#remote-providers))
+* `<path-to-executable>` is the path to the provider's executable (at the
+  moment the path to `azul` on the remote machine)
+* `user@host` represents the user and the host used for launching the `ssh`
+  process.
+
+Let's assume we want to open a remote tab at `my-server.com` where we identify
+with the user `john.doe`. On the server `my-server.com` `azul` is installed
+in the folder `~/.local/bin`. In this case, the remote connection will be
+`azul://~/.local/bin/azul@john.doe@my-server.com`.
+
+**Note**: There is no action to open a pane remote. If you want to have
+shortcuts for opening remotes you will need to use an `init.lua` in the config
+folder path to set your own shortcuts (see the
+[configuration](#configuration)) section.
+
+However, by setting the variable `AZUL_REMOTE_CONNECTION`, the `create_tab`,
+`create_float`, `split_left`, `split_right`, `split_up` and `split_down`
+actions will open a remote pane, instead of a local one, by using the
+connection indicated in the `AZUL_REMOTE_CONNECTION` variable.
+
+#### Closing a remote pane
 
 A remote pane has to be closed in 2 steps. Since the remote connection can be
-dropped, 
+dropped due to external factors, the pane will not be discarded, as not to
+break the current layout. If the remote connection is lost, then the pane will
+open the editor set in your `EDITOR` variable with a temporary file anouncing
+you that you can try to press `r` in this pane in order to try to reconnect,
+or `q` to close also the pane.
+
+As a consequence, even if you close the remote pane on purpose by clicking
+`exit` in the remote pane, the pane will still not be closed. It will be
+replaced by the dialog mentioned above. You will have then to also press `q`
+if you want to really close the pane as to remote the pane from the layout
+also.
+
+So, if you use remote panes, be sure to set your `EDITOR` variable to point to
+a real editor that can be run.
+
+#### Scrolling
+
+Since a remote pane is embedded in another instance provide by another app
+(usually an `azul` on a remote machine), the scrolling has to be handle by
+that app. So, by putting the local `azul` in normal mode, will not scroll to
+the buffer content. You need to put the remote pane in scrolling mode. This
+means that you need to signal the remote `azul` that you want to scroll. You
+can do this by calling the action `remote_scroll` (default shortcut `<C-s>[`
+in `azul` workflow) or by calling directly the function
+`remote_enter_scroll_mode` (`require('azul').remote_enter_scroll_mode()`).
+
+#### Remote providers
+
+Since the remote connection has to only provide means of scrolling in the back
+buffer and to keep the session in case the connection is lost to the server,
+`azul` can communicate with several software on the remote machine. Of course,
+the best way to open remote tabs is by having your local `azul` communicate
+with another `azul` instance on the remote server. However, if you cannot
+install `azul` on the remote server, but you have there for example `abduco`
+or `dtach`, you can have azul communicating with these, rather than `azul`. 
+
+**Note**: the scrolling provided by `dtach` is lost after you disconnect and
+reconnect, while `abduco` does not offer any scrolling. In the future, `azul`
+will be able to communicate with `tmux` and `gnu screen` for a proper
+scrolling with other providers than `azul`. You can use any of these providers
+by specifing them in the remote connection.
+
+*dtach*:
+
+```
+dtach:///usr/bin/dtach@john.doe@my-server.com
+```
+
+*abduco*:
+
+```
+abduco:///usr/bin/abduco@john.doe@my-server.com
+```
 
 ## Passthrough mode
 
