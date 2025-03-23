@@ -37,7 +37,7 @@ A nvim based terminal multiplexer.
   - [Shortcuts](#shortcuts)
     + [Possible actions](#possible-actions)
   - [Copy/Pasting](#copypasting)
-* [Remote panes](#remote-pane)
+* [Remote panes](#remote-panes)
   - [Closing a remote pane](#closing-a-remote-pane)
   - [Scrolling](#scrolling)
   - [Remote providers](#remote-providers)
@@ -705,6 +705,10 @@ or the action directly, for the `emacs` workflow. For more info see the
   opening a new pane. This option allows you to have as many lines in your
   current scrollback, that you can see at anytime by invoking
   `edit_scrollback_log` action `<C-s>pe`
+* **modes_cheatsheet_position** The position where to show the cheatsheet
+  (`bottom`, `top` or `auto`). Auto means that depending on where the cursor
+  is situated when showing the cheatsheet, the window will be displayed top or
+  bottom as to not hide the cursor (default: `bottom`)
 
 **Note**:
 
@@ -1292,6 +1296,13 @@ session
     + `zellij`: `pane.rename_float = r`
     + `emacs`: `rename_float = <C-x><C-f>`
 
+* **remote_scroll**: Puts a remote pane in scrolling mode. 
+  - defaults: 
+    + `azul`: `terminal.remote_scroll = [`
+    + `tmux`: `terminal.remote_scroll = [`
+    + `zellij`: `terminal.remote_scroll = [`
+    + `emacs`: `remote_scroll = <C-x>[`
+
 ## Copy/pasting
 
 In `azul`, you can copy paste by using the expected `<C-c>` and `<C-v>`
@@ -1344,8 +1355,8 @@ in the folder `~/.local/bin`. In this case, the remote connection will be
 `azul://~/.local/bin/azul@john.doe@my-server.com`.
 
 **Note**: There is no action to open a pane remote. If you want to have
-shortcuts for opening remotes you will need to use an `init.lua` in the config
-folder path to set your own shortcuts (see the
+shortcuts for opening remote panes you will need to use an `init.lua` in the
+config folder path to set your own shortcuts (see the
 [configuration](#configuration)) section.
 
 However, by setting the variable `AZUL_REMOTE_CONNECTION`, the `create_tab`,
@@ -1365,7 +1376,7 @@ or `q` to close also the pane.
 As a consequence, even if you close the remote pane on purpose by typing
 `exit` in the remote pane, the pane will still not be closed. It will be
 replaced by the dialog mentioned above. You will have then to also press `q`
-if you want to really close the pane as to remote the pane from the layout
+if you want to really close the pane as to remove the pane from the layout
 also.
 
 So, if you use remote panes, be sure to set your `EDITOR` variable to point to
@@ -1373,8 +1384,8 @@ a real editor that can be run.
 
 #### Scrolling
 
-Since a remote pane is embedded in another instance provide by another app
-(usually an `azul` on a remote machine), the scrolling has to be handle by
+Since a remote pane is embedded in another instance provided by another app
+(usually an `azul` on a remote machine), the scrolling has to be handled by
 that app. So, by putting the local `azul` in normal mode, will not scroll to
 the buffer content. You need to put the remote pane in scrolling mode. This
 means that you need to signal the remote `azul` that you want to scroll. You
@@ -1387,10 +1398,10 @@ in `azul` workflow) or by calling directly the function
 Since the remote connection has to only provide means of scrolling in the back
 buffer and to keep the session in case the connection is lost to the server,
 `azul` can communicate with several software on the remote machine. Of course,
-the best way to open remote tabs is by having your local `azul` communicate
+the best way to open remote panes is by having your local `azul` communicate
 with another `azul` instance on the remote server. However, if you cannot
 install `azul` on the remote server, but you have there for example `abduco`
-or `dtach`, you can have azul communicating with these, rather than `azul`. 
+or `dtach`, you can have `azul` communicating with these, rather than `azul`. 
 
 **Note**: the scrolling provided by `dtach` is lost after you disconnect and
 reconnect, while `abduco` does not offer any scrolling. In the future, `azul`
