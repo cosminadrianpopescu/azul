@@ -4,17 +4,16 @@ local funcs = require('functions')
 local FILES = require('files')
 local options = require('options')
 
+local M = {}
+
 local is_suspended = false
 local is_modifier = false
 
 local updating_titles = true
 local azul_started = false
 local last_access = 0
-
-local M = {
-    --- If set to true, then list all buffers
-    list_buffers = false,
-}
+local remote_command = nil
+local to_save_remote_command = nil
 
 --- @class terminals
 --- @field is_current boolean If true, it means that this is the current terminal
@@ -29,6 +28,7 @@ local M = {
 --- @field azul_win_id string The custom azul windows id
 --- @field win_config table The current neovim window config
 --- @field current_selected_pane boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
+--- @field remote_command string The terminal's remote connection
 local terminals = {}
 local tab_id = 0
 local azul_win_id = 0
@@ -71,6 +71,8 @@ local events = {
     ExitAzul = {},
     FloatTitleChanged = {},
     ConfigReloaded = {},
+    RemoteDisconnected = {},
+    RemoteReconnected = {},
 }
 
 local persistent_events = {}
@@ -110,6 +112,15 @@ local trigger_event = function(ev, args)
     end
 end
 
+local do_exit = function()
+    M.suspend()
+    local channels = vim.tbl_filter(function(c) return c.mode == 'terminal' end, vim.api.nvim_list_chans())
+    for _, c in ipairs(channels) do
+        vim.fn.jobstop(c.id)
+    end
+    trigger_event('ExitAzul')
+end
+
 local start_insert = function()
     if options.workflow == 'tmux' and mode ~= 'n' and mode ~= 'T' and mode ~= 'P' and mode ~= nil then
         return
@@ -121,10 +132,14 @@ M.is_float = function(t)
     return t and t.win_config and t.win_config['zindex'] ~= nil
 end
 
-local remove_term_buf = function(buf)
+local do_remove_term_buf = function(buf)
     terminals = vim.tbl_filter(function(t) return t.buf ~= buf end, terminals)
+end
+
+local remove_term_buf = function(buf)
+    do_remove_term_buf(buf)
     if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
-        trigger_event("ExitAzul", {})
+        do_exit()
         vim.api.nvim_command('quit!')
     end
 end
@@ -172,13 +187,15 @@ local _buf = function(t)
     return t.editing_buf or t.buf
 end
 
-local refresh_buf = function(buf)
+local refresh_buf = function(buf, with_win_id)
     local t = funcs.find(function(t) return _buf(t) == buf end, terminals)
     if t == nil then
         return nil
     end
-    t.win_id = vim.fn.win_getid(vim.fn.winnr())
-    refresh_win_config(t)
+    if with_win_id == nil or with_win_id == true then
+        t.win_id = vim.fn.win_getid(vim.fn.winnr())
+        refresh_win_config(t)
+    end
     return t
 end
 
@@ -257,9 +274,7 @@ local OnEnter = function(ev)
     local old = funcs.find(function(t) return t.is_current end, M.get_terminals())
 
     for _, t in ipairs(terminals) do
-        if not M.list_buffers then
-            vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
-        end
+        vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
         t.is_current = _buf(t) == ev.buf
         if t.is_current and _buf(t) ~= is_current_terminal then
             trigger_event('PaneChanged', {t, old})
@@ -302,17 +317,17 @@ end
 --- Opens a new terminal in the current window
 ---
 ---@param start_edit boolean If true, then start editing automatically (default true)
----@param force boolean If true, then open the terminal without opening a new tab in the current place
+---@param buf number The buffer in which to open the terminal
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
-M.open = function(start_edit, force, callback)
-    if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and not force then
-        L.open_params = {start_edit, force, callback}
+M.open = function(start_edit, buf, callback)
+    if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and buf == nil then
+        L.open_params = {start_edit, buf, callback}
         vim.api.nvim_command('$tabnew')
         return
     end
     if L.open_params ~= nil then
         start_edit = L.open_params[1]
-        force = L.open_params[2]
+        buf = L.open_params[2]
         callback = L.open_params[3]
         L.open_params = nil
     end
@@ -321,6 +336,7 @@ M.open = function(start_edit, force, callback)
         env = {
             VIM = '',
             VIMRUNTIME='',
+            TERM='st-256color'
         },
     }
 
@@ -332,7 +348,17 @@ M.open = function(start_edit, force, callback)
             on_chan_input(callback, 'err', chan, data)
         end
     end
-    vim.fn.termopen(vim.o.shell, opts)
+
+    local do_open = function()
+        local result = vim.fn.termopen(remote_command or vim.o.shell, opts)
+    end
+    to_save_remote_command = remote_command
+    if buf == nil then
+        do_open()
+    else
+        vim.api.nvim_buf_call(buf, do_open)
+    end
+    remote_command = nil
     if type(start_edit) == 'boolean' and start_edit == false then
         return
     end
@@ -345,6 +371,13 @@ local OnTermClose = function(ev)
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
     if t == nil then
+        return
+    end
+    if t.remote_command ~= nil then
+        trigger_event('RemoteDisconnected', {t})
+        vim.fn.timer_start(1, function()
+            refresh_buf(t.buf, false)
+        end)
         return
     end
     add_to_history(ev.buf, "close", nil, t.tab_id)
@@ -576,11 +609,9 @@ M.hide_floats = function()
     vim.fn.timer_start(1, update_titles)
 end
 
-cmd({"VimLeave"},{
+cmd({"VimLeave", "QuitPre"},{
     desc = "launch ExitAzul event",
-    callback = function()
-        trigger_event("ExitAzul", {})
-    end,
+    callback = do_exit,
 })
 
 cmd({'TabNew', 'TermClose', 'TabEnter'}, {
@@ -594,7 +625,7 @@ cmd('TermOpen',{
         if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
             return
         end
-        table.insert(terminals, {
+        local new_terminal = {
             is_current = false,
             buf = ev.buf,
             win_id = vim.fn.win_getid(vim.fn.winnr()),
@@ -604,7 +635,11 @@ cmd('TermOpen',{
             panel_id = panel_id,
             cwd = vim.fn.getcwd(),
             azul_win_id = azul_win_id,
-        })
+        }
+        if to_save_remote_command ~= nil then
+            new_terminal.remote_command = to_save_remote_command
+        end
+        table.insert(terminals, new_terminal)
         L.current_group = nil
         OnEnter(ev)
         if #history > 0 and history[#history].to == -1 then
@@ -637,7 +672,6 @@ cmd({'FileType'}, {
         end
         vim.fn.timer_start(100, function()
             start_insert()
-            -- trigger_event('ModeChanged', {'t', 'n'})
         end)
     end
 })
@@ -751,7 +785,7 @@ end
 --- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
 --- @param to_restore terminals The float terminal to restore (optional)
 M.open_float = function(group, opts, to_restore)
-    L.current_group = group or 'default'
+    L.current_group = group or funcs.current_float_group()
     if #get_all_floats(group) > 0 and M.are_floats_hidden(group) then
         M.show_floats(group)
     end
@@ -1106,6 +1140,7 @@ M.resize = function(direction)
         down = 'res +5',
     }
     vim.api.nvim_command(args[direction])
+    refresh_win_config(t)
 end
 
 --- Disconnects the current session.
@@ -1137,6 +1172,7 @@ local get_custom_values = function()
         result[t.panel_id .. ""] = {
             azul_win_id = t.azul_win_id,
             azul_cmd = t.azul_cmd or nil,
+            remote_command = t.remote_command
         }
     end
 
@@ -1191,12 +1227,15 @@ local post_restored = function(t, customs, callback)
     if c.azul_cmd ~= nil then
         t.azul_cmd = c.azul_cmd
     end
+    if c.remote_command ~= nil then
+        t.remote_command = c.remote_command
+    end
 
     if callback ~= nil then
         callback(t, t.azul_win_id)
     end
 
-    if t.azul_cmd ~= nil then
+    if t.azul_cmd ~= nil and t.remote_command == nil then
         local _cmd = t.azul_cmd .. '<cr>'
         vim.fn.timer_start(1000, function()
             M.send_to_buf(t.buf, _cmd, true)
@@ -1234,6 +1273,17 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     L.restore_floats(histories, idx + 1, f.panel_id, 0)
 end
 
+L.restore_remotes = function()
+    local remotes = vim.tbl_filter(function(t) return t.remote_command ~= nil end, M.get_terminals())
+    for _, r in ipairs(remotes) do
+        vim.fn.jobstop(r.term_id)
+    end
+    updating_titles = false
+    update_titles()
+    trigger_event("LayoutRestored")
+    vim.fn.timer_start(100, start_insert)
+end
+
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if timeout > 100 then
         updating_titles = false
@@ -1263,21 +1313,14 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
 
     local h = histories.history[i][j]
 
-    if h.operation == "create" and j == 1 and i == 1 then
-        history = {}
-        terminals[1].panel_id = h.to
-        terminals[1].tab_id = h.tab_id
-        post_restored(terminals[1], histories.customs, histories.callback)
-        vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', h.tab_id)
-        add_to_history(terminals[1].buf, "create", {}, h.tab_id)
-        L.restore_tab_history(histories, i, j + 1, nil, 0)
-        return
-    end
-
     if h.operation == "create" then
         panel_id = h.to
         tab_id = h.tab_id
-        M.open()
+        local buf = nil
+        if j == 1 and i == 1 then
+            buf = vim.fn.bufnr('%')
+        end
+        M.open(true, buf)
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)
@@ -1358,9 +1401,8 @@ L.restore_ids = function(title_placeholders, title_overrides)
             vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_tab_title_overriden', o)
         end
     end
-    updating_titles = false
-    update_titles()
-    trigger_event("LayoutRestored")
+
+    vim.fn.timer_start(1, L.restore_remotes)
 end
 
 L.histories_by_tab_id = function(tab_id, history)
@@ -1375,6 +1417,7 @@ end
 M.restore_layout = function(where, callback)
     if #terminals > 1 then
         L.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
+        return
     end
     local f = io.open(where, "r")
     if f == nil then
@@ -1384,6 +1427,13 @@ M.restore_layout = function(where, callback)
     h.callback = callback
     updating_titles = true
     funcs.safe_del_tab_var(0, 'azul_placeholders')
+    local t = M.get_current_terminal()
+    local old_buf = t.buf
+    t.buf = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_win_set_buf(t.win_id, t.buf)
+    vim.fn.jobstop(t.term_id)
+    vim.api.nvim_buf_delete(old_buf, {force = true})
+    do_remove_term_buf(t.buf)
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
 end
@@ -1821,6 +1871,11 @@ M.create_tab = function()
     vim.fn.timer_start(1, start_insert)
 end
 
+M.create_tab_remote = function()
+    M.open_remote()
+    vim.fn.timer_start(1, start_insert)
+end
+
 M.on_action = function(action, callback)
     M.on('ActionRan', function(args)
         if args[1] ~= action then
@@ -1828,6 +1883,90 @@ M.on_action = function(action, callback)
         end
         callback(args[1])
     end)
+end
+
+local do_open_remote = function(force, callback)
+    local when_done = function(result)
+        remote_command = funcs.remote_command(result)
+        if remote_command == nil then
+            return
+        end
+        callback()
+    end
+    if force == true or not funcs.is_handling_remote() then
+        M.user_input({prompt = "Please enter a remote connection:"}, function(result)
+            if result == nil or result == '' then
+                return
+            end
+            when_done(result)
+        end)
+
+        return
+    end
+
+    when_done(os.getenv('AZUL_REMOTE_CONNECTION'))
+end
+
+--- Opens a new remote terminal in the current window
+---
+---@param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
+---@param start_edit boolean If true, then start editing automatically (default true)
+---@param callback function If set, then the callback will be called everytime for a new line in the terminal
+M.open_remote = function(force, start_edit, callback)
+    do_open_remote(force, function()
+        M.open(start_edit, nil, callback)
+    end)
+end
+
+M.remote_reconnect = function(t)
+    if t.remote_command == nil then
+        L.error("The terminal " .. t.term_id .. " is not a remote terminal", nil)
+        return
+    end
+    local old_buf = t.buf
+    local id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
+    t.buf = vim.api.nvim_create_buf(false, false)
+    if t.win_id ~= nil then
+        vim.api.nvim_win_set_buf(t.win_id, t.buf)
+    end
+    vim.api.nvim_buf_delete(old_buf, {force = true})
+    remote_command = t.remote_command
+    if id ~= nil then
+        M.suspend()
+        vim.fn.jobstop(id)
+        vim.fn.timer_start(1, function()
+            M.resume()
+        end)
+    end
+    M.open(true, t.buf)
+    trigger_event('RemoteReconnected', {t})
+    t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
+end
+
+M.remote_quit = function(t)
+    t.remote_command = nil
+    vim.fn.jobstop(funcs.safe_get_buf_var(t.buf, 'terminal_job_id'))
+end
+
+--- Opens a new float
+--- @param group string The group in which to open a float
+--- @param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
+--- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
+--- @param to_restore terminals The float terminal to restore (optional)
+M.open_float_remote = function(group, force, opts, to_restore)
+    do_open_remote(force, function()
+        M.open_float(group, opts, to_restore)
+    end)
+end
+
+M.split_remote = function(force, dir)
+    do_open_remote(force, function()
+        M.split(dir)
+    end)
+end
+
+M.remote_enter_scroll_mode = function()
+    M.send_to_current('<C-\\><C-n>', true)
 end
 
 M.persistent_on = function(ev, callback)

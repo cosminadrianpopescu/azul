@@ -37,6 +37,10 @@ A nvim based terminal multiplexer.
   - [Shortcuts](#shortcuts)
     + [Possible actions](#possible-actions)
   - [Copy/Pasting](#copypasting)
+* [Remote panes](#remote-pane)
+  - [Closing a remote pane](#closing-a-remote-pane)
+  - [Scrolling](#scrolling)
+  - [Remote providers](#remote-providers)
 * [Passthrough mode](#passthrough-mode)
 * [Session restore](#session-restore)
   - [AzulSetCmd](#azulsetcmd)
@@ -153,6 +157,14 @@ choose whatever you like.
 Again, you are in neovim. You can have whatever shortcuts neovim supports. You
 can have these shortcuts inside command mode, inside terminal mode (so inside
 the real terminal), in normal mode, in visual mode, you name it...
+
+### Remote panes
+
+You can have panes (embedded or floating) that are connected remotely to a
+server via ssh. For example, first tab represents a shell on your local
+machine, second tab the same, while the third tab can open a shell on a remote
+machine via ssh. and the fourth tab can be another remote shell on yet another
+machine. See the [Remote panes section](#remote-panes) for how this works.
 
 ### Passthrough mode
 
@@ -809,7 +821,8 @@ session
     + `zellij`: `pane.select_session = S`
     + `emacs`: `select_session = <C-S-s>`
 
-* **create_tab**: Creates a new tab
+* **create_tab**: Creates a new tab with a local shell, or with a shell from a
+  remote machine, if `AZUL_REMOTE_CONNECTION` variable is set
   - defaults: 
     + `azul`: `terminal.create_tab = c`
     + `azul`: `tabs.create_tab = c`
@@ -892,7 +905,8 @@ session
     + `zellij`: `tabs.enter_mode.t = <esc>`
     + `zellij`: `tabs.enter_mode.t = i`
 
-* **create_float**: Creates a new float
+* **create_float**: Creates a new float with a local shell, or with a shell
+  from a remote machine, if the `AZUL_REMOTE_CONNECTION` variable is set
   - defaults: 
     + `azul`: `terminal.create_float = f`
     + `tmux`: `azul.create_float = f`
@@ -1054,7 +1068,9 @@ session
     + `zellij`: `move.move_down.1 = <C-down>`
     + `emacs`: `move_down.5 = <C-A-down>`
 
-* **split_left**: Splits the currently selected tab to the left
+* **split_left**: Splits the currently selected tab to the left opening a
+  local shell, or a shell from a remote machine, if the
+  `AZUL_REMOTE_CONNECTION` variable is set
   - defaults:
     + `azul`: `pane.split_left = H`
     + `azul`: `pane.split_left = <S-left>`
@@ -1068,7 +1084,9 @@ session
     + `zellij`: `split.split_left = <left>`
     + `emacs`: `split_left = <C-left>`
 
-* **split_right**: Splits the currently selected tab to the right
+* **split_right**: Splits the currently selected tab to the right opening a
+  local shell, or a shell from a remote machine, if the
+  `AZUL_REMOTE_CONNECTION` variable is set
   - defaults:
     + `azul`: `pane.split_right = L`
     + `azul`: `pane.split_right = <S-right>`
@@ -1082,7 +1100,9 @@ session
     + `zellij`: `split.split_right = <right>`
     + `emacs`: `split_right = <C-right>`
 
-* **split_up**: Splits the currently selected tab upwards
+* **split_up**: Splits the currently selected tab upwards opening a local
+  shell, or a shell from a remote machine, if the `AZUL_REMOTE_CONNECTION`
+  variable is set
   - defaults:
     + `azul`: `pane.split_up = K`
     + `azul`: `pane.split_up = <S-up>`
@@ -1096,7 +1116,9 @@ session
     + `zellij`: `split.split_up = <up>`
     + `emacs`: `split_up = <C-up>`
 
-* **split_down**: Splits the currently selected tab downwards
+* **split_down**: Splits the currently selected tab downwards a local shell,
+  or a shell from a remote machine, if the `AZUL_REMOTE_CONNECTION` variable
+  is set
   - defaults:
     + `azul`: `pane.split_down = J`
     + `azul`: `pane.split_down = <S-down>`
@@ -1290,6 +1312,104 @@ switch to `VISUAL` mode, via the default shortcuts (see the [shortcuts
 section](#shortcuts)) and then using `vim` movements (`h`, `j`, `k`, `l`) or
 the cursors and `<pgup>` or `<pgdown>`.
 
+## Remote panes
+
+By default, whenever you open a new pane, it will open a new shell on your
+local machine. However, you can call one of the following API functions, to
+open a new shell on a remote machine: `create_tab_remote`, `open_remote`,
+`open_float_remote` or `split_remote`.
+
+Whenever you call one of these functions, if the variable
+`AZUL_REMOTE_CONNECTION` is set, then a remote pane is opened using that
+connection. If the `AZUL_REMOTE_CONNECTION` variable is not set, or if the
+parameter `force` is set to `true`, then `azul` will ask the user for the
+connection to which he or she wants to connect.
+
+The remote connection has to respect the following format: 
+
+```
+<provider>://<path-to-executable>[@user@host]
+```
+
+* `provider` represents one of the possible providers (see
+  [bellow](#remote-providers))
+* `<path-to-executable>` is the path to the provider's executable (at the
+  moment the path to `azul` on the remote machine)
+* `user@host` represents the user and the host used for launching the `ssh`
+  process.
+
+Let's assume we want to open a remote tab at `my-server.com` where we identify
+with the user `john.doe`. On the server `my-server.com` `azul` is installed
+in the folder `~/.local/bin`. In this case, the remote connection will be
+`azul://~/.local/bin/azul@john.doe@my-server.com`.
+
+**Note**: There is no action to open a pane remote. If you want to have
+shortcuts for opening remotes you will need to use an `init.lua` in the config
+folder path to set your own shortcuts (see the
+[configuration](#configuration)) section.
+
+However, by setting the variable `AZUL_REMOTE_CONNECTION`, the `create_tab`,
+`create_float`, `split_left`, `split_right`, `split_up` and `split_down`
+actions will open a remote pane, instead of a local one, by using the
+connection indicated in the `AZUL_REMOTE_CONNECTION` variable.
+
+#### Closing a remote pane
+
+A remote pane has to be closed in 2 steps. Since the remote connection can be
+dropped due to external factors, the pane will not be discarded, as not to
+break the current layout. If the remote connection is lost, then the pane will
+open the editor set in your `EDITOR` variable with a temporary file anouncing
+you that you can try to press `r` in this pane in order to try to reconnect,
+or `q` to close also the pane.
+
+As a consequence, even if you close the remote pane on purpose by clicking
+`exit` in the remote pane, the pane will still not be closed. It will be
+replaced by the dialog mentioned above. You will have then to also press `q`
+if you want to really close the pane as to remote the pane from the layout
+also.
+
+So, if you use remote panes, be sure to set your `EDITOR` variable to point to
+a real editor that can be run.
+
+#### Scrolling
+
+Since a remote pane is embedded in another instance provide by another app
+(usually an `azul` on a remote machine), the scrolling has to be handle by
+that app. So, by putting the local `azul` in normal mode, will not scroll to
+the buffer content. You need to put the remote pane in scrolling mode. This
+means that you need to signal the remote `azul` that you want to scroll. You
+can do this by calling the action `remote_scroll` (default shortcut `<C-s>[`
+in `azul` workflow) or by calling directly the function
+`remote_enter_scroll_mode` (`require('azul').remote_enter_scroll_mode()`).
+
+#### Remote providers
+
+Since the remote connection has to only provide means of scrolling in the back
+buffer and to keep the session in case the connection is lost to the server,
+`azul` can communicate with several software on the remote machine. Of course,
+the best way to open remote tabs is by having your local `azul` communicate
+with another `azul` instance on the remote server. However, if you cannot
+install `azul` on the remote server, but you have there for example `abduco`
+or `dtach`, you can have azul communicating with these, rather than `azul`. 
+
+**Note**: the scrolling provided by `dtach` is lost after you disconnect and
+reconnect, while `abduco` does not offer any scrolling. In the future, `azul`
+will be able to communicate with `tmux` and `gnu screen` for a proper
+scrolling with other providers than `azul`. You can use any of these providers
+by specifing them in the remote connection.
+
+*dtach*:
+
+```
+dtach:///usr/bin/dtach@john.doe@my-server.com
+```
+
+*abduco*:
+
+```
+abduco:///usr/bin/abduco@john.doe@my-server.com
+```
+
 ## Passthrough mode
 
 Passthrough mode is a special mode. When you enter passthrough mode, no
@@ -1323,7 +1443,10 @@ If you also want to save the commands running in a pane, you have two options.
 You can call the command `AzulSetCmd`. This variable will be saved together
 with the layout. When `AzulRestoreLayout` is called, then the command saved in
 the `AzulSetCmd` will be sent to the same pane (float or not, in a split or
-not)
+not). 
+
+**Note**: The command will not be executed if the restored pane is a remote
+pane.
 
 #### AzulSetWinId
 
@@ -1361,6 +1484,12 @@ script, which in turn, for the pane with the id `vifm` (split, tab or float)
 will execute `vifm<cr>`, wait one second for `vifm` to open and then execute
 `:session my-vifm-session<cr>`. So, this should restore your `vifm` pane and
 inside this pane, should also restore your saved `vifm` session.
+
+**Note**: Be carefull when using the callback with a remote buffer. In case of
+a remote buffer, this callback will be called before the buffer is
+reconnected. So, you'll need probably to wait until the buffer is reconnected.
+You might want to send a `r` key to the pane if you are sure that the remote
+is still alive.
 
 ## Lua API
 

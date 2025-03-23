@@ -1,5 +1,5 @@
 import { writeFileSync } from "fs";
-import { test } from "./test";
+import { test, test_single } from "./test";
 
 function test_workflow_factory(test_case: string, wf: string, other_options?: string, which = test) {
     which(test_case, (base_path: string) => {
@@ -11,6 +11,7 @@ workflow = ${wf}
 ${other_options || ''}
     `;
         writeFileSync(`${base_path}/config/config.ini`, config);
+        return {};
     });
 }
 
@@ -38,14 +39,20 @@ test('custom-tab-titles', (base_path: string) => {
 ${tab_title_option}
 `;
     writeFileSync(`${base_path}/config/config.ini`, config);
+    return {};
 });
 test_workflow_factory('custom-tab-titles', 'tmux', tab_title_option);
 test_workflow_factory('custom-tab-titles', 'zellij', tab_title_option);
 test_workflow_factory('custom-tab-titles', 'emacs', tab_title_option);
+test('custom-titles');
+test('reload-config');
+test_workflow_factory('reload-config', 'tmux');
+test('remotes', (base_path: string) => {
+    return {
+        AZUL_REMOTE_CONNECTION: `azul://${base_path}/bin/azul`,
+    }
+});
 test('layout');
 test_workflow_factory('layout', 'tmux');
 test_workflow_factory('layout', 'zellij');
 test_workflow_factory('layout', 'emacs');
-test('custom-titles');
-test('reload-config');
-test_workflow_factory('reload-config', 'tmux');

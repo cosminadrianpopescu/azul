@@ -1,4 +1,5 @@
 local mappings = {}
+math.randomseed()
 
 local get_sensitive_ls = function(ls)
     if ls == nil then
@@ -99,10 +100,78 @@ local current_float_group = function()
                                           -- will be assigned to the t:float_group group
 end
 
+local regexp_group = function(s, p, idx)
+    if string.match(s, p) == nil then
+        return nil
+    end
+    local i = 1
+    for g in string.gmatch(s, p) do
+        if i == idx then
+            return g
+        end
+        i = i + 1
+    end
+
+    return nil
+end
+
+local function uuid()
+    local random = math.random
+    local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+    return string.gsub(template, '[xy]', function (c)
+        local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
+        return string.format('%x', v)
+    end) .. ''
+end
+
+local join = function(t, delimiter)
+    local result = ''
+    for i, s in ipairs(t) do
+        if i > 1 then
+            result = result .. delimiter
+        end
+        result = result .. s
+    end
+    return result
+end
+
+local remote_command = function(connection)
+    local p = '([a-z]+)://([^@]+)@?(.*)$'
+    if connection == nil or not string.match(connection, p) then
+        return nil
+    end
+    local proto, bin, host = string.gmatch(connection, p)()
+    local cmd = ''
+    if proto == 'azul' then
+        cmd = bin .. ' -a ' .. uuid() .. ' -m'
+    elseif proto == 'dtach' then
+        cmd = bin .. ' -A ' .. uuid() .. ' ' .. vim.o.shell
+    elseif proto == 'abduco' then
+        cmd = bin .. ' -A ' .. uuid()
+    end
+    if host ~= '' and host ~= nil then
+        return 'ssh ' .. host .. " -t '" .. cmd .. "'"
+    end
+    return cmd
+end
+
+local is_marionette = function()
+    return os.getenv('AZUL_IS_MARIONETTE') == '1'
+end
+
+local is_handling_remote = function()
+    return os.getenv('AZUL_REMOTE_CONNECTION') ~= nil
+end
+
 return {
+    is_handling_remote = is_handling_remote,
+    is_marionette = is_marionette,
+    remote_command = remote_command,
     get_sensitive_ls = get_sensitive_ls,
     find = find,
+    uuid = uuid,
     log = log,
+    join = join,
     safe_get_buf_var = safe_get_buf_var,
     safe_del_buf_var = safe_del_buf_var,
     safe_get_tab_var = safe_get_tab_var,
@@ -113,4 +182,5 @@ return {
     restore_previous_mapping = restore_previous_mapping,
     map_by_action = map_by_action,
     current_float_group = current_float_group,
+    regexp_group = regexp_group,
 }
