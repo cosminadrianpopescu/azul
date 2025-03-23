@@ -1373,7 +1373,7 @@ open the editor set in your `EDITOR` variable with a temporary file anouncing
 you that you can try to press `r` in this pane in order to try to reconnect,
 or `q` to close also the pane.
 
-As a consequence, even if you close the remote pane on purpose by clicking
+As a consequence, even if you close the remote pane on purpose by typing
 `exit` in the remote pane, the pane will still not be closed. It will be
 replaced by the dialog mentioned above. You will have then to also press `q`
 if you want to really close the pane as to remove the pane from the layout
