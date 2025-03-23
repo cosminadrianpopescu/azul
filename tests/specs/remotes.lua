@@ -53,34 +53,36 @@ t.simulate_keys(s, {PaneChanged = 1}, function()
             vim.fn.timer_start(1, function()
                 t.assert(#get_channels() == 2, "We should have only 2 terminal channels opened")
                 t.simulate_keys('r', {RemoteReconnected = 1}, function()
-                    t.assert(#get_channels() == 2, "After reconnecting, we should still have 2 channels opened")
-                    term = azul.get_current_terminal()
-                    local lines = vim.api.nvim_buf_get_lines(term.buf, 0, -1, false)
-                    local found = false
-                    for _, line in ipairs(lines) do
-                        if line == '' .. LINES then
-                            found = true
-                        end
-                    end
-                    t.assert(found, "We should have in the current buffer a line containing " .. LINES)
-                    s = t.action_shortcut('create_float')
-                    t.simulate_keys(s, {PaneChanged = 1}, function()
+                    vim.fn.timer_start(TIMER, function()
+                        t.assert(#get_channels() == 2, "After reconnecting, we should still have 2 channels opened")
                         term = azul.get_current_terminal()
-                        s = t.action_shortcut('toggle_floats')
+                        local lines = vim.api.nvim_buf_get_lines(term.buf, 0, -1, false)
+                        local found = false
+                        for _, line in ipairs(lines) do
+                            if line == '' .. LINES then
+                                found = true
+                            end
+                        end
+                        t.assert(found, "We should have in the current buffer a line containing " .. LINES)
+                        s = t.action_shortcut('create_float')
                         t.simulate_keys(s, {PaneChanged = 1}, function()
-                            t.simulate_keys(select_tab_shortcut('first'), {PaneChanged = 1}, function()
-                                vim.fn.jobstop(term.term_id)
-                                vim.fn.timer_start(1, function()
-                                    t.assert(#get_channels() == 3, "We should have 3 opened channels")
-                                    t.assert(#azul.get_terminals() == 3, "We should have 3 opened terminals")
-                                    t.simulate_keys(select_tab_shortcut('last'), {PaneChanged = 1}, function()
-                                        t.simulate_keys(t.action_shortcut('toggle_floats'), {PaneChanged = 1}, function()
-                                            assert_buf_state(false)
-                                            t.simulate_keys('r', {RemoteReconnected = 1}, function()
-                                                assert_buf_state(true)
-                                                close_remote_buffer(3, function()
-                                                    close_remote_buffer(2, function()
-                                                        t.done()
+                            term = azul.get_current_terminal()
+                            s = t.action_shortcut('toggle_floats')
+                            t.simulate_keys(s, {PaneChanged = 1}, function()
+                                t.simulate_keys(select_tab_shortcut('first'), {PaneChanged = 1}, function()
+                                    vim.fn.jobstop(term.term_id)
+                                    vim.fn.timer_start(1, function()
+                                        t.assert(#get_channels() == 3, "We should have 3 opened channels")
+                                        t.assert(#azul.get_terminals() == 3, "We should have 3 opened terminals")
+                                        t.simulate_keys(select_tab_shortcut('last'), {PaneChanged = 1}, function()
+                                            t.simulate_keys(t.action_shortcut('toggle_floats'), {PaneChanged = 1}, function()
+                                                assert_buf_state(false)
+                                                t.simulate_keys('r', {RemoteReconnected = 1}, function()
+                                                    assert_buf_state(true)
+                                                    close_remote_buffer(3, function()
+                                                        close_remote_buffer(2, function()
+                                                            t.done()
+                                                        end)
                                                     end)
                                                 end)
                                             end)

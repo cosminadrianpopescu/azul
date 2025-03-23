@@ -87,8 +87,8 @@ Hides the floats if they are displayed
 
 * start_edit If true, then starts edit automatically after the terminal is
   created (default true)
-* force If true, then open the terminal without opening a new tab in the
-  current place (default false)
+* buf If set, instead of creating a new tab, a new pane will be opened in the
+  current tab or floating window, closing the existing one
 * callback If set, then the callback will be called everytime for a new line
   in the terminal. Use it with caution, since it will accumulate memory until
   the current terminal is closed. If you set this on a currently long running
@@ -596,6 +596,74 @@ is an embedded pane and not a floating one, it will throw an error.
 Selects the tab indicated by the number (starting with 1). If the tab does not
 exists (for example you want to select the 5th tab, but you only have 4 tabs
 opened) it will throw an error.
+
+#### create_tab
+
+Creates a new tab
+
+#### create_tab_remote
+
+Creates a new tab with a remote pane inside
+
+#### open_remote
+
+**Parameters**:
+
+* force If true, then ask for a remote connection even if the
+  `AZUL_REMOTE_CONNECTION` variable is set
+* start_edit If true, then starts edit automatically after the terminal is
+  created (default true)
+* callback If set, then the callback will be called everytime for a new line
+  in the terminal. Use it with caution, since it will accumulate memory until
+  the current terminal is closed. If you set this on a currently long running
+  shell, you might experience high memory consumption.
+
+#### remote_reconnect
+
+**Parameters**: 
+
+* t The terminal to reconnect
+
+If the selected terminal is not of a remote pane, then it will throw an error.
+Otherwise, will try to reconnect the current remote pane to the remote
+machine.
+
+#### remote_quit
+
+**Parameters**: 
+
+* t The terminal to quit
+
+It will kill the remote connection of the current remote pane and it will
+replace the pane content with a dialog to close or reconnect the pane.
+
+#### open_float_remote
+
+**Parameters**:
+
+* group The group for which to open a new float
+* force If true, then ask for a remote connection even if the
+  `AZUL_REMOTE_CONNECTION` variable is set
+* config The win_config to pass (see `vim.api.nvim_win_get_config`)
+* to_restore If the opened float is a restored float from a layout, it
+  contains the float saved in the layout file
+
+Like `open_float`, but it opens a new floating pane remotely connected
+
+#### split_remote
+
+**Parameters**:
+
+* force If true, then ask for a remote connection even if the
+  `AZUL_REMOTE_CONNECTION` variable is set
+* dir The direction in which to split (left, right up or down)
+
+Like `split`, but splits in the given direction with a pane connected
+remotely.
+
+#### remote_enter_scroll_mode
+
+If the current pane is a remote pane, it will be put in scrolling mode.
 
 ### Events
 
