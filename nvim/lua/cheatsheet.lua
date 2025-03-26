@@ -4,10 +4,12 @@ local options = require('options')
 
 local win_id = nil
 local win_buffer = nil
+local ns_id = nil
 local mode_win_id = nil
 local timer = nil
 local timer_set = false
 local position_timer = nil
+local pass_modifier = false
 
 vim.api.nvim_command('highlight AzulCheatsheetArrow guifg=#565f89')
 
@@ -22,21 +24,33 @@ local close_window = function()
         position_timer = nil
     end
     if win_id ~= nil then
-        vim.api.nvim_win_close(win_id, true)
+        if not funcs.safe_close_window(win_id) then
+            print("There was an error closing the window with id " .. win_id .. ". You'll probably need to close it manually.")
+        end
     end
     win_id = nil
     if win_buffer ~= nil then
-        vim.api.nvim_buf_delete(win_buffer, {force = true, unload = false})
+        if not funcs.safe_buf_delete(win_buffer) then
+            print("There was an error removing the buffer " .. vim.inspect(win_buffer) .. ". You'll probably need to remove it manually.")
+        end
     end
     win_buffer = nil
     if timer ~= nil then
         vim.fn.timer_stop(timer)
     end
+
+    if ns_id ~= nil then
+        local safe, _ = pcall(function() vim.on_key(nil, ns_id) end)
+        if not safe then
+            print("There was an error closing the cheatsheet window")
+        end
+    end
+    ns_id = nil
 end
 
 local close_mode_window = function()
     if mode_win_id ~= nil then
-        vim.api.nvim_win_close(mode_win_id, true)
+        funcs.safe_close_window(mode_win_id)
     end
     mode_win_id = nil
 end
@@ -82,17 +96,9 @@ local wait_input = function(mode)
     local c = ''
     local before_c = ''
     timer_set = false
-    while true do
-        -- Prevent Keyboard interrupt error when pressing <C-c>. 
-        -- See https://github.com/neovim/neovim/issues/16416
-        local cc_map = funcs.find_map('<C-C>', 'n')
-        vim.api.nvim_set_keymap('n', '<C-c>', '<Esc>', {})
-        local trans = azul.block_input()
-        if cc_map ~= nil then
-            funcs.restore_map('n', '<C-c>', cc_map)
-        else
-            vim.api.nvim_del_keymap('n', '<C-c>')
-        end
+
+    local process_input = function(key)
+        local trans = vim.fn.keytrans(key)
         if not timer_set then
             timer = vim.fn.timer_start(options.modifer_timeout, function()
                 timer = nil
@@ -104,16 +110,19 @@ local wait_input = function(mode)
             local new_char = funcs.get_sensitive_ls(trans)
             if new_char == "<c-c>" or new_char == '<Esc>' then
                 azul.cancel_modifier()
-                return
+                return ''
             end
             if new_char == '<cr>' then
                 try_select(collection, c)
-                return
+                return ''
             end
-            if new_char == '<c-s>' and c == '' then
-                azul.send_to_current('<c-s>', true)
-                azul.cancel_modifier()
-                return
+            if new_char == funcs.get_sensitive_ls(options.modifier) and c == '' then
+                -- azul.cancel_modifier()
+                -- vim.fn.timer_start(1, function()
+                --     azul.send_to_current('<C-s>', true)
+                -- end)
+                pass_modifier = true
+                return nil
             end
             before_c = c
             c = c .. new_char
@@ -125,11 +134,11 @@ local wait_input = function(mode)
         end
         if timer == nil then
             try_select(collection, c)
-            return
+            return ''
         end
         if #collection == 1 and funcs.get_sensitive_ls(collection[1].ls) == c then
             azul.run_map(collection[1])
-            return
+            return ''
         end
         if #collection == 0 then
             local result = try_select(vim.tbl_filter(function(x) return x.m == mode end, get_mappings_for_mode(mode)), before_c)
@@ -139,9 +148,15 @@ local wait_input = function(mode)
             else
                 azul.feedkeys(after, mode)
             end
-            return
+            return ''
         end
+
+        return ''
     end
+
+    ns_id = vim.on_key(function(_, key)
+        return process_input(key)
+    end)
 end
 
 local cheatsheet_content = function(mappings, height, full)
@@ -315,10 +330,6 @@ local create_window = function(mappings, full, position)
     return win_id
 end
 
-if not options.use_cheatsheet then
-    return
-end
-
 azul.on_action('show_mode_cheatsheet', function()
     close_window()
     if mode_win_id ~= nil then
@@ -334,6 +345,9 @@ azul.on_action('show_mode_cheatsheet', function()
 end)
 
 azul.persistent_on('ModeChanged', function(args)
+    if not options.use_cheatsheet then
+        return
+    end
     local new_mode = args[2]
     local mappings = get_mappings_for_mode(new_mode)
     close_window()
@@ -355,17 +369,20 @@ azul.persistent_on('ModeChanged', function(args)
     win_id = create_window(mappings, false)
 end)
 
-azul.persistent_on({'ModifierFinished', 'Error'}, function()
+azul.persistent_on({'CheatsheetHide', 'Error'}, function()
     close_window()
 end)
 
-azul.persistent_on('ModifierTrigger', function(args)
-    local mode = args[1]
-    win_id = create_window(get_mappings_for_mode(mode), true, 'bottom')
-    if options.blocking_cheatsheet then
-        vim.fn.timer_start(0, function()
-            wait_input(mode)
-        end)
+azul.persistent_on('CheatsheetShow', function(args)
+    if pass_modifier then
+        pass_modifier = false
+        azul.send_to_current(options.modifier, true)
+        azul.cancel_modifier()
         return
     end
+    local mode = args[1]
+    win_id = create_window(get_mappings_for_mode(mode), true, 'bottom')
+    vim.fn.timer_start(0, function()
+        wait_input(mode)
+    end)
 end)

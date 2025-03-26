@@ -235,17 +235,17 @@ require('lualine').setup {
     extensions = {}
 }
 
-mx.persistent_on('ModifierTrigger', function()
+mx.persistent_on({'ModifierTrigger', 'CheatsheetShow'}, function()
     is_modifier = true
     require('lualine').refresh()
 end)
 
-mx.persistent_on('ModifierFinished', function()
+mx.persistent_on({'ModifierFinished', 'CheatsheetHide'}, function()
     is_modifier = false
     require('lualine').refresh()
 end)
 
-mx.persistent_on({'ModeChanged', 'AboutToBeBlocked', 'TabTitleChanged'}, function()
+mx.persistent_on({'ModeChanged', 'TabTitleChanged'}, function()
     if is_disabled and mx.current_mode() ~= 'P' then
         require('lualine').setup({options = {theme = theme}})
         is_disabled = false

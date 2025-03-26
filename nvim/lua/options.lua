@@ -14,7 +14,6 @@ local M = {
     passthrough_escape = '<C-\\><C-s>',
     modifer_timeout = 500,
     use_cheatsheet = true,
-    blocking_cheatsheet = true,
     float_pane_title = ':term_title:',
     tab_title = 'Tab :tab_n:',
     use_dressing = true,

@@ -59,9 +59,6 @@ end
 azul.persistent_on('ModifierTrigger', function(args)
     local mode = args[1]
     local modifier = args[2]
-    if options.blocking_cheatsheet and options.use_cheatsheet then
-        return
-    end
     save_current_mappings(mode, modifier)
     M.remap_all(mode)
     set_cancel_shortcut('<esc>', mode)
@@ -71,9 +68,6 @@ end)
 azul.persistent_on('ModifierFinished', function(args)
     local mode = args[1]
     local modifier = args[2]
-    if options.blocking_cheatsheet and options.use_cheatsheet then
-        return
-    end
     M.unmap_all(mode)
     restore_previous_mappings(mode, modifier)
 end)

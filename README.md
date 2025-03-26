@@ -53,7 +53,7 @@ A nvim based terminal multiplexer.
 
 ### Requirements
 
-* `Neovim` >= 0.9
+* `Neovim` >= 0.11 (latest development build)
 
 You can install `azul` in several ways.
 
@@ -677,7 +677,7 @@ or the action directly, for the `emacs` workflow. For more info see the
   status line of the passed through session (default false)
 * **use_cheatsheet** If this is set to true, for `azul` and `tmux` workflows, a
   cheatsheet will be displayed after you click the modifier key (default
-  true). *Note*: to change this option, `azul` requires a restart.
+  true)
 * **modifer_timeout** The milliseconds to wait for a key sequence after the
   modifier has been clicked (for `azul` or `tmux` worklows and only if
   `use_cheatsheet` option is set to ``). In `azul` or `tmux` workflows, after

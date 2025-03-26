@@ -712,7 +712,7 @@ M.apply_config = function(_config)
     if files.exists(files.config_dir .. '/config.ini') then
         M.load_config(files.config_dir .. '/config.ini')
     end
-    require('azul').set_workflow(options.workflow, options.use_cheatsheet, options.modifier)
+    require('azul').set_workflow(options.workflow, options.modifier)
 
     local config = _config or M.default_config
     local wf = options.workflow

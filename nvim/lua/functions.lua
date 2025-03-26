@@ -163,10 +163,22 @@ local is_handling_remote = function()
     return os.getenv('AZUL_REMOTE_CONNECTION') ~= nil
 end
 
+local safe_close_window = function(win_id)
+    local safe, _ = pcall(function() vim.api.nvim_win_close(win_id, true) end)
+    return safe
+end
+
+local safe_buf_delete = function(buf_id)
+    local safe, _ = pcall(function() vim.api.nvim_buf_delete(buf_id, {force = true, unload = false}) end)
+    return safe
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
     remote_command = remote_command,
+    safe_close_window = safe_close_window,
+    safe_buf_delete = safe_buf_delete,
     get_sensitive_ls = get_sensitive_ls,
     find = find,
     uuid = uuid,

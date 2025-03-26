@@ -7,7 +7,6 @@ local options = require('options')
 local M = {}
 
 local is_suspended = false
-local is_modifier = false
 
 local updating_titles = true
 local azul_started = false
@@ -63,7 +62,6 @@ local events = {
     LayoutRestored = {},
     ModifierTrigger = {},
     ModifierFinished = {},
-    AboutToBeBlocked = {},
     WinConfigChanged = {},
     TabTitleChanged = {},
     AzulStarted = {},
@@ -73,6 +71,8 @@ local events = {
     ConfigReloaded = {},
     RemoteDisconnected = {},
     RemoteReconnected = {},
+    CheatsheetShow = {},
+    CheatsheetHide = {},
 }
 
 local persistent_events = {}
@@ -438,7 +438,6 @@ end
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'
 M.enter_mode = function(new_mode)
     local old_mode = mode
-    -- L.unmap_all(mode)
     if mode == 'P' then
         if options.hide_in_passthrough then
             vim.o.laststatus = global_last_status
@@ -766,6 +765,9 @@ M.show_floats = function(group)
         trigger_event('FloatsVisible')
     end)
     update_titles()
+    if M.current_mode() == 'n' and workflow == 'tmux' then
+        M.feedkeys('i', 'n')
+    end
 end
 
 local get_all_floats = function(group)
@@ -857,25 +859,6 @@ end
 
 M.remove_key_map = function(m, ls)
     mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls end, mode_mappings)
-end
-
-L.unmap_all = function(mode)
-    if ((workflow == 'azul' and mode == 't') or (workflow == 'tmux' and mode == 'n')) and options.use_cheatsheet then
-        return
-    end
-    local cmds = {}
-    local collection = vim.tbl_filter(function(x) return x.m == mode end, mode_mappings)
-    local pref = (workflow == 'azul' and mode == 't' and mod) or ''
-    for _, m in ipairs(collection) do
-        local cmd = m.real_mode .. 'unmap ' .. pref .. m.ls
-        if vim.tbl_contains(cmds, cmd) == false then
-            local result = pcall(function() vim.api.nvim_command(cmd) end)
-            if not result then
-                print(cmd .. " failed")
-            end
-            table.insert(cmds, cmd)
-        end
-    end
 end
 
 --- Sets a new keymap
@@ -1089,8 +1072,7 @@ M.redraw = function()
     end)
 end
 
-M.set_workflow = function(w, _use_cheatsheet, m)
-    local cheatsheet = (_use_cheatsheet == nil) or _use_cheatsheet
+M.set_workflow = function(w, m)
     mod = m or '<C-s>'
     workflow = w
     if workflow == 'azul' or workflow == 'tmux' then
@@ -1100,22 +1082,15 @@ M.set_workflow = function(w, _use_cheatsheet, m)
                     M.send_to_current(mod, true)
                     return
                 end
-                if is_modifier then
-                    M.send_to_current(mod, true)
-                    is_modifier = false
-                    trigger_event('ModifierFinished', {get_modifier_mode(), mod})
-                    return
-                end
                 if mode == 'P' then
                     M.send_to_current(mod, true)
                     return
                 end
-                if workflow == 'tmux' then
+                if workflow == 'tmux' and M.current_mode() ~= 'n' then
                     M.enter_mode('n')
                     M.feedkeys('<C-\\><C-n>', 't')
                 end
-                trigger_event('ModifierTrigger', {get_modifier_mode(), mod})
-                is_modifier = true
+                trigger_event((options.use_cheatsheet and 'CheatsheetShow') or 'ModifierTrigger', {get_modifier_mode(), mod})
             end,
             desc = '',
         })
@@ -1479,7 +1454,7 @@ local snapshot = function(buf)
 end
 
 local snapshot_equals = function(new_lines, existing_lines)
-    local i = 1;
+    local i = 1
     while i <= #new_lines do
         if new_lines[i] ~= existing_lines[i] then
             return false
@@ -1615,11 +1590,6 @@ end
 
 M.get_mode_mappings = function()
     return mode_mappings
-end
-
-M.block_input = function()
-    trigger_event('AboutToBeBlocked')
-    return vim.fn.keytrans(vim.fn.getcharstr())
 end
 
 M.user_input = function(opts, callback, force)
@@ -1795,8 +1765,7 @@ end
 
 M.run_map = function(m)
     if M.is_modifier_mode(m.m) then
-        trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
-        is_modifier = false
+        trigger_event((options.use_cheatsheet and 'CheatsheetHide') or 'ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
     end
     if m.options.callback ~= nil then
         m.options.callback()
@@ -1809,11 +1778,7 @@ M.run_map = function(m)
 end
 
 M.cancel_modifier = function()
-    if not is_modifier then
-        return
-    end
-    trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
-    is_modifier = false
+    trigger_event((options.use_cheatsheet and 'CheatsheetHide') or 'ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
 end
 
 M.is_modifier_mode = function(m)
@@ -1978,13 +1943,6 @@ M.persistent_on('AzulStarted', function()
         updating_titles = false
         update_titles()
     end)
-end)
-
-M.persistent_on('ModeChanged', function(args)
-    local old_mode = args[1]
-    if M.is_modifier_mode(old_mode) and is_modifier then
-        M.cancel_modifier()
-    end
 end)
 
 M.persistent_on('PaneChanged', function(args)
