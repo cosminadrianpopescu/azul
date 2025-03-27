@@ -7,6 +7,7 @@ local options = require('options')
 local M = {}
 
 local is_suspended = false
+local is_modifier = false
 
 local updating_titles = true
 local azul_started = false
@@ -121,8 +122,8 @@ local do_exit = function()
     trigger_event('ExitAzul')
 end
 
-local start_insert = function()
-    if options.workflow == 'tmux' and mode ~= 'n' and mode ~= 'T' and mode ~= 'P' and mode ~= nil then
+local start_insert = function(force)
+    if options.workflow == 'tmux' and not force then
         return
     end
     vim.api.nvim_command('startinsert')
@@ -362,7 +363,7 @@ M.open = function(start_edit, buf, callback)
     if type(start_edit) == 'boolean' and start_edit == false then
         return
     end
-    start_insert()
+    start_insert(true)
 end
 
 local OnTermClose = function(ev)
@@ -450,7 +451,7 @@ M.enter_mode = function(new_mode)
     if mode == 'P' then
         vim.fn.timer_start(1, function()
             if workflow == 'tmux' then
-                start_insert()
+                start_insert(true)
             end
             if options.hide_in_passthrough then
                 global_last_status = vim.o.laststatus
@@ -519,9 +520,17 @@ local get_default_placeholders = function(t)
     }
 end
 
-local update_titles = function()
+local update_titles = function(callback)
     if updating_titles or not azul_started then
         return
+    end
+
+    local finished = function()
+        updating_titles = false
+        start_insert()
+        if callback ~= nil then
+            callback()
+        end
     end
     updating_titles = true
     local floats = get_visible_floatings()
@@ -545,8 +554,7 @@ local update_titles = function()
             function(title, placeholders)
                 titles_updated = titles_updated + 1
                 if titles_updated >= titles_to_update then
-                    updating_titles = false
-                    start_insert()
+                    finished()
                 end
                 local trigger = false
                 if funcs.safe_get_tab_var(t, 'azul_tab_title') ~= title then
@@ -574,8 +582,7 @@ local update_titles = function()
             function(title, placeholders)
                 titles_updated = titles_updated + 1
                 if titles_updated >= titles_to_update then
-                    updating_titles = false
-                    start_insert()
+                    finished()
                 end
                 local trigger = false
                 if f.win_config.title ~= title then
@@ -605,7 +612,9 @@ M.hide_floats = function()
     if #floats > 0 then
         trigger_event('FloatClosed')
     end
-    vim.fn.timer_start(1, update_titles)
+    vim.fn.timer_start(1, function()
+        update_titles()
+    end)
 end
 
 cmd({"VimLeave", "QuitPre"},{
@@ -615,7 +624,9 @@ cmd({"VimLeave", "QuitPre"},{
 
 cmd({'TabNew', 'TermClose', 'TabEnter'}, {
     pattern= '*', callback = function()
-        vim.fn.timer_start(1, update_titles)
+        vim.fn.timer_start(1, function()
+            update_titles()
+        end)
     end
 })
 
@@ -664,13 +675,13 @@ cmd('TermEnter', {
     pattern = "*", callback = OnEnter
 })
 
-cmd({'FileType'}, {
+cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function()
         if vim.o.filetype ~= 'DressingInput' or vim.fn.mode() == 'i' then
             return
         end
         vim.fn.timer_start(100, function()
-            start_insert()
+            start_insert(true)
         end)
     end
 })
@@ -728,6 +739,9 @@ cmd({'ModeChanged'}, {
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
         if to ~= from and mode ~= 'P' then
+            if is_modifier and to ~= get_modifier_mode() then
+                M.cancel_modifier()
+            end
             M.enter_mode(to)
         end
     end
@@ -765,9 +779,6 @@ M.show_floats = function(group)
         trigger_event('FloatsVisible')
     end)
     update_titles()
-    if M.current_mode() == 'n' and workflow == 'tmux' then
-        M.feedkeys('i', 'n')
-    end
 end
 
 local get_all_floats = function(group)
@@ -953,7 +964,9 @@ M.select_next_pane = function(dir, group)
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('wincmd ' .. which)
-            vim.fn.timer_start(1, update_titles)
+            vim.fn.timer_start(1, function()
+                update_titles()
+            end)
         end)
         return
     end
@@ -989,7 +1002,9 @@ M.select_next_pane = function(dir, group)
 
     vim.fn.timer_start(1, function()
         M.select_pane(_buf(found))
-        vim.fn.timer_start(1, update_titles)
+        vim.fn.timer_start(1, function()
+            update_titles()
+        end)
     end)
 end
 
@@ -1039,7 +1054,9 @@ M.split = function(dir)
 
     vim.api.nvim_command(cmd)
     M.open(false)
-    vim.fn.timer_start(1, update_titles)
+    vim.fn.timer_start(1, function()
+        update_titles()
+    end)
     vim.o.splitright = splitright
     vim.o.splitbelow = splitbelow
 end
@@ -1090,7 +1107,13 @@ M.set_workflow = function(w, m)
                     M.enter_mode('n')
                     M.feedkeys('<C-\\><C-n>', 't')
                 end
+                if is_modifier then
+                    M.cancel_modifier()
+                    M.send_to_current(mod, true)
+                    return
+                end
                 trigger_event((options.use_cheatsheet and 'CheatsheetShow') or 'ModifierTrigger', {get_modifier_mode(), mod})
+                is_modifier = true
             end,
             desc = '',
         })
@@ -1256,7 +1279,9 @@ L.restore_remotes = function()
     updating_titles = false
     update_titles()
     trigger_event("LayoutRestored")
-    vim.fn.timer_start(100, start_insert)
+    vim.fn.timer_start(100, function()
+        start_insert(true)
+    end)
 end
 
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
@@ -1596,11 +1621,12 @@ M.user_input = function(opts, callback, force)
     M.suspend()
     vim.fn.timer_start(1, function()
         M.resume()
-        start_insert()
+        start_insert(true)
     end)
     vim.ui.input(opts, function(input)
         if (input ~= nil and input ~= '') or force then
             callback(input)
+            start_insert(true)
         end
     end)
 end
@@ -1732,7 +1758,7 @@ M.edit = function(t, file, on_finish)
     }
     vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
     M.resume()
-    start_insert()
+    start_insert(true)
 end
 
 M.edit_scrollback = function(t)
@@ -1765,7 +1791,7 @@ end
 
 M.run_map = function(m)
     if M.is_modifier_mode(m.m) then
-        trigger_event((options.use_cheatsheet and 'CheatsheetHide') or 'ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
+        M.cancel_modifier()
     end
     if m.options.callback ~= nil then
         m.options.callback()
@@ -1779,6 +1805,7 @@ end
 
 M.cancel_modifier = function()
     trigger_event((options.use_cheatsheet and 'CheatsheetHide') or 'ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
+    is_modifier = false
 end
 
 M.is_modifier_mode = function(m)
@@ -1833,12 +1860,16 @@ end
 
 M.create_tab = function()
     M.open()
-    vim.fn.timer_start(1, start_insert)
+    vim.fn.timer_start(1, function()
+        start_insert(true)
+    end)
 end
 
 M.create_tab_remote = function()
     M.open_remote()
-    vim.fn.timer_start(1, start_insert)
+    vim.fn.timer_start(1, function()
+        start_insert(true)
+    end)
 end
 
 M.on_action = function(action, callback)

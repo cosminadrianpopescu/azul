@@ -64,3 +64,6 @@ f('p', 'h', '', {
 
 * option use_default_statusbar
 * option to automatically start logging
+
+* cheatsheet test case
+* mappings.lua need to trea the case of <C-s><C-s> by itself

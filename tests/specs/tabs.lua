@@ -39,6 +39,9 @@ vim.fn.timer_start(TIMEOUT, function()
                 local term = azul.get_current_terminal()
                 t.single_shot('PaneChanged', function()
                     assert_ls(false)
+                    if options.workflow == 'tmux' and azul.current_mode() == 'n' then
+                        azul.feedkeys('i', 'n')
+                    end
                     s = t.action_shortcut('create_tab')
                     vim.fn.timer_start(TIMEOUT, function()
                         t.simulate_keys(s, {PaneChanged = 1}, function()

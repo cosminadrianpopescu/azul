@@ -1,15 +1,14 @@
 import { writeFileSync } from "fs";
 import { test, test_single } from "./test";
 
-function test_workflow_factory(test_case: string, wf: string, other_options?: string, which = test) {
+function test_factory(test_case: string, options: {[key: string]: string | number} = {}, which = test) {
     which(test_case, (base_path: string) => {
-        console.log(`test ${wf} workflow`)
         const config = `
 [Options]
 
-workflow = ${wf}
-${other_options || ''}
+${Object.keys(options).map(k => `${k} = ${options[k]}`).join("\n")}
     `;
+        console.log(config)
         writeFileSync(`${base_path}/config/config.ini`, config);
         return {};
     });
@@ -17,42 +16,53 @@ ${other_options || ''}
 
 test('test-started');
 test('floats');
-test_workflow_factory('floats', 'tmux');
-test_workflow_factory('floats', 'zellij');
-test_workflow_factory('floats', 'emacs');
+test_factory('floats', {workflow: 'tmux'});
+test_factory('floats', {workflow: 'zellij'});
+test_factory('floats', {workflow: 'emacs'});
+test_factory('floats', {workflow: 'azul', use_cheatsheet: 'false'});
+test_factory('floats', {workflow: 'tmux', use_cheatsheet: 'false'});
+test_factory('floats', {workflow: 'zellij', use_cheatsheet: 'false'});
 test('splits');
-test_workflow_factory('splits', 'tmux');
-test_workflow_factory('splits', 'zellij');
-test_workflow_factory('splits', 'emacs');
+test_factory('splits', {workflow: 'tmux'});
+test_factory('splits', {workflow: 'zellij'});
+test_factory('splits', {workflow: 'emacs'});
+test_factory('splits', {workflow: 'azul', use_cheatsheet: 'false'});
+test_factory('splits', {workflow: 'tmux', use_cheatsheet: 'false'});
+test_factory('splits', {workflow: 'zellij', use_cheatsheet: 'false'});
 test('modes');
-test_workflow_factory('modes', 'tmux');
-test_workflow_factory('modes', 'zellij');
+test_factory('modes', {workflow: 'tmux'});
+test_factory('modes', {workflow: 'zellij'});
+test_factory('modes', {workflow: 'azul', use_cheatsheet: 'false'});
+test_factory('modes', {workflow: 'tmux', use_cheatsheet: 'false'});
+test_factory('modes', {workflow: 'zellij', use_cheatsheet: 'false'});
 test('tabs');
-test_workflow_factory('tabs', 'tmux');
-test_workflow_factory('tabs', 'zellij');
-test_workflow_factory('tabs', 'emacs');
-const tab_title_option = "tab_title = :tab_n: :tab_name::is_current:\n";
-test('custom-tab-titles', (base_path: string) => {
-    const config = `
-[Options]
-
-${tab_title_option}
-`;
-    writeFileSync(`${base_path}/config/config.ini`, config);
-    return {};
-});
-test_workflow_factory('custom-tab-titles', 'tmux', tab_title_option);
-test_workflow_factory('custom-tab-titles', 'zellij', tab_title_option);
-test_workflow_factory('custom-tab-titles', 'emacs', tab_title_option);
+test_factory('tabs', {workflow: 'tmux'});
+test_factory('tabs', {workflow: 'zellij'});
+test_factory('tabs', {workflow: 'emacs'});
+test_factory('tabs', {workflow: 'azul', use_cheatsheet: 'false'});
+test_factory('tabs', {workflow: 'tmux', use_cheatsheet: 'false'});
+test_factory('tabs', {workflow: 'zellij', use_cheatsheet: 'false'});
+const tab_title = ':tab_n: :tab_name::is_current:';
+test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title})
+test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title});
+test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title});
+test_factory('custom-tab-titles', {workflow: 'emacs', tab_title: tab_title});
+test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_cheatsheet: 'false'});
+test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_cheatsheet: 'false'});
+test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_cheatsheet: 'false'});
 test('custom-titles');
 test('reload-config');
-test_workflow_factory('reload-config', 'tmux');
+test_factory('reload-config', {workflow: 'tmux'});
 test('remotes', (base_path: string) => {
     return {
         AZUL_REMOTE_CONNECTION: `azul://${base_path}/bin/azul`,
     }
 });
 test('layout');
-test_workflow_factory('layout', 'tmux');
-test_workflow_factory('layout', 'zellij');
-test_workflow_factory('layout', 'emacs');
+test_factory('layout', {workflow: 'tmux'});
+test_factory('layout', {workflow: 'zellij'});
+test_factory('layout', {workflow: 'emacs'});
+test_factory('layout', {workflow: 'azul', use_cheatsheet: 'false'});
+test_factory('layout', {workflow: 'tmux', use_cheatsheet: 'false'});
+test_factory('layout', {workflow: 'zellij', use_cheatsheet: 'false'});
+test_factory('layout', {workflow: 'emacs', use_cheatsheet: 'false'});
