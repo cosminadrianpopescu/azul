@@ -8,6 +8,7 @@ local M = {}
 
 local is_suspended = false
 local is_modifier = false
+local is_dressing = false
 
 local updating_titles = true
 local azul_started = false
@@ -72,8 +73,6 @@ local events = {
     ConfigReloaded = {},
     RemoteDisconnected = {},
     RemoteReconnected = {},
-    CheatsheetShow = {},
-    CheatsheetHide = {},
 }
 
 local persistent_events = {}
@@ -104,6 +103,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -677,12 +677,10 @@ cmd('TermEnter', {
 
 cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function()
-        if vim.o.filetype ~= 'DressingInput' or vim.fn.mode() == 'i' then
-            return
-        end
-        vim.fn.timer_start(100, function()
-            start_insert(true)
-        end)
+        is_dressing = vim.o.filetype == 'DressingInput'
+        -- vim.fn.timer_start(100, function()
+        --     start_insert(true)
+        -- end)
     end
 })
 
@@ -742,7 +740,13 @@ cmd({'ModeChanged'}, {
             if is_modifier and to ~= get_modifier_mode() then
                 M.cancel_modifier()
             end
-            M.enter_mode(to)
+            if is_dressing and to == 'n' then
+                vim.fn.timer_start(1, function()
+                    start_insert(true)
+                end)
+            else
+                M.enter_mode(to)
+            end
         end
     end
 })
@@ -1112,7 +1116,7 @@ M.set_workflow = function(w, m)
                     M.send_to_current(mod, true)
                     return
                 end
-                trigger_event((options.use_cheatsheet and 'CheatsheetShow') or 'ModifierTrigger', {get_modifier_mode(), mod})
+                trigger_event('ModifierTrigger', {get_modifier_mode(), mod})
                 is_modifier = true
             end,
             desc = '',
@@ -1804,7 +1808,7 @@ M.run_map = function(m)
 end
 
 M.cancel_modifier = function()
-    trigger_event((options.use_cheatsheet and 'CheatsheetHide') or 'ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
+    trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
     is_modifier = false
 end
 

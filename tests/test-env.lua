@@ -280,7 +280,7 @@ return {
             do_exec = true
         end)
         L.simulate_keys(extract_chars(what), 1, function()
-            if (events == nil and after ~= nil) or (after ~= nil and do_exec) then
+            if (events == nil and after ~= nil) or (after ~= nil and (do_exec or #events == 0)) then
                 after()
             end
         end)

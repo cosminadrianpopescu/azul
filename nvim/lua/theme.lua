@@ -9,7 +9,7 @@ if options.use_dressing then
     local opts = {
         enabled = true,
         title_pos = 'center',
-        start_mode = 'normal',
+        start_mode = 'insert',
         relative = 'editor',
         border = "double",
     }
@@ -235,12 +235,12 @@ require('lualine').setup {
     extensions = {}
 }
 
-mx.persistent_on({'ModifierTrigger', 'CheatsheetShow'}, function()
+mx.persistent_on({'ModifierTrigger'}, function()
     is_modifier = true
     require('lualine').refresh()
 end)
 
-mx.persistent_on({'ModifierFinished', 'CheatsheetHide'}, function()
+mx.persistent_on({'ModifierFinished'}, function()
     is_modifier = false
     require('lualine').refresh()
 end)

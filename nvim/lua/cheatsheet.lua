@@ -331,6 +331,9 @@ local create_window = function(mappings, full, position)
 end
 
 azul.on_action('show_mode_cheatsheet', function()
+    if not options.use_cheatsheet then
+        return
+    end
     close_window()
     if mode_win_id ~= nil then
         close_mode_window()
@@ -369,20 +372,17 @@ azul.persistent_on('ModeChanged', function(args)
     win_id = create_window(mappings, false)
 end)
 
-azul.persistent_on({'CheatsheetHide', 'Error'}, function()
+azul.persistent_on({'ModifierFinished', 'Error'}, function()
+    if not options.use_cheatsheet then
+        return
+    end
     close_window()
 end)
 
-azul.persistent_on('CheatsheetShow', function(args)
-    if pass_modifier then
-        pass_modifier = false
-        azul.send_to_current(options.modifier, true)
-        azul.cancel_modifier()
+azul.persistent_on('ModifierTrigger', function(args)
+    if not options.use_cheatsheet then
         return
     end
     local mode = args[1]
     win_id = create_window(get_mappings_for_mode(mode), true, 'bottom')
-    vim.fn.timer_start(0, function()
-        wait_input(mode)
-    end)
 end)
