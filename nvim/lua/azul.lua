@@ -103,7 +103,6 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -1148,7 +1147,10 @@ end
 --- Disconnects the current session.
 M.disconnect = function()
     for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
-        vim.fn.chanclose(ui.chan)
+        start_insert(true)
+        vim.fn.timer_start(1, function()
+            vim.fn.chanclose(ui.chan)
+        end)
     end
 end
 
