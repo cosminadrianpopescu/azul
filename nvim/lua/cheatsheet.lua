@@ -6,10 +6,7 @@ local win_id = nil
 local win_buffer = nil
 local ns_id = nil
 local mode_win_id = nil
-local timer = nil
-local timer_set = false
 local position_timer = nil
-local pass_modifier = false
 
 vim.api.nvim_command('highlight AzulCheatsheetArrow guifg=#565f89')
 
@@ -35,9 +32,6 @@ local close_window = function()
         end
     end
     win_buffer = nil
-    if timer ~= nil then
-        vim.fn.timer_stop(timer)
-    end
 
     if ns_id ~= nil then
         local safe, _ = pcall(function() vim.on_key(nil, ns_id) end)
@@ -53,22 +47,6 @@ local close_mode_window = function()
         funcs.safe_close_window(mode_win_id)
     end
     mode_win_id = nil
-end
-
-local try_select = function(collection, c)
-    local map = funcs.find(function(x) return funcs.get_sensitive_ls(x.ls) == funcs.get_sensitive_ls(c) end, collection)
-    if map == nil then
-        if azul.get_current_workflow() == 'tmux' then
-            azul.feedkeys(c, 'n')
-        else
-            azul.send_to_current('<C-s>' .. c, true)
-        end
-        azul.cancel_modifier()
-        return false
-    else
-        azul.run_map(map)
-        return true
-    end
 end
 
 local get_mappings_for_mode = function(mode)
@@ -89,74 +67,6 @@ local get_mappings_for_mode = function(mode)
         return false
     end)
     return result
-end
-
-local wait_input = function(mode)
-    local collection = get_mappings_for_mode(mode)
-    local c = ''
-    local before_c = ''
-    timer_set = false
-
-    local process_input = function(key)
-        local trans = vim.fn.keytrans(key)
-        if not timer_set then
-            timer = vim.fn.timer_start(options.modifer_timeout, function()
-                timer = nil
-                azul.feedkeys("<esc>", mode)
-            end)
-            timer_set = true
-        end
-        if timer ~= nil then
-            local new_char = funcs.get_sensitive_ls(trans)
-            if new_char == "<c-c>" or new_char == '<Esc>' then
-                azul.cancel_modifier()
-                return ''
-            end
-            if new_char == '<cr>' then
-                try_select(collection, c)
-                return ''
-            end
-            if new_char == funcs.get_sensitive_ls(options.modifier) and c == '' then
-                -- azul.cancel_modifier()
-                -- vim.fn.timer_start(1, function()
-                --     azul.send_to_current('<C-s>', true)
-                -- end)
-                pass_modifier = true
-                return nil
-            end
-            before_c = c
-            c = c .. new_char
-            collection = vim.tbl_filter(function(x)
-                local s = funcs.get_sensitive_ls(x.ls)
-                return string.sub(s, 1, string.len(c)) == c
-            end, collection)
-            -- collection = vim.tbl_filter(function(x) return funcs.get_sensitive_ls(x.ls):match("^" .. c) end, collection)
-        end
-        if timer == nil then
-            try_select(collection, c)
-            return ''
-        end
-        if #collection == 1 and funcs.get_sensitive_ls(collection[1].ls) == c then
-            azul.run_map(collection[1])
-            return ''
-        end
-        if #collection == 0 then
-            local result = try_select(vim.tbl_filter(function(x) return x.m == mode end, get_mappings_for_mode(mode)), before_c)
-            local after = c:gsub("^" .. before_c, "")
-            if not result and azul.get_current_workflow() ~= 'tmux' then
-                azul.send_to_current(after, true)
-            else
-                azul.feedkeys(after, mode)
-            end
-            return ''
-        end
-
-        return ''
-    end
-
-    ns_id = vim.on_key(function(_, key)
-        return process_input(key)
-    end)
 end
 
 local cheatsheet_content = function(mappings, height, full)
@@ -352,6 +262,10 @@ azul.persistent_on('ModeChanged', function(args)
         return
     end
     local new_mode = args[2]
+    if new_mode == 'M' then
+        win_id = create_window(get_mappings_for_mode(new_mode), true, 'bottom')
+        return
+    end
     local mappings = get_mappings_for_mode(new_mode)
     close_window()
     if azul.is_modifier_mode(new_mode) or #mappings == 0 or new_mode == 't' then
@@ -370,19 +284,4 @@ azul.persistent_on('ModeChanged', function(args)
         table.insert(mappings, (#maps > 0 and maps[1]) or "etc.")
     end
     win_id = create_window(mappings, false)
-end)
-
-azul.persistent_on({'ModifierFinished', 'Error'}, function()
-    if not options.use_cheatsheet then
-        return
-    end
-    close_window()
-end)
-
-azul.persistent_on('ModifierTrigger', function(args)
-    if not options.use_cheatsheet then
-        return
-    end
-    local mode = args[1]
-    win_id = create_window(get_mappings_for_mode(mode), true, 'bottom')
 end)

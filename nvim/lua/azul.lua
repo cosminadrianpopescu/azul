@@ -7,7 +7,6 @@ local options = require('options')
 local M = {}
 
 local is_suspended = false
-local is_modifier = false
 local is_dressing = false
 
 local updating_titles = true
@@ -15,6 +14,7 @@ local azul_started = false
 local last_access = 0
 local remote_command = nil
 local to_save_remote_command = nil
+local mode_before_modifier = nil
 
 --- @class terminals
 --- @field is_current boolean If true, it means that this is the current terminal
@@ -103,6 +103,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -435,8 +436,9 @@ local recall_passthrough = function()
 end
 
 --- Enters a custom mode. Use this function for changing custom modes
----@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'
+---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'
 M.enter_mode = function(new_mode)
+    funcs.log("ENTER MODE " .. vim.inspect(new_mode))
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then
@@ -525,6 +527,7 @@ local update_titles = function(callback)
     end
 
     local finished = function()
+        funcs.log("FINISHED PARSING TITLES")
         updating_titles = false
         start_insert()
         if callback ~= nil then
@@ -736,7 +739,7 @@ cmd({'ModeChanged'}, {
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
         if to ~= from and mode ~= 'P' then
-            if is_modifier and to ~= get_modifier_mode() then
+            if M.current_mode() == 'M' and to ~= get_modifier_mode() then
                 M.cancel_modifier()
             end
             if is_dressing and to == 'n' then
@@ -744,6 +747,7 @@ cmd({'ModeChanged'}, {
                     start_insert(true)
                 end)
             else
+                funcs.log("MODE CHANGED IN VIM TO " .. vim.inspect(to))
                 M.enter_mode(to)
             end
         end
@@ -1110,13 +1114,14 @@ M.set_workflow = function(w, m)
                     M.enter_mode('n')
                     M.feedkeys('<C-\\><C-n>', 't')
                 end
-                if is_modifier then
+                if M.current_mode() == 'M' then
                     M.cancel_modifier()
                     M.send_to_current(mod, true)
                     return
                 end
-                trigger_event('ModifierTrigger', {get_modifier_mode(), mod})
-                is_modifier = true
+                vim.fn.timer_start(1, function()
+                    M.enter_mode('M')
+                end)
             end,
             desc = '',
         })
@@ -1810,8 +1815,8 @@ M.run_map = function(m)
 end
 
 M.cancel_modifier = function()
-    trigger_event('ModifierFinished', {get_modifier_mode(), M.get_current_modifier()})
-    is_modifier = false
+    M.enter_mode(mode_before_modifier or 't')
+    mode_before_modifier = nil
 end
 
 M.is_modifier_mode = function(m)
@@ -1991,6 +1996,15 @@ M.persistent_on('PaneChanged', function(args)
     end
 
     set_current_panel(t.tab_id)
+end)
+
+M.persistent_on('ModeChanged', function(args)
+    local old_mode = args[1]
+    local new_mode = args[2]
+
+    if new_mode == 'M' then
+        mode_before_modifier = old_mode
+    end
 end)
 
 return M

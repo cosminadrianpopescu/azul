@@ -58,12 +58,16 @@ local actions = {
 
 local modes = {
     terminal = 't', azul = 'n', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v', passthrough = 'P',
+    modifier = 'M',
 }
 
 M.default_config = {
     shortcuts = {
         azul = {
             terminal = {
+                paste = '<C-v>',
+            },
+            modifier = {
                 select_terminal = 'St',
                 select_session = 'Ss',
                 passthrough = 'N',
@@ -92,8 +96,8 @@ M.default_config = {
                 },
                 create_float = 'f',
                 disconnect = 'd',
-                paste = 'pp$$$<C-v>',
                 remote_scroll = '[',
+                paste = 'pp',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -149,7 +153,7 @@ M.default_config = {
             terminal = {
                 paste = '<C-v>',
             },
-            azul = {
+            modifier = {
                 select_terminal = 'St',
                 select_session = 'Ss',
                 passthrough = 'N',
@@ -178,6 +182,7 @@ M.default_config = {
                 create_float = 'f',
                 disconnect = 'd',
                 remote_scroll = '[',
+                paste = 'pp',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},

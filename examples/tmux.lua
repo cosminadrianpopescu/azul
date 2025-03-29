@@ -19,7 +19,7 @@ cmd('TermClose', {
     end
 })
 
-map('n', 'c', '', {
+map('M', 'c', '', {
     callback = function()
         azul.open()
         vim.fn.timer_start(1, function()
@@ -40,7 +40,7 @@ local set_mode_escape = function(shortcut)
 end
 
 local tab_shortcut = function(n)
-    map('n', n .. '', '', {
+    map('M', n .. '', '', {
         callback = function()
             local hidden = azul.are_floats_hidden(float_group())
             if not hidden then
@@ -59,7 +59,7 @@ for i = 1,9,1 do
     tab_shortcut(i)
 end
 
-map('n', 'w', '', {
+map('M', 'w', '', {
     callback = function()
         azul.toggle_floats(float_group())
         vim.fn.timer_start(1, function()
@@ -69,14 +69,14 @@ map('n', 'w', '', {
 })
 
 local enter_mode_mapping = function(mode)
-    map('n', mode, '', {
+    map('M', mode, '', {
         callback = function()
             azul.enter_mode(mode)
         end
     })
 end
 
-map('n', 'f', '', {
+map('M', 'f', '', {
     callback = function()
         azul.open_float(float_group())
         vim.fn.timer_start(1, function()
@@ -97,7 +97,7 @@ set_mode_escape('<esc>')
 local options = {noremap = true}
 map('c', '<C-n>', '<Down>', options)
 map('c', '<C-p>', '<Up>', options)
-map('n', 'd', '', {
+map('M', 'd', '', {
     callback = azul.disconnect,
 })
 
@@ -151,7 +151,7 @@ local set_resize_shortcuts = function(key, which)
 end
 
 local set_position_shortcut = function(key, where)
-    map('n', key, '', {
+    map('m', key, '', {
         callback = function()
             azul.position_current_float(where)
         end
@@ -199,7 +199,7 @@ set_resize_shortcuts('j', 'res +5')
 set_resize_shortcuts('k', 'res -5')
 set_resize_shortcuts('l', 'vert res +5')
 
-map('n', '<space>P', '', {
+map('M', '<space>P', '', {
     callback = function()
         u.paste_from_clipboard()
         vim.fn.timer_start(1, function()
@@ -208,7 +208,7 @@ map('n', '<space>P', '', {
     end,
 })
 
-map('n', '<space>p', '', {
+map('M', '<space>p', '', {
     callback = function()
         u.paste()
         vim.fn.timer_start(1, function()
@@ -218,7 +218,7 @@ map('n', '<space>p', '', {
 })
 
 map('n', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
-map('n', 'N', '', {
+map('M', 'N', '', {
     callback = azul.toggle_nested_mode
 })
 

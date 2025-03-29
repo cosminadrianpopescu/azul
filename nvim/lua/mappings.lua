@@ -8,8 +8,10 @@ local timer = nil
 local ns_id = nil
 
 local cancel = function()
+    funcs.log("CANCEL TIMER")
     if timer ~= nil then
         vim.fn.timer_stop(timer)
+        timer = nil
     end
 
     if ns_id ~= nil then
@@ -17,8 +19,8 @@ local cancel = function()
         if not safe then
             print("There was an error closing the cheatsheet window")
         end
+        ns_id = nil
     end
-    ns_id = nil
 end
 
 local get_mappings_for_mode = function(mode)
@@ -96,6 +98,7 @@ local key_handler = function(mode)
     timer_set = false
 
     local process_input = function(key)
+        funcs.log("PROCESSING " .. vim.inspect(key))
         local trans = vim.fn.keytrans(key)
         if not timer_set then
             timer = vim.fn.timer_start(options.modifer_timeout, function()
@@ -158,6 +161,7 @@ local key_handler = function(mode)
         return ''
     end
 
+    funcs.log("SET PROCESSING")
     ns_id = vim.on_key(function(_, key)
         return process_input(key)
     end)
@@ -170,16 +174,18 @@ azul.persistent_on('ModifierTrigger', function(args)
     end)
 end)
 
-azul.persistent_on('ModifierFinished', function()
-    if ns_id == nil then
-        return
-    end
-    cancel()
-end)
-
 azul.persistent_on('ModeChanged', function(args)
     local old_mode = args[1]
     local new_mode = args[2]
+
+    if new_mode == 'M' then
+        vim.fn.timer_start(0, function()
+            key_handler(new_mode)
+        end)
+        return
+    end
+
+    cancel()
 
     if not azul.is_modifier_mode(old_mode) then
         M.unmap_all(old_mode)

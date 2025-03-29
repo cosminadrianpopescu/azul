@@ -10,7 +10,7 @@ local float_group = function()
 end
 
 local t = function(key, callback, what)
-    map('t', key, '', {
+    map('M', key, '', {
         callback = function()
             local opts = require('telescope.themes').get_ivy({})
             callback(opts)
@@ -19,7 +19,7 @@ local t = function(key, callback, what)
     })
 end
 
-map('t', 'c', '', {
+map('M', 'c', '', {
     callback = function()
         azul.open()
     end,
@@ -38,7 +38,7 @@ local set_mode_escape = function(shortcut)
 end
 
 local tab_shortcut = function(n)
-    map('t', n, '', {
+    map('M', n, '', {
         callback = function()
             local hidden = azul.are_floats_hidden(float_group())
             if not hidden then
@@ -57,7 +57,7 @@ for i = 1,9,1 do
     tab_shortcut(i)
 end
 
-map('t', 'w', '', {
+map('M', 'w', '', {
     callback = function()
         azul.toggle_floats(float_group())
     end,
@@ -72,7 +72,7 @@ local enter_mode_mapping = function(mode)
         s = 'split',
         T = 'tabs',
     }
-    map('t', mode, '', {
+    map('M', mode, '', {
         callback = function()
             azul.enter_mode(mode)
         end,
@@ -80,7 +80,7 @@ local enter_mode_mapping = function(mode)
     })
 end
 
-map('t', 'f', '', {
+map('M', 'f', '', {
     callback = function()
         azul.open_float(float_group())
     end,
@@ -99,7 +99,7 @@ set_mode_escape('<esc>')
 local options = {noremap = true}
 map('c', '<C-n>', '<Down>', options)
 map('c', '<C-p>', '<Up>', options)
-map('t', 'd', '', {
+map('M', 'd', '', {
     callback = azul.disconnect,
     desc = "Disconnect",
 })
@@ -202,14 +202,14 @@ set_resize_shortcuts('j', 'res +5')
 set_resize_shortcuts('k', 'res -5')
 set_resize_shortcuts('l', 'vert res +5')
 
-map('t', 'P', '', {
+map('M', 'P', '', {
     callback = function()
         u.paste_from_clipboard()
     end,
     desc = "Paste",
 })
 
-map('t', 'pp', '', {
+map('M', 'pp', '', {
     callback = function()
         u.paste()
     end,
@@ -217,7 +217,7 @@ map('t', 'pp', '', {
 })
 
 map2('t', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
-map('t', 'N', '', {
+map('M', 'N', '', {
     callback = azul.toggle_nested_mode,
     desc = 'Toggle nested session'
 })

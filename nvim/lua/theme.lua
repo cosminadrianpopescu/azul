@@ -1,5 +1,6 @@
 local mx = require('azul')
 local options = require('options')
+local funcs = require('functions')
 
 local dressing_opts = {
     input = {enabled = false},
@@ -82,6 +83,10 @@ local MOD_MAP = {
     P = {
         text = 'PASSTHROUGH',
         color = colors.inactive.a.bg,
+    },
+    M = {
+        text = ' MODIFIER  ',
+        color = colors.inactive.b.bg,
     },
 }
 
@@ -235,17 +240,8 @@ require('lualine').setup {
     extensions = {}
 }
 
-mx.persistent_on({'ModifierTrigger'}, function()
-    is_modifier = true
-    require('lualine').refresh()
-end)
-
-mx.persistent_on({'ModifierFinished'}, function()
-    is_modifier = false
-    require('lualine').refresh()
-end)
-
-mx.persistent_on({'ModeChanged', 'TabTitleChanged'}, function()
+mx.persistent_on({'ModeChanged', 'TabTitleChanged'}, function(args)
+    is_modifier = args[2] == 'M'
     if is_disabled and mx.current_mode() ~= 'P' then
         require('lualine').setup({options = {theme = theme}})
         is_disabled = false
