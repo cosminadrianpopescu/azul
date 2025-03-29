@@ -1147,9 +1147,9 @@ end
 --- Disconnects the current session.
 M.disconnect = function()
     for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
-        start_insert(true)
         vim.fn.timer_start(1, function()
             vim.fn.chanclose(ui.chan)
+            start_insert(true)
         end)
     end
 end
@@ -1969,6 +1969,7 @@ end
 
 M.remote_enter_scroll_mode = function()
     M.send_to_current('<C-\\><C-n>', true)
+    start_insert(true)
 end
 
 M.persistent_on = function(ev, callback)

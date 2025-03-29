@@ -772,6 +772,23 @@ Triggered once before azul quits.
 
 Triggered every time a float title changes
 
+#### ConfigReloaded
+
+Triggered every time the config is reloaded.
+
+#### RemoteDisconnected
+
+* `args[1]` The pane who got disconnected
+
+Triggered every time a remote pane gets disconnected.
+
+#### RemoteReconnected
+
+* `args[1]` The pane who got reconnected
+
+Triggered every time a remote pane gets reconnected. This will not be
+triggered when a remote pane gets opened.
+
 ### Configuring via init.lua
 
 You'll find inside the `examples` folder 4 lua files, corresponding to each of
