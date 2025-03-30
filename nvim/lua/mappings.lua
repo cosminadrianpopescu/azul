@@ -119,6 +119,10 @@ local key_handler = function(mode)
             local new_char = funcs.get_sensitive_ls(trans)
             if new_char == "<c-c>" or new_char == '<Esc>' then
                 cancel()
+                funcs.log("CANCEL")
+                vim.fn.timer_start(1, function()
+                    vim.api.nvim_command('startinsert')
+                end)
                 return ''
             end
             if new_char == '<cr>' then

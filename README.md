@@ -293,6 +293,8 @@ The possible modes are:
   * `PANE RESIZE` (you can resize the currently selected pane)
   * `SPLIT` (you can add new splits in the currently selected tab)
   * `TABS` (you can change the currently selected tab or add a new one)
+  * `MODIFIER` (used for mappings for the first action after the modifier is
+    pressed for `tmux` and `azul` workflows)
   * `AZUL`.
 
 The `AZUL` mode is a special mode in which you interact automatically with
@@ -320,6 +322,11 @@ The `TERMINAL` mode is the mode in which you start `azul` by default. In
 
 The current mode is indicated in the left bottom side of your status bar.
 
+The `MODIFIER` mode is a special mode also, in which `azul` waits for the next
+keys combination in order to select an action to execute. For `azul` and
+`tmux` workflows, when you press the modifier (`<C-s>` by default), azul will
+then wait in this mode for the next key combination or for cancel.
+
 ### Modifiers
 
 For `tmux` and `azul` workflows, there is also a modifier. A modifier is a key
@@ -335,7 +342,7 @@ terminal. You can click `<esc>` or `<C-c>` if you change your mind and you
 want to get back to `TERMINAL` mode, or you can press for example `p` to
 switch to `PANE SELECT` mode.
 
-With an `azul` workflow, the modifier will show you the next possible keys (if
+When clicking the modifier, `azul` will show you the next possible keys (if
 `use_cheatsheet` options is set to true) on the bottom of the page, but will
 stay in `TERMINAL` mode. If the next key is an `azul` shortcut, then an `azul`
 command will be executed. If no, then both keys (the modifier and the
