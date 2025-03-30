@@ -6,9 +6,9 @@ local M = {}
 local timer_set = false
 local timer = nil
 local ns_id = nil
+local mode_before_modifier = nil
 
 local cancel = function()
-    funcs.log("CANCEL TIMER")
     if timer ~= nil then
         vim.fn.timer_stop(timer)
         timer = nil
@@ -21,6 +21,15 @@ local cancel = function()
         end
         ns_id = nil
     end
+    if mode_before_modifier ~= nil and azul.current_mode() == 'M' then
+        azul.enter_mode(mode_before_modifier)
+    end
+    mode_before_modifier = nil
+end
+
+local run_map = function(map)
+    azul.run_map(map)
+    cancel()
 end
 
 local get_mappings_for_mode = function(mode)
@@ -51,10 +60,10 @@ local try_select = function(collection, c)
         else
             azul.send_to_current('<C-s>' .. c, true)
         end
-        azul.cancel_modifier()
+        cancel()
         return false
     else
-        azul.run_map(map)
+        run_map(map)
         return true
     end
 end
@@ -84,7 +93,7 @@ M.remap_all = function(mode)
         vim.api.nvim_set_keymap(m.real_mode, m.ls, '', {
             callback = function()
                 -- M.unmap_all(mode, modifier)
-                azul.run_map(m)
+                run_map(m)
             end,
             desc = m.desc,
         })
@@ -98,7 +107,6 @@ local key_handler = function(mode)
     timer_set = false
 
     local process_input = function(key)
-        funcs.log("PROCESSING " .. vim.inspect(key))
         local trans = vim.fn.keytrans(key)
         if not timer_set then
             timer = vim.fn.timer_start(options.modifer_timeout, function()
@@ -110,7 +118,7 @@ local key_handler = function(mode)
         if timer ~= nil then
             local new_char = funcs.get_sensitive_ls(trans)
             if new_char == "<c-c>" or new_char == '<Esc>' then
-                azul.cancel_modifier()
+                cancel()
                 return ''
             end
             if new_char == '<cr>' then
@@ -118,14 +126,14 @@ local key_handler = function(mode)
                 return ''
             end
             if new_char == funcs.get_sensitive_ls(options.modifier) and c == '' then
-                -- azul.cancel_modifier()
+                -- cancel()
                 -- vim.fn.timer_start(1, function()
                 --     azul.send_to_current('<C-s>', true)
                 -- end)
                 vim.fn.timer_start(1, function()
                     azul.send_to_current(options.modifier, true)
                     vim.fn.timer_start(1, function()
-                        azul.cancel_modifier()
+                        cancel()
                     end)
                 end)
                 return ''
@@ -144,7 +152,7 @@ local key_handler = function(mode)
             return ''
         end
         if #collection == 1 and funcs.get_sensitive_ls(collection[1].ls) == c then
-            azul.run_map(collection[1])
+            run_map(collection[1])
             return ''
         end
         if #collection == 0 then
@@ -161,24 +169,17 @@ local key_handler = function(mode)
         return ''
     end
 
-    funcs.log("SET PROCESSING")
     ns_id = vim.on_key(function(_, key)
         return process_input(key)
     end)
 end
-
-azul.persistent_on('ModifierTrigger', function(args)
-    local mode = args[1]
-    vim.fn.timer_start(0, function()
-        key_handler(mode)
-    end)
-end)
 
 azul.persistent_on('ModeChanged', function(args)
     local old_mode = args[1]
     local new_mode = args[2]
 
     if new_mode == 'M' then
+        mode_before_modifier = old_mode
         vim.fn.timer_start(0, function()
             key_handler(new_mode)
         end)

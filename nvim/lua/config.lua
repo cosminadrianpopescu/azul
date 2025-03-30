@@ -456,7 +456,11 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 return
             end
             local suf = (arg == 'v' and 'v') or ''
-            map(mode, shortcut, '<C-\\><C-n>' .. suf, {
+            map(mode, shortcut, '', {
+                callback = function()
+                    azul.enter_mode('n')
+                    azul.feedkeys('<C-\\><C-n>' .. suf, 't')
+                end,
                 desc = 'Enter ' .. mapping[arg] .. ' mode',
             })
             return

@@ -85,7 +85,7 @@ local MOD_MAP = {
         color = colors.inactive.a.bg,
     },
     M = {
-        text = ' MODIFIER  ',
+        text = '    ...    ',
         color = colors.inactive.b.bg,
     },
 }

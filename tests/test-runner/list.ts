@@ -1,5 +1,5 @@
 import { writeFileSync } from "fs";
-import { test } from "./test";
+import { test, test_single } from "./test";
 
 function test_factory(test_case: string, options: {[key: string]: string | number} = {}, which = test) {
     which(test_case, (base_path: string) => {

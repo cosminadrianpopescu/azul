@@ -536,11 +536,6 @@ Returns the current modifier (for `tmux` or `azul` workflows)
 Executes the callback of a given map, triggering in the process `ActionRan`
 event.
 
-#### cancel_modifier
-
-Will trigger the `ModifierFinished` event, which will make sure that the next
-key you send will be sent to your command interpreter.
-
 #### is_modifier_mode
 
 **Parameters**:
@@ -721,16 +716,6 @@ Triggered every time after the current layout has been saved to a file.
 
 Triggered every time after a layout has been restored from a file.
 
-#### ModifierTrigger
-
-**Parameters**:
-
-* `args[1]` The current mode in which `azul` is after the modifier has been
-  clicked
-* `args[2]` The modifier that has been triggered
-
-Triggered every time the modifier is clicked for `azul` or `tmux` workflows.
-
 #### WinConfigChanged
 
 **Parameters**:
@@ -754,11 +739,6 @@ Triggered only once, after azul loaded and it's ready to process input.
 * `args[1]` The action that has just been ran
 
 Triggered everytime a shortcut action has been ran.
-
-#### ModifierFinished
-
-Triggered everytime the modifier is finished (an action is selected after the
-modifier is triggered or `<Esc>` or `<C-c>` are pressed)
 
 #### ExitAzul
 

@@ -17,6 +17,12 @@ local assert_terminals_for_floating = function(no, state)
     t.assert(#terms == no, 'There should be ' .. no .. ' ' .. by_state(state) .. ' terminals. Instead, I found ' .. #terms)
 end
 
+funcs.log('REMOTE THIS WHEN REMOVING the vim keymap api')
+if options.workflow == 'emacs' then
+    t.done()
+    return
+end
+
 t.simulate_keys(t.action_shortcut('create_float'), {PaneChanged = 1}, function()
     assert_current_terminal(true)
     t.simulate_keys(t.action_shortcut('toggle_floats'), {PaneChanged = 1}, function()

@@ -14,7 +14,6 @@ local azul_started = false
 local last_access = 0
 local remote_command = nil
 local to_save_remote_command = nil
-local mode_before_modifier = nil
 
 --- @class terminals
 --- @field is_current boolean If true, it means that this is the current terminal
@@ -62,8 +61,6 @@ local events = {
     PaneClosed = {},
     LayoutSaved = {},
     LayoutRestored = {},
-    ModifierTrigger = {},
-    ModifierFinished = {},
     WinConfigChanged = {},
     TabTitleChanged = {},
     AzulStarted = {},
@@ -103,7 +100,6 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -284,7 +280,6 @@ local OnEnter = function(ev)
             M.start_logging(os.tmpname())
         end
     end
-    start_insert()
     if not azul_started then
         azul_started = true
         trigger_event('AzulStarted')
@@ -438,7 +433,6 @@ end
 --- Enters a custom mode. Use this function for changing custom modes
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'
 M.enter_mode = function(new_mode)
-    funcs.log("ENTER MODE " .. vim.inspect(new_mode))
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then
@@ -527,7 +521,6 @@ local update_titles = function(callback)
     end
 
     local finished = function()
-        funcs.log("FINISHED PARSING TITLES")
         updating_titles = false
         start_insert()
         if callback ~= nil then
@@ -739,15 +732,11 @@ cmd({'ModeChanged'}, {
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
         if to ~= from and mode ~= 'P' then
-            if M.current_mode() == 'M' and to ~= get_modifier_mode() then
-                M.cancel_modifier()
-            end
             if is_dressing and to == 'n' then
                 vim.fn.timer_start(1, function()
                     start_insert(true)
                 end)
             else
-                funcs.log("MODE CHANGED IN VIM TO " .. vim.inspect(to))
                 M.enter_mode(to)
             end
         end
@@ -1113,11 +1102,6 @@ M.set_workflow = function(w, m)
                 if workflow == 'tmux' and M.current_mode() ~= 'n' then
                     M.enter_mode('n')
                     M.feedkeys('<C-\\><C-n>', 't')
-                end
-                if M.current_mode() == 'M' then
-                    M.cancel_modifier()
-                    M.send_to_current(mod, true)
-                    return
                 end
                 vim.fn.timer_start(1, function()
                     M.enter_mode('M')
@@ -1801,9 +1785,6 @@ M.get_current_modifier = function()
 end
 
 M.run_map = function(m)
-    if M.is_modifier_mode(m.m) then
-        M.cancel_modifier()
-    end
     if m.options.callback ~= nil then
         m.options.callback()
     elseif m.rs ~= nil then
@@ -1811,12 +1792,10 @@ M.run_map = function(m)
     end
     if m.action ~= nil then
         trigger_event('ActionRan', {m.action})
+        if funcs.find(function(a) return a == m.action end, {'select_terminal', 'select_session', 'create_tab', 'tab_select', 'toggle_floats', 'create_float', 'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'remote_scroll'}) then
+            M.enter_mode('t')
+        end
     end
-end
-
-M.cancel_modifier = function()
-    M.enter_mode(mode_before_modifier or 't')
-    mode_before_modifier = nil
 end
 
 M.is_modifier_mode = function(m)
@@ -1996,15 +1975,6 @@ M.persistent_on('PaneChanged', function(args)
     end
 
     set_current_panel(t.tab_id)
-end)
-
-M.persistent_on('ModeChanged', function(args)
-    local old_mode = args[1]
-    local new_mode = args[2]
-
-    if new_mode == 'M' then
-        mode_before_modifier = old_mode
-    end
 end)
 
 return M

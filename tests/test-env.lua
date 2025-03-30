@@ -71,9 +71,7 @@ local quit = function(msg)
     local f = io.open(file, "w")
     f:write(msg)
     f:close()
-    vim.fn.timer_start(1, function()
-        vim.api.nvim_command('qa!')
-    end)
+    vim.api.nvim_command('qa!')
 end
 
 local reverse = function(_list)
@@ -128,7 +126,7 @@ local check_trigger_after = function(events, ran)
     end
 
     for ev, count in pairs(events) do
-        if (ran[ev] == nil or count > ran[ev]) and (ev ~= 'ModeChanged' or options.workflow ~= 'emacs') then
+        if (ran[ev] == nil or count > ran[ev]) and (ev ~= 'ModeChanged' or options.workflow ~= 'emacs') and (ev ~= 'Timeout') then
             return false
         end
     end
@@ -140,33 +138,35 @@ local wait_events = function(events, after)
     local ran = {}
     local after_ran = false
     for ev, _ in pairs(events or {}) do
-        azul.on(ev, function()
-            if ran[ev] == nil then
-                ran[ev] = 0
-            end
-            ran[ev] = ran[ev] + 1
+        if ev ~= 'Timeout' then
+            azul.on(ev, function()
+                if ran[ev] == nil then
+                    ran[ev] = 0
+                end
+                ran[ev] = ran[ev] + 1
 
-            if not check_trigger_after(events, ran) then
-                return
-            end
+                if not check_trigger_after(events, ran) then
+                    return
+                end
 
-            azul.clear_event(ev)
-            if after_ran then
-                return
-            end
-            after()
-            after_ran = true
-        end)
+                azul.clear_event(ev)
+                if after_ran then
+                    return
+                end
+                after()
+                after_ran = true
+            end)
+        end
     end
 end
 
 local default_shortcut_mode = function(action)
-    if options.workflow == 'azul' or options.workflow == 'emacs' then
+    if options.workflow == 'emacs' then
         return 't'
     end
 
-    if options.workflow == 'tmux' then
-        return 'n'
+    if options.workflow == 'tmux' or options.workflow == 'azul' then
+        return 'M'
     end
 
     if vim.tbl_contains({'create_float', 'toggle_floats'}, action) then
@@ -280,8 +280,8 @@ return {
             do_exec = true
         end)
         L.simulate_keys(extract_chars(what), 1, function()
-            if (events == nil and after ~= nil) or (after ~= nil and (do_exec or #events == 0)) then
-                after()
+            if (events == nil and after ~= nil) or (after ~= nil and (do_exec or #vim.tbl_keys(events) == 0)) then
+                vim.fn.timer_start((events or {}).Timeout or 0, after)
             end
         end)
     end,
