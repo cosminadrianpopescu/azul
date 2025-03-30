@@ -738,6 +738,10 @@ M.overwrite_default_action = function(action, wf, mode, shortcut)
     if not vim.tbl_contains(vim.tbl_keys(modes), mode) then
         error("There is no mode " .. mode)
     end
+    local old = M.default_config.shortcuts[wf][mode][action]
+    if old ~= nil then
+        require('azul').remove_key_map(modes[mode], old)
+    end
     M.default_config.shortcuts[wf][mode][action] = shortcut
 end
 

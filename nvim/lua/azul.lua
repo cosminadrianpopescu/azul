@@ -865,7 +865,8 @@ local do_set_key_map = function(map_mode, ls, rs, options)
 end
 
 M.remove_key_map = function(m, ls)
-    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or _m.ls ~= ls end, mode_mappings)
+    funcs.log("MODE MAPPINGS BEFORE ARE " .. vim.inspect(m))
+    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or funcs.get_sensitive_ls(_m.ls) ~= funcs.get_sensitive_ls(ls) end, mode_mappings)
 end
 
 --- Sets a new keymap
