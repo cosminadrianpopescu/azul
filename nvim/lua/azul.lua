@@ -47,10 +47,6 @@ local mod = nil
 local global_last_status = nil
 local quit_on_last = true
 
-local get_modifier_mode = function()
-    return (workflow == 'azul' and 't') or 'n'
-end
-
 local events = {
     FloatClosed = {},
     ModeChanged = {},
@@ -865,7 +861,6 @@ local do_set_key_map = function(map_mode, ls, rs, options)
 end
 
 M.remove_key_map = function(m, ls)
-    funcs.log("MODE MAPPINGS BEFORE ARE " .. vim.inspect(m))
     mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or funcs.get_sensitive_ls(_m.ls) ~= funcs.get_sensitive_ls(ls) end, mode_mappings)
 end
 

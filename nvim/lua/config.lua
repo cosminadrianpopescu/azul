@@ -784,7 +784,6 @@ M.reload_config = function()
         local cmd = 'tunmap ' .. options.modifier
         pcall(function() vim.api.nvim_command(cmd) end)
     end
-    require('mappings').unmap_all()
     require('azul').clear_mappings()
     M.apply_config()
     M.set_vim_options()

@@ -17,7 +17,7 @@ local assert_terminals_for_floating = function(no, state)
     t.assert(#terms == no, 'There should be ' .. no .. ' ' .. by_state(state) .. ' terminals. Instead, I found ' .. #terms)
 end
 
-funcs.log('REMOTE THIS WHEN REMOVING the vim keymap api')
+funcs.log('REMOVE THIS WHEN REMOVING the vim keymap api')
 if options.workflow == 'emacs' then
     t.done()
     return
