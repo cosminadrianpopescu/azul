@@ -15,7 +15,7 @@ ${Object.keys(options).map(k => `${k} = ${options[k]}`).join("\n")}
 }
 
 test('test-started');
-test('floats');
+test_single('floats');
 test_factory('floats', {workflow: 'tmux'});
 test_factory('floats', {workflow: 'zellij'});
 test_factory('floats', {workflow: 'emacs'});
