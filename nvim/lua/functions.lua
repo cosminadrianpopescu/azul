@@ -5,7 +5,7 @@ local get_sensitive_ls = function(ls)
     if ls == nil then
         return ls
     end
-    local p = '^(<[amsc])(.*)$'
+    local p = '^(<[amsce])(.*)$'
     local p1, p2 = (ls .. ""):lower():match(p)
     if p1 == nil then
         return ls

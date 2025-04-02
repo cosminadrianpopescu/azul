@@ -429,6 +429,7 @@ end
 --- Enters a custom mode. Use this function for changing custom modes
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'
 M.enter_mode = function(new_mode)
+    funcs.log("ENTERING MODE " .. vim.inspect(new_mode))
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then
@@ -461,6 +462,7 @@ M.enter_mode = function(new_mode)
         })
     end
     if old_mode ~= new_mode then
+        funcs.log("MODE CHANGED 1 " .. vim.inspect(new_mode))
         trigger_event('ModeChanged', {old_mode, new_mode})
     end
     if L.is_vim_mode(new_mode) then
@@ -733,6 +735,7 @@ cmd({'ModeChanged'}, {
                     start_insert(true)
                 end)
             else
+                funcs.log("MODE CHANGED 2 " .. vim.inspect(to))
                 M.enter_mode(to)
             end
         end
@@ -1085,26 +1088,26 @@ M.set_workflow = function(w, m)
     mod = m or '<C-s>'
     workflow = w
     if workflow == 'azul' or workflow == 'tmux' then
-        vim.api.nvim_set_keymap('t', mod, '', {
-            callback = function()
-                if M.current_mode() ~= 't' then
-                    M.send_to_current(mod, true)
-                    return
-                end
-                if mode == 'P' then
-                    M.send_to_current(mod, true)
-                    return
-                end
-                if workflow == 'tmux' and M.current_mode() ~= 'n' then
-                    M.enter_mode('n')
-                    M.feedkeys('<C-\\><C-n>', 't')
-                end
-                vim.fn.timer_start(1, function()
-                    M.enter_mode('M')
-                end)
-            end,
-            desc = '',
-        })
+        -- vim.api.nvim_set_keymap('t', mod, '', {
+        --     callback = function()
+        --         if M.current_mode() ~= 't' then
+        --             M.send_to_current(mod, true)
+        --             return
+        --         end
+        --         if mode == 'P' then
+        --             M.send_to_current(mod, true)
+        --             return
+        --         end
+        --         if workflow == 'tmux' and M.current_mode() ~= 'n' then
+        --             M.enter_mode('n')
+        --             M.feedkeys('<C-\\><C-n>', 't')
+        --         end
+        --         vim.fn.timer_start(1, function()
+        --             M.enter_mode('M')
+        --         end)
+        --     end,
+        --     desc = '',
+        -- })
     end
 end
 
