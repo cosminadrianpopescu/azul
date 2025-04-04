@@ -2,6 +2,7 @@ local t = require('test-env')
 local azul = require('azul')
 local funcs = require('functions')
 
+
 local title = 'Tab :tab_n: (:term_title:)'
 azul.on('AzulStarted', function()
     vim.fn.timer_start(1, function()
@@ -10,6 +11,7 @@ azul.on('AzulStarted', function()
             azul.parse_custom_title(title, {tab_n = 3}, '', function(result, placeholders)
                 t.assert(result == 'Tab 3 (abc)', 'The placeholders in the second test have not been replaced properly')
                 t.assert(placeholders.term_title == 'abc', 'The returned placeholders in the second test are not ok')
+                t.assert(funcs.compare_shortcuts('<M-C-Right>', '<c-a-right>'), 'The sensitive ls is not working')
                 t.done()
             end)
             vim.fn.timer_start(150, function()

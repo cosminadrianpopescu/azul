@@ -1,13 +1,24 @@
 import { writeFileSync } from "fs";
 import { test, test_single } from "./test";
 
-function test_factory(test_case: string, options: {[key: string]: string | number} = {}, which = test) {
+function test_factory(test_case: string, options: {[key: string]: any} = {}, which = test) {
     which(test_case, (base_path: string) => {
-        const config = `
+        let config = `
 [Options]
 
-${Object.keys(options).map(k => `${k} = ${options[k]}`).join("\n")}
+${Object.keys(options).filter(k => k != 'shortcuts').map(k => `${k} = ${options[k]}`).join("\n")}
     `;
+
+        if (!!options.shortcuts) {
+            const ss = options.shortcuts;
+            config = `
+${config}
+
+[Shortcuts]
+
+${Object.keys(ss).map(k => `${k} = ${ss[k]}`).join("\n")}
+`
+        }
         console.log(config)
         writeFileSync(`${base_path}/config/config.ini`, config);
         return {};
@@ -15,13 +26,13 @@ ${Object.keys(options).map(k => `${k} = ${options[k]}`).join("\n")}
 }
 
 test('test-started');
-test_single('floats');
+test('floats');
 test_factory('floats', {workflow: 'tmux'});
-test_factory('floats', {workflow: 'zellij'});
+test_factory('floats', {workflow: 'zellij', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
 test_factory('floats', {workflow: 'emacs'});
 test_factory('floats', {workflow: 'azul', use_cheatsheet: 'false'});
 test_factory('floats', {workflow: 'tmux', use_cheatsheet: 'false'});
-test_factory('floats', {workflow: 'zellij', use_cheatsheet: 'false'});
+test_factory('floats', {workflow: 'zellij', use_cheatsheet: 'false', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
 test('splits');
 test_factory('splits', {workflow: 'tmux'});
 test_factory('splits', {workflow: 'zellij'});
@@ -44,7 +55,7 @@ test_factory('tabs', {workflow: 'tmux', use_cheatsheet: 'false'});
 test_factory('tabs', {workflow: 'zellij', use_cheatsheet: 'false'});
 const tab_title = ':tab_n: :tab_name::is_current:';
 test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title})
-test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title});
+test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title}, test_single);
 test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title});
 test_factory('custom-tab-titles', {workflow: 'emacs', tab_title: tab_title});
 test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_cheatsheet: 'false'});

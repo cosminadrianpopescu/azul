@@ -1,16 +1,61 @@
 local mappings = {}
 math.randomseed()
 
-local get_sensitive_ls = function(ls)
-    if ls == nil then
-        return ls
+local compare_shortcuts = function(s1, s2)
+    local p1 = '\\v(\\<[^\\>]+\\>)'
+    if vim.fn.match(s1, p1) == -1 or vim.fn.match(s2, p1) == -1 then
+        return s1 == s2;
     end
-    local p = '^(<[amsce])(.*)$'
-    local p1, p2 = (ls .. ""):lower():match(p)
-    if p1 == nil then
-        return ls
+    local p2 = '\\v^\\<(.*)\\>$'
+    local keys1 = vim.fn.split(vim.fn.substitute(s1, p2, '\\1', 'gi'), '-')
+    local keys2 = vim.fn.split(vim.fn.substitute(s2, p2, '\\1', 'gi'), '-')
+
+    if #keys1 ~= #keys2 then
+        return false
     end
-    return p1:lower() .. p2
+
+    local replace_alt = function(keys)
+        for _, k in ipairs(vim.tbl_keys(keys)) do
+            if string.lower(keys[k]) == 'a' then
+                keys[k] = 'm'
+            end
+        end
+    end
+
+    replace_alt(keys1)
+    replace_alt(keys2)
+
+    local lowerise = function(keys)
+        return vim.tbl_map(function(k) return string.lower(k) end, keys)
+    end
+
+    local _keys1 = lowerise(keys1)
+    local _keys2 = lowerise(keys2)
+
+    table.sort(_keys1)
+    table.sort(_keys2)
+
+    for _, k in ipairs(vim.tbl_keys(_keys1)) do
+        if _keys1[k] ~= _keys2[k] then
+            return false
+        end
+    end
+
+    return true
+end
+
+local shortcut_starts_with = function(src, search)
+    local p = '\\v^(\\<[^\\>]+\\>)'
+    if vim.fn.match(src, p) == -1 or vim.fn.match(search, p) == -1 then
+        return string.sub(src, 1, string.len(search)) == search
+    end
+
+    local s = vim.fn.matchlist(src, p)
+    if #s == 0 then
+        return false
+    end
+
+    return compare_shortcuts(s[1], search)
 end
 
 local find = function(callback, table)
@@ -179,11 +224,12 @@ return {
     remote_command = remote_command,
     safe_close_window = safe_close_window,
     safe_buf_delete = safe_buf_delete,
-    get_sensitive_ls = get_sensitive_ls,
     find = find,
     uuid = uuid,
     log = log,
     join = join,
+    compare_shortcuts = compare_shortcuts,
+    shortcut_starts_with = shortcut_starts_with,
     safe_get_buf_var = safe_get_buf_var,
     safe_del_buf_var = safe_del_buf_var,
     safe_get_tab_var = safe_get_tab_var,

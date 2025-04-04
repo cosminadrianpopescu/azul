@@ -66,6 +66,7 @@ local events = {
     ConfigReloaded = {},
     RemoteDisconnected = {},
     RemoteReconnected = {},
+    UserInput = {},
 }
 
 local persistent_events = {}
@@ -96,6 +97,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -429,7 +431,7 @@ end
 --- Enters a custom mode. Use this function for changing custom modes
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'
 M.enter_mode = function(new_mode)
-    funcs.log("ENTERING MODE " .. vim.inspect(new_mode))
+    funcs.log("ENTERING MODE " .. vim.inspect(new_mode) .. " WHEN " .. vim.inspect(is_dressing))
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then
@@ -520,7 +522,6 @@ local update_titles = function(callback)
 
     local finished = function()
         updating_titles = false
-        start_insert()
         if callback ~= nil then
             callback()
         end
@@ -671,6 +672,10 @@ cmd('TermEnter', {
 cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function()
         is_dressing = vim.o.filetype == 'DressingInput'
+        if is_dressing then
+            -- M.feedkeys('i', 'n')
+            funcs.log("START DRESSING INPUT " .. vim.inspect(vim.fn.mode()))
+        end
         -- vim.fn.timer_start(100, function()
         --     start_insert(true)
         -- end)
@@ -730,25 +735,11 @@ cmd({'ModeChanged'}, {
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
         if to ~= from and mode ~= 'P' then
-            if is_dressing and to == 'n' then
-                vim.fn.timer_start(1, function()
-                    start_insert(true)
-                end)
-            else
+            if not is_dressing then
                 funcs.log("MODE CHANGED 2 " .. vim.inspect(to))
                 M.enter_mode(to)
             end
         end
-    end
-})
-
-cmd({'UiEnter'}, {
-    pattern = {'*'}, callback = function(_)
-        -- M.feedkeys('<C-\\><C-n>i', 't')
-        -- vim.fn.timer_start(1, function()
-        --     M.enter_mode('')
-        --     start_insert()
-        -- end)
     end
 })
 
@@ -846,7 +837,7 @@ end
 
 local do_set_key_map = function(map_mode, ls, rs, options)
     local map = funcs.find(function(m)
-        return m.m == map_mode and funcs.get_sensitive_ls(m.ls) == funcs.get_sensitive_ls(ls)
+        return m.m == map_mode and funcs.compare_shortcuts(m.ls, ls)
     end, mode_mappings)
     local _mode = L.get_real_mode(map_mode)
     if map == nil then
@@ -864,7 +855,7 @@ local do_set_key_map = function(map_mode, ls, rs, options)
 end
 
 M.remove_key_map = function(m, ls)
-    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or funcs.get_sensitive_ls(_m.ls) ~= funcs.get_sensitive_ls(ls) end, mode_mappings)
+    mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or not funcs.compare_shortcuts(_m.ls, ls) end, mode_mappings)
 end
 
 --- Sets a new keymap
@@ -1613,16 +1604,18 @@ end
 
 M.user_input = function(opts, callback, force)
     M.suspend()
-    vim.fn.timer_start(1, function()
-        M.resume()
-        start_insert(true)
-    end)
     vim.ui.input(opts, function(input)
+        M.resume()
         if (input ~= nil and input ~= '') or force then
             callback(input)
-            start_insert(true)
         end
+        start_insert(true)
+        trigger_event("UserInput", {input})
     end)
+    funcs.log("FOUND MODE " .. vim.fn.mode() .. " -> " .. vim.inspect(is_dressing))
+    -- vim.fn.timer_start(20, function()
+    --     start_insert(true)
+    -- end)
 end
 
 M.get_file = function(callback)

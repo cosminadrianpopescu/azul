@@ -65,13 +65,14 @@ local generic_key_handler = function()
         run_after_ignore = callback
     end
 
-    azul.on('ModeChanged', function(args)
+    azul.persistent_on('ModeChanged', function(args)
         local old_mode = args[1]
         mode = args[2]
         if mode == 'M' then
             mode_before_modifier = old_mode
         end
         collection = get_mappings_for_mode(mode)
+        funcs.log("CHANGE COLLECTION FOR " .. vim.inspect(mode) .. " => " .. vim.inspect(#collection))
     end)
 
     local run_map = function(map)
@@ -81,7 +82,7 @@ local generic_key_handler = function()
 
     local try_select = function(collection, c)
         funcs.log("TRY SELECTING " .. vim.inspect(c))
-        local map = funcs.find(function(x) return funcs.get_sensitive_ls(x.ls) == funcs.get_sensitive_ls(c) end, collection)
+        local map = funcs.find(function(x) return funcs.compare_shortcuts(x.ls, c) end, collection)
         if map == nil then
             azul.send_to_current(c, true)
             -- reset()
@@ -93,6 +94,7 @@ local generic_key_handler = function()
     end
 
     local process_modifier = function()
+        funcs.log("PROCESSING MODIFIER")
         if azul.current_mode() == 'P' then
             azul.send_to_current(options.modifier, true)
             return ''
@@ -130,8 +132,10 @@ local generic_key_handler = function()
             return nil
         end
         funcs.log("PROCESSING " .. vim.inspect(trans) .. " IN " .. vim.inspect(azul.current_mode()))
-        if funcs.get_sensitive_ls(trans) == funcs.get_sensitive_ls(options.modifier)
-            and azul.current_mode() == 't' and buffer == '' and not timer_set and timer == nil then
+        if funcs.compare_shortcuts(trans, options.modifier)
+            and azul.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
+            and (options.workflow == 'tmux' or options.workflow == 'azul')
+        then
             return process_modifier()
         end
         reset_timer()
@@ -142,9 +146,8 @@ local generic_key_handler = function()
         end)
         timer_set = true
         funcs.log("TIMER SET " .. vim.inspect(timer))
-        local new_char = funcs.get_sensitive_ls(trans)
         if azul.current_mode() == 'M' then
-            if new_char == "<c-c>" or new_char == '<Esc>' then
+            if funcs.compare_shortcuts(trans, "<C-c>") or funcs.compare_shortcuts(trans, "<esc>") then
                 reset()
                 vim.fn.timer_start(1, function()
                     vim.api.nvim_command('startinsert')
@@ -152,13 +155,13 @@ local generic_key_handler = function()
                 funcs.log("RETURNING empty 6")
                 return ''
             end
-            if new_char == '<cr>' then
+            if funcs.compare_shortcuts(trans, '<cr>') then
                 funcs.log("TRY SELECT 2")
                 try_select(collection, c)
                 funcs.log("RETURNING empty 5")
                 return ''
             end
-            if new_char == funcs.get_sensitive_ls(options.modifier) and c == '' then
+            if funcs.compare_shortcuts(trans, options.modifier) and c == '' then
                 azul.send_to_current(options.modifier, true)
                 vim.fn.timer_start(1, function()
                     reset()
@@ -169,12 +172,9 @@ local generic_key_handler = function()
             end
             buffer = c
         end
-        c = c .. new_char
-        funcs.log("SEARCHING FOR " .. vim.inspect(c) .. " AS " .. vim.inspect(funcs.get_sensitive_ls(c)) .. " IN " .. vim.inspect(#collection))
-        collection = vim.tbl_filter(function(x)
-            local s = funcs.get_sensitive_ls(x.ls)
-            return string.sub(s, 1, string.len(c)) == c
-        end, collection)
+        c = c .. trans
+        funcs.log("SEARCHING FOR " .. vim.inspect(c) .. " AS " .. vim.inspect(c) .. " IN " .. vim.inspect(#collection))
+        collection = vim.tbl_filter(function(x) return funcs.shortcut_starts_with(x.ls, c) end, collection)
         funcs.log("FOUND " .. vim.inspect(#collection))
         if timer == nil then
             funcs.log("TRY SELECT 3")
@@ -182,9 +182,9 @@ local generic_key_handler = function()
             funcs.log("RETURNING empty 3")
             return ''
         end
-        if #collection == 1 and funcs.get_sensitive_ls(collection[1].ls) == c then
+        if #collection == 1 and funcs.compare_shortcuts(collection[1].ls, c) then
             run_map(collection[1])
-            funcs.log("RETURNING empty 2")
+            funcs.log("RETURNING empty 2 " .. vim.inspect(vim.fn.mode()))
             return ''
         end
         if #collection == 0 then
@@ -198,7 +198,7 @@ local generic_key_handler = function()
                     azul.feedkeys(after, mode)
                 elseif mode_before ~= azul.current_mode() then
                     collection = get_mappings_for_mode(azul.current_mode())
-                    me(new_char, me)
+                    me(trans, me)
                 end
                 funcs.log("RETURNING empty 1")
                 reset()
@@ -226,6 +226,7 @@ local generic_key_handler = function()
             reset()
             return nil
         end
+        funcs.log("RECEIVED " .. vim.inspect(_) .. " AND " .. vim.inspect(key))
         return process_input(key, process_input)
     end)
     funcs.log("ADDED  " .. vim.inspect(ns_id))

@@ -23,6 +23,7 @@ if options.workflow == 'emacs' then
     return
 end
 
+funcs.log("STARTING")
 t.simulate_keys(t.action_shortcut('create_float'), {PaneChanged = 1}, function()
     assert_current_terminal(true)
     t.simulate_keys(t.action_shortcut('toggle_floats'), {PaneChanged = 1}, function()

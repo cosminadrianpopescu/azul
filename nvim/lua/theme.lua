@@ -10,7 +10,7 @@ if options.use_dressing then
     local opts = {
         enabled = true,
         title_pos = 'center',
-        start_mode = 'insert',
+        start_mode = 'normal',
         relative = 'editor',
         border = "double",
     }
