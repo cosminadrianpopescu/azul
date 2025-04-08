@@ -174,8 +174,10 @@ local generic_key_handler = function()
         end
         c = c .. trans
         funcs.log("SEARCHING FOR " .. vim.inspect(c) .. " AS " .. vim.inspect(c) .. " IN " .. vim.inspect(#collection))
+        funcs.log("BEFORE WE HAVE " .. vim.inspect(#collection))
         collection = vim.tbl_filter(function(x) return funcs.shortcut_starts_with(x.ls, c) end, collection)
         funcs.log("FOUND " .. vim.inspect(#collection))
+        funcs.log(vim.inspect(collection))
         if timer == nil then
             funcs.log("TRY SELECT 3")
             try_select(collection, c)
@@ -217,8 +219,8 @@ local generic_key_handler = function()
         end
 
         funcs.log("RETURNING NIL 1")
-        reset()
-        return nil
+        -- reset()
+        return ''
     end
 
     ns_id = vim.on_key(function(_, key)

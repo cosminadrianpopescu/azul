@@ -26,7 +26,7 @@ ${Object.keys(ss).map(k => `${k} = ${ss[k]}`).join("\n")}
 }
 
 test('test-started');
-test('floats');
+test_single('floats');
 test_factory('floats', {workflow: 'tmux'});
 test_factory('floats', {workflow: 'zellij', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
 test_factory('floats', {workflow: 'emacs'});
@@ -55,7 +55,7 @@ test_factory('tabs', {workflow: 'tmux', use_cheatsheet: 'false'});
 test_factory('tabs', {workflow: 'zellij', use_cheatsheet: 'false'});
 const tab_title = ':tab_n: :tab_name::is_current:';
 test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title})
-test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title}, test_single);
+test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title});
 test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title});
 test_factory('custom-tab-titles', {workflow: 'emacs', tab_title: tab_title});
 test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_cheatsheet: 'false'});

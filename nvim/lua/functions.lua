@@ -50,12 +50,25 @@ local shortcut_starts_with = function(src, search)
         return string.sub(src, 1, string.len(search)) == search
     end
 
-    local s = vim.fn.matchlist(src, p)
-    if #s == 0 then
+    local _src = src
+    local _search = search
+    local s1 = vim.fn.matchlist(_src, p)
+    local s2 = vim.fn.matchlist(_search, p)
+    while #s1 > 0 and #s2 > 0 do
+        if not compare_shortcuts(s1[1], s2[1]) then
+            return false
+        end
+        _src = string.gsub(_src, "^" .. string.gsub(s1[1], "%-", "%%-"), "")
+        _search = string.gsub(_search, "^" .. string.gsub(s2[1], "%-", "%%-"), "")
+        s1 = vim.fn.matchlist(_src, p)
+        s2 = vim.fn.matchlist(_search, p)
+    end
+
+    if #s2 > 0 then
         return false
     end
 
-    return compare_shortcuts(s[1], search)
+    return true
 end
 
 local find = function(callback, table)

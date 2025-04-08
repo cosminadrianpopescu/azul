@@ -1613,9 +1613,9 @@ M.user_input = function(opts, callback, force)
         trigger_event("UserInput", {input})
     end)
     funcs.log("FOUND MODE " .. vim.fn.mode() .. " -> " .. vim.inspect(is_dressing))
-    -- vim.fn.timer_start(20, function()
-    --     start_insert(true)
-    -- end)
+    vim.fn.timer_start(20, function()
+        start_insert(true)
+    end)
 end
 
 M.get_file = function(callback)
