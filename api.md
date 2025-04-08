@@ -769,6 +769,13 @@ Triggered every time a remote pane gets disconnected.
 Triggered every time a remote pane gets reconnected. This will not be
 triggered when a remote pane gets opened.
 
+#### UserInput
+
+* `args[1]` The input from the user
+
+Triggered every time the user inputs data (like selecting a file or a tab or
+pane name).
+
 ### Configuring via init.lua
 
 You'll find inside the `examples` folder 4 lua files, corresponding to each of
