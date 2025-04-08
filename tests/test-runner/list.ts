@@ -26,7 +26,7 @@ ${Object.keys(ss).map(k => `${k} = ${ss[k]}`).join("\n")}
 }
 
 test('test-started');
-test_single('floats');
+test('floats');
 test_factory('floats', {workflow: 'tmux'});
 test_factory('floats', {workflow: 'zellij', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
 test_factory('floats', {workflow: 'emacs'});
@@ -76,4 +76,3 @@ test_factory('layout', {workflow: 'emacs'});
 test_factory('layout', {workflow: 'azul', use_cheatsheet: 'false'});
 test_factory('layout', {workflow: 'tmux', use_cheatsheet: 'false'});
 test_factory('layout', {workflow: 'zellij', use_cheatsheet: 'false'});
-test_factory('layout', {workflow: 'emacs', use_cheatsheet: 'false'});

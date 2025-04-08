@@ -86,7 +86,7 @@ end
 
 local log = function(msg, file)
     if file == nil then
-        file = "/tmp/azul-log"
+        file = "/tmp/azul-log-" .. os.getenv('AZUL_SESSION')
     end
     local f = io.open(file, "a+")
     if f == nil then

@@ -97,7 +97,6 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -371,6 +370,7 @@ local OnTermClose = function(ev)
         trigger_event('RemoteDisconnected', {t})
         vim.fn.timer_start(1, function()
             refresh_buf(t.buf, false)
+            start_insert(true)
         end)
         return
     end
@@ -391,6 +391,7 @@ local OnTermClose = function(ev)
     vim.fn.timer_start(1, function()
         ev.buf = vim.fn.bufnr()
         OnEnter(ev)
+        start_insert(true)
     end)
 end
 
@@ -431,7 +432,6 @@ end
 --- Enters a custom mode. Use this function for changing custom modes
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'
 M.enter_mode = function(new_mode)
-    funcs.log("ENTERING MODE " .. vim.inspect(new_mode) .. " WHEN " .. vim.inspect(is_dressing))
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then
@@ -464,7 +464,6 @@ M.enter_mode = function(new_mode)
         })
     end
     if old_mode ~= new_mode then
-        funcs.log("MODE CHANGED 1 " .. vim.inspect(new_mode))
         trigger_event('ModeChanged', {old_mode, new_mode})
     end
     if L.is_vim_mode(new_mode) then
@@ -674,7 +673,6 @@ cmd({'FileType', 'BufEnter'}, {
         is_dressing = vim.o.filetype == 'DressingInput'
         if is_dressing then
             -- M.feedkeys('i', 'n')
-            funcs.log("START DRESSING INPUT " .. vim.inspect(vim.fn.mode()))
         end
         -- vim.fn.timer_start(100, function()
         --     start_insert(true)
@@ -736,7 +734,6 @@ cmd({'ModeChanged'}, {
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
         if to ~= from and mode ~= 'P' then
             if not is_dressing then
-                funcs.log("MODE CHANGED 2 " .. vim.inspect(to))
                 M.enter_mode(to)
             end
         end
@@ -809,7 +806,9 @@ M.open_float = function(group, opts, to_restore)
             opened.azul_placeholders = to_restore.azul_placeholders or {}
             opened.overriden_title = to_restore.overriden_title
         end
-        update_titles()
+        update_titles(function()
+            start_insert(true)
+        end)
     end)
 end
 
@@ -1612,7 +1611,6 @@ M.user_input = function(opts, callback, force)
         start_insert(true)
         trigger_event("UserInput", {input})
     end)
-    funcs.log("FOUND MODE " .. vim.fn.mode() .. " -> " .. vim.inspect(is_dressing))
     vim.fn.timer_start(20, function()
         start_insert(true)
     end)

@@ -45,11 +45,8 @@ t.wait_events({TabTitleChanged = 1}, function()
                     if options.workflow == 'emacs' then
                         events = {ActionRan = 1}
                     end
-                    funcs.log("SIMULATE RENAME")
                     t.simulate_keys(rename_tab_keys(), events, function()
-                        funcs.log("WAIT AFTER RENAME")
                         t.wait_events({UserInput = 1}, function()
-                            funcs.log("RENAME WAIT ENDED")
                             vim.fn.timer_start(150, function()
                                 t.assert(get_title(1) == '1 test 1', 'Second time, the first tab now should be named 1 test 1')
                                 t.assert(get_title(2) == '2 test 2*', 'Second time, the second tab now should be named 2 test 2*')
