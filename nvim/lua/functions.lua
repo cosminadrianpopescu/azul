@@ -45,13 +45,13 @@ local compare_shortcuts = function(s1, s2)
 end
 
 local shortcut_starts_with = function(src, search)
-    local p = '\\v^(\\<[^\\>]+\\>)'
+    local p = '\\v^(\\<[^>]+\\>)'
     if vim.fn.match(src, p) == -1 or vim.fn.match(search, p) == -1 then
         return string.sub(src, 1, string.len(search)) == search
     end
 
-    local _src = src
-    local _search = search
+    local _src = string.lower(src)
+    local _search = string.lower(search)
     local s1 = vim.fn.matchlist(_src, p)
     local s2 = vim.fn.matchlist(_search, p)
     while #s1 > 0 and #s2 > 0 do
@@ -231,10 +231,19 @@ local safe_buf_delete = function(buf_id)
     return safe
 end
 
+local session_child_file = function(for_parent)
+    local name = os.getenv((for_parent and 'AZUL_PARENT_SESSION') or 'AZUL_SESSION')
+    if name == nil then
+        name = ''
+    end
+    return os.getenv('AZUL_RUN_DIR') .. '/' .. name .. '-child'
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
     remote_command = remote_command,
+    session_child_file = session_child_file,
     safe_close_window = safe_close_window,
     safe_buf_delete = safe_buf_delete,
     find = find,

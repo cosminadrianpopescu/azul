@@ -527,15 +527,6 @@ message is thrown.
 
 Returns the current modifier (for `tmux` or `azul` workflows)
 
-#### run_map
-
-**Parameters**:
-
-* m The azul map to run
-
-Executes the callback of a given map, triggering in the process `ActionRan`
-event.
-
 #### is_modifier_mode
 
 **Parameters**:

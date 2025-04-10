@@ -148,7 +148,8 @@ M.debug = function(ev)
     -- print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
     -- print("TITLE IS ALREADY" .. vim.b.term_title)
     -- print("JOB ID IS " .. vim.b.terminal_job_id)
-    print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    print("MAPPINGS ARE" .. vim.inspect(vim.tbl_filter(function(m) return m.m == 'P' end, mode_mappings)))
     -- print("MODE IS" .. mode)
 end
 
@@ -395,26 +396,8 @@ local OnTermClose = function(ev)
     end)
 end
 
-local session_child_file = function(for_parent)
-    local name = os.getenv((for_parent and 'AZUL_PARENT_SESSION') or 'AZUL_SESSION')
-    if name == nil then
-        name = ''
-    end
-    return os.getenv('AZUL_RUN_DIR') .. '/' .. name .. '-child'
-end
-
-local has_child_sessions_in_passthrough = function()
-    local f = session_child_file()
-    if not FILES.exists(f) then
-        return false
-    end
-
-    local content = FILES.read_file(f)
-    return content:gsub('[\n\r\t]', '') == 'true'
-end
-
 local anounce_passthrough = function()
-    local f = session_child_file(true)
+    local f = funcs.session_child_file(true)
     if not FILES.exists(f) then
         return
     end
@@ -422,7 +405,7 @@ local anounce_passthrough = function()
 end
 
 local recall_passthrough = function()
-    local f = session_child_file(true)
+    local f = funcs.session_child_file(true)
     if not FILES.exists(f) then
         return
     end
@@ -438,7 +421,6 @@ M.enter_mode = function(new_mode)
             vim.o.laststatus = global_last_status
         end
         recall_passthrough()
-        vim.api.nvim_command('tunmap ' .. (L.passthrough_escape or options.passthrough_escape))
         L.passthrough_escape = nil
     end
     mode = new_mode
@@ -453,15 +435,6 @@ M.enter_mode = function(new_mode)
             end
         end)
         anounce_passthrough()
-        map('t', (L.passthrough_escape or options.passthrough_escape), '', {
-            callback = function()
-                if has_child_sessions_in_passthrough() then
-                    M.send_to_current('<C-\\><C-s>', true)
-                    return
-                end
-                M.enter_mode('t')
-            end
-        })
     end
     if old_mode ~= new_mode then
         trigger_event('ModeChanged', {old_mode, new_mode})
@@ -1077,28 +1050,6 @@ end
 M.set_workflow = function(w, m)
     mod = m or '<C-s>'
     workflow = w
-    if workflow == 'azul' or workflow == 'tmux' then
-        -- vim.api.nvim_set_keymap('t', mod, '', {
-        --     callback = function()
-        --         if M.current_mode() ~= 't' then
-        --             M.send_to_current(mod, true)
-        --             return
-        --         end
-        --         if mode == 'P' then
-        --             M.send_to_current(mod, true)
-        --             return
-        --         end
-        --         if workflow == 'tmux' and M.current_mode() ~= 'n' then
-        --             M.enter_mode('n')
-        --             M.feedkeys('<C-\\><C-n>', 't')
-        --         end
-        --         vim.fn.timer_start(1, function()
-        --             M.enter_mode('M')
-        --         end)
-        --     end,
-        --     desc = '',
-        -- })
-    end
 end
 
 M.suspend = function()

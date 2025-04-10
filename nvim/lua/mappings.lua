@@ -1,6 +1,7 @@
 local azul = require('azul')
 local funcs = require('functions')
 local options = require('options')
+local FILES = require('files')
 
 local ns_id = nil
 
@@ -110,7 +111,7 @@ local generic_key_handler = function()
     end
 
     local process_input = function(key, me)
-        local trans = vim.fn.keytrans(key)
+        local trans = string.gsub(vim.fn.keytrans(key), "Bslash", "\\")
         if trans == '' then
             reset()
             return nil
@@ -209,6 +210,27 @@ local generic_key_handler = function()
         return result
     end)
 end
+
+local has_child_sessions_in_passthrough = function()
+    local f = funcs.session_child_file()
+    if not FILES.exists(f) then
+        return false
+    end
+
+    local content = FILES.read_file(f)
+    return content:gsub('[\n\r\t]', '') == 'true'
+end
+
+
+azul.set_key_map('P', options.passthrough_escape, '', {
+    callback = function()
+        if has_child_sessions_in_passthrough() then
+            azul.send_to_current(options.passthrough_escape, true)
+            return
+        end
+        azul.enter_mode('t')
+    end
+})
 
 azul.persistent_on('AzulStarted', function()
     generic_key_handler()
