@@ -81,7 +81,13 @@ local generic_key_handler = function()
     local try_select = function(collection, c)
         local map = funcs.find(function(x) return funcs.compare_shortcuts(x.ls, c) end, collection)
         if map == nil then
-            azul.send_to_current(c, true)
+            local t = azul.get_current_terminal()
+            if t.term_id == nil then
+                funcs.log("FEEDING " .. vim.inspect(c))
+                azul.feedkeys(c, 'n')
+            else
+                azul.send_to_current(c, true)
+            end
             -- reset()
             return false
         else
@@ -160,7 +166,12 @@ local generic_key_handler = function()
             buffer = c
         end
         c = c .. trans
+        funcs.log("SEARCH FOR " .. vim.inspect(c) .. " IN " .. #collection)
         collection = vim.tbl_filter(function(x) return funcs.shortcut_starts_with(x.ls, c) end, collection)
+        funcs.log("FOUND " .. vim.inspect(#collection))
+        if #collection < 3 then
+            funcs.log(vim.inspect(collection))
+        end
         if timer == nil then
             try_select(collection, c)
             return ''
@@ -185,6 +196,7 @@ local generic_key_handler = function()
             end
             -- azul.feedkeys(c, vim.fn.mode())
             reset()
+            funcs.log("IGNORE KEYS" .. vim.inspect(vim.fn.mode()))
             return nil
         end
 
@@ -201,6 +213,7 @@ local generic_key_handler = function()
             reset()
             return nil
         end
+        funcs.log("PROCESSING " .. vim.inspect(_) .. " AND " .. vim.inspect(key))
         local safe, result = pcall(function() return process_input(key, process_input) end)
         if not safe then
             print(result)

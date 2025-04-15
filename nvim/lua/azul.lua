@@ -1,5 +1,4 @@
 local cmd = vim.api.nvim_create_autocmd
-local map = vim.api.nvim_set_keymap
 local funcs = require('functions')
 local FILES = require('files')
 local options = require('options')
@@ -77,6 +76,16 @@ end
 
 local L = {}
 
+local current_win_has_no_pane = function()
+    funcs.log("PANE SEARCH FOR " .. vim.inspect(vim.fn.bufnr('%')))
+    local t = L.term_by_buf_id(vim.fn.bufnr('%'))
+    if t == nil then
+        return vim.b.terminal_job_id == nil
+    end
+    funcs.log("STATE IS " .. vim.inspect(M.remote_state(t)) .. " FOR " .. vim.inspect(t.buf))
+    return vim.b.terminal_job_id == nil and M.remote_state(t) ~= 'disconnected'
+end
+
 local add_to_history = function(buf, operation, params, tab_id)
     local t = L.term_by_buf_id(buf)
     if t == nil or M.is_float(t) then
@@ -97,6 +106,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -116,10 +126,18 @@ local do_exit = function()
 end
 
 local start_insert = function(force)
+    funcs.log("STARTING INSERT" .. vim.fn.mode())
     if options.workflow == 'tmux' and not force then
         return
     end
+    if vim.fn.mode() == 'n' and M.remote_state(M.get_current_terminal()) ~= 'disconnected' then
+        M.feedkeys('<esc>', 'n')
+        M.feedkeys('i', 'n')
+    end
     vim.api.nvim_command('startinsert')
+    vim.fn.timer_start(1, function()
+        funcs.log("AND AFTER " .. vim.fn.mode())
+    end)
 end
 
 M.is_float = function(t)
@@ -258,7 +276,10 @@ local OnEnter = function(ev)
         return
     end
 
+    vim.inspect("ENTER WITH " .. vim.inspect(ev))
+
     if M.is_float(crt) == false then
+        funcs.log("HIDE FLOATS ON ENTER")
         M.hide_floats()
     end
     crt.last_access = last_access
@@ -314,6 +335,7 @@ end
 ---@param buf number The buffer in which to open the terminal
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
 M.open = function(start_edit, buf, callback)
+    funcs.log("OPEN A NEW TERM")
     if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and buf == nil then
         L.open_params = {start_edit, buf, callback}
         vim.api.nvim_command('$tabnew')
@@ -371,6 +393,7 @@ local OnTermClose = function(ev)
         trigger_event('RemoteDisconnected', {t})
         vim.fn.timer_start(1, function()
             refresh_buf(t.buf, false)
+            funcs.log("START INSERT")
             start_insert(true)
         end)
         return
@@ -415,6 +438,7 @@ end
 --- Enters a custom mode. Use this function for changing custom modes
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'
 M.enter_mode = function(new_mode)
+    funcs.log("ENTERING MODE " .. vim.inspect(new_mode))
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then
@@ -440,12 +464,20 @@ M.enter_mode = function(new_mode)
         trigger_event('ModeChanged', {old_mode, new_mode})
     end
     if L.is_vim_mode(new_mode) then
+        if vim.fn.mode() ~= 't' and new_mode == 't' then
+            vim.fn.timer_start(1, function()
+                start_insert()
+            end)
+        end
+        funcs.log("MODE IS " .. vim.inspect(vim.fn.mode()) .. " AND " .. vim.inspect(new_mode) .. " and " .. vim.inspect(old_mode))
         return
     end
 
     local real_mode = L.get_real_mode(new_mode)
+    funcs.log("MODE FROM " .. vim.inspect() .. " TO " .. vim.inspect(new_mode))
     if real_mode ~= new_mode and workflow ~= 'tmux' then
         M.suspend()
+        funcs.log("START INSERT AZUL MODE")
         start_insert()
         M.resume()
     end
@@ -653,21 +685,6 @@ cmd({'FileType', 'BufEnter'}, {
     end
 })
 
-cmd({'WinEnter'}, {
-    pattern = "term://*", callback = function(ev)
-        if is_suspended then
-            return
-        end
-        vim.fn.timer_start(1, function()
-            ev.buf = vim.fn.bufnr()
-            if vim.b.terminal_job_id == nil then
-                M.open(false)
-            end
-            OnEnter(ev)
-        end)
-    end
-})
-
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
     pattern = "*", callback = function()
         vim.fn.timer_start(1, function()
@@ -685,14 +702,20 @@ cmd({'TabLeave'}, {
     end
 })
 
-cmd({'WinNew'}, {
-    pattern = "term://*", callback = function()
+cmd({'WinNew', 'WinEnter'}, {
+    pattern = "*", callback = function(ev)
         if is_suspended then
             return
         end
         vim.fn.timer_start(1, function()
-            if vim.b.terminal_job_id == nil then
+            ev.buf = vim.fn.bufnr('%')
+            local buftype = vim.api.nvim_get_option_value('buftype', {buf = ev.buf})
+            local filetype = vim.api.nvim_get_option_value('filetype', {buf = ev.buf})
+            if current_win_has_no_pane() then
                 M.open(false)
+            end
+            if ev.event == 'WinEnter' and (buftype == 'terminal' or filetype == 'AzulRemoteTerm') then
+                OnEnter(ev)
             end
         end)
     end
@@ -705,8 +728,20 @@ cmd({'ModeChanged'}, {
         end
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
+        -- if M.remote_state(M.get_current_terminal()) == 'disconnected' then
+        --     -- Block insert or visual mode for a disconnected buffer
+        --     if to == 'i' or to == 'v' then
+        --         vim.fn.timer_start(1, function()
+        --             -- vim.api.nvim_command('stopinsert')
+        --             -- M.feedkeys('<Esc>', to)
+        --         end)
+
+        --         return
+        --     end
+        -- end
         if to ~= from and mode ~= 'P' then
-            if not is_dressing then
+            local t = M.get_current_terminal()
+            if not is_dressing and (t == nil or M.remote_state(t) ~= 'disconnected') then
                 M.enter_mode(to)
             end
         end
@@ -717,6 +752,7 @@ local restore_float = function(t)
     if t == nil or not vim.api.nvim_buf_is_valid(_buf(t)) then
         return
     end
+    funcs.log("RESTORING BUF " .. vim.inspect(_buf(t)))
     vim.api.nvim_open_win(_buf(t), true, t.win_config)
     if t.editing_buf == nil then
         refresh_buf(t.buf)
@@ -729,6 +765,7 @@ M.show_floats = function(group)
     local floatings = vim.tbl_filter(function(t) return M.is_float(t) and t.group == g end, terminals)
     table.sort(floatings, function(a, b) return a.last_access < b.last_access end)
     for _, f in ipairs(floatings) do
+        funcs.log("RESTORING " .. vim.inspect(f))
         restore_float(f)
     end
     vim.fn.timer_start(1, function()
@@ -772,6 +809,7 @@ M.open_float = function(group, opts, to_restore)
         _opts[k] = v
     end
     vim.api.nvim_open_win(buf, true, _opts)
+    funcs.log("OPENED " .. vim.inspect(buf))
     vim.fn.timer_start(1, function()
         local opened = L.term_by_buf_id(buf)
         trigger_event('FloatOpened', {opened})
@@ -967,6 +1005,10 @@ M.select_next_pane = function(dir, group)
 end
 
 M.current_mode = function()
+    local t = M.get_current_terminal()
+    if t ~= nil and (mode == 'i' or mode == 'n') and M.remote_state(t) == 'disconnected' then
+        return 't'
+    end
     return mode
 end
 
@@ -1726,6 +1768,7 @@ M.get_current_modifier = function()
 end
 
 M.run_map = function(m)
+    funcs.log("RUNNING ACTION " .. vim.inspect(m))
     if m.options.callback ~= nil then
         m.options.callback()
     elseif m.rs ~= nil then
@@ -1895,6 +1938,17 @@ end
 M.remote_enter_scroll_mode = function()
     M.send_to_current('<C-\\><C-n>', true)
     start_insert(true)
+end
+
+--- Returns the reomote state of a pane (nil means the pane is not a remote pane). If the pane is remote, it will
+--- return connected or disconnected
+--- @param t terminals The pane to be analyzed
+M.remote_state = function(t)
+    if t == nil or t.remote_command == nil then
+        return nil
+    end
+
+    return (t.term_id == nil and 'disconnected') or 'connected'
 end
 
 M.persistent_on = function(ev, callback)
