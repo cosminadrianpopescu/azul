@@ -66,4 +66,6 @@ f('p', 'h', '', {
 * option to automatically start logging
 
 * cheatsheet test case
-* mappings.lua need to trea the case of <C-s><C-s> by itself
+* mappings.lua need to treat the case of <C-s><C-s> by itself
+
+* when opening a float, instead of relying on the WinEnter, just open it with the buffer directly (this will help us with the start_insert)

@@ -66,6 +66,9 @@ local events = {
     RemoteDisconnected = {},
     RemoteReconnected = {},
     UserInput = {},
+
+    UserInputPrompt = {},
+    Edit = {},
 }
 
 local persistent_events = {}
@@ -123,21 +126,6 @@ local do_exit = function()
         vim.fn.jobstop(c.id)
     end
     trigger_event('ExitAzul')
-end
-
-local start_insert = function(force)
-    funcs.log("STARTING INSERT" .. vim.fn.mode())
-    if options.workflow == 'tmux' and not force then
-        return
-    end
-    if vim.fn.mode() == 'n' and M.remote_state(M.get_current_terminal()) ~= 'disconnected' then
-        M.feedkeys('<esc>', 'n')
-        M.feedkeys('i', 'n')
-    end
-    vim.api.nvim_command('startinsert')
-    vim.fn.timer_start(1, function()
-        funcs.log("AND AFTER " .. vim.fn.mode())
-    end)
 end
 
 M.is_float = function(t)
@@ -348,6 +336,7 @@ M.open = function(start_edit, buf, callback)
         L.open_params = nil
     end
     local opts = {
+        term = true,
         cdw = vim.fn.getcwd(),
         env = {
             VIM = '',
@@ -366,7 +355,7 @@ M.open = function(start_edit, buf, callback)
     end
 
     local do_open = function()
-        local result = vim.fn.termopen(remote_command or vim.o.shell, opts)
+        local result = vim.fn.jobstart(remote_command or vim.o.shell, opts)
     end
     to_save_remote_command = remote_command
     if buf == nil then
@@ -378,7 +367,6 @@ M.open = function(start_edit, buf, callback)
     if type(start_edit) == 'boolean' and start_edit == false then
         return
     end
-    start_insert(true)
 end
 
 local OnTermClose = function(ev)
@@ -393,8 +381,6 @@ local OnTermClose = function(ev)
         trigger_event('RemoteDisconnected', {t})
         vim.fn.timer_start(1, function()
             refresh_buf(t.buf, false)
-            funcs.log("START INSERT")
-            start_insert(true)
         end)
         return
     end
@@ -415,7 +401,6 @@ local OnTermClose = function(ev)
     vim.fn.timer_start(1, function()
         ev.buf = vim.fn.bufnr()
         OnEnter(ev)
-        start_insert(true)
     end)
 end
 
@@ -450,9 +435,6 @@ M.enter_mode = function(new_mode)
     mode = new_mode
     if mode == 'P' then
         vim.fn.timer_start(1, function()
-            if workflow == 'tmux' then
-                start_insert(true)
-            end
             if options.hide_in_passthrough then
                 global_last_status = vim.o.laststatus
                 vim.o.laststatus = 0
@@ -462,24 +444,6 @@ M.enter_mode = function(new_mode)
     end
     if old_mode ~= new_mode then
         trigger_event('ModeChanged', {old_mode, new_mode})
-    end
-    if L.is_vim_mode(new_mode) then
-        if vim.fn.mode() ~= 't' and new_mode == 't' then
-            vim.fn.timer_start(1, function()
-                start_insert()
-            end)
-        end
-        funcs.log("MODE IS " .. vim.inspect(vim.fn.mode()) .. " AND " .. vim.inspect(new_mode) .. " and " .. vim.inspect(old_mode))
-        return
-    end
-
-    local real_mode = L.get_real_mode(new_mode)
-    funcs.log("MODE FROM " .. vim.inspect() .. " TO " .. vim.inspect(new_mode))
-    if real_mode ~= new_mode and workflow ~= 'tmux' then
-        M.suspend()
-        funcs.log("START INSERT AZUL MODE")
-        start_insert()
-        M.resume()
     end
 end
 
@@ -677,11 +641,8 @@ cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function()
         is_dressing = vim.o.filetype == 'DressingInput'
         if is_dressing then
-            -- M.feedkeys('i', 'n')
+            trigger_event('UserInputPrompt')
         end
-        -- vim.fn.timer_start(100, function()
-        --     start_insert(true)
-        -- end)
     end
 })
 
@@ -817,9 +778,7 @@ M.open_float = function(group, opts, to_restore)
             opened.azul_placeholders = to_restore.azul_placeholders or {}
             opened.overriden_title = to_restore.overriden_title
         end
-        update_titles(function()
-            start_insert(true)
-        end)
+        update_titles()
     end)
 end
 
@@ -1120,7 +1079,6 @@ M.disconnect = function()
     for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
         vim.fn.timer_start(1, function()
             vim.fn.chanclose(ui.chan)
-            start_insert(true)
         end)
     end
 end
@@ -1256,9 +1214,6 @@ L.restore_remotes = function()
     updating_titles = false
     update_titles()
     trigger_event("LayoutRestored")
-    vim.fn.timer_start(100, function()
-        start_insert(true)
-    end)
 end
 
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
@@ -1601,11 +1556,7 @@ M.user_input = function(opts, callback, force)
         if (input ~= nil and input ~= '') or force then
             callback(input)
         end
-        start_insert(true)
         trigger_event("UserInput", {input})
-    end)
-    vim.fn.timer_start(20, function()
-        start_insert(true)
     end)
 end
 
@@ -1736,7 +1687,7 @@ M.edit = function(t, file, on_finish)
     }
     vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
     M.resume()
-    start_insert(true)
+    trigger_event('Edit', {t, file})
 end
 
 M.edit_scrollback = function(t)
@@ -1834,16 +1785,10 @@ end
 
 M.create_tab = function()
     M.open()
-    vim.fn.timer_start(1, function()
-        start_insert(true)
-    end)
 end
 
 M.create_tab_remote = function()
     M.open_remote()
-    vim.fn.timer_start(1, function()
-        start_insert(true)
-    end)
 end
 
 M.on_action = function(action, callback)
@@ -1937,7 +1882,6 @@ end
 
 M.remote_enter_scroll_mode = function()
     M.send_to_current('<C-\\><C-n>', true)
-    start_insert(true)
 end
 
 --- Returns the reomote state of a pane (nil means the pane is not a remote pane). If the pane is remote, it will

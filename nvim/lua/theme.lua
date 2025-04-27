@@ -98,7 +98,8 @@ local function my_mode()
         m = 't'
     end
     last_color = (MOD_MAP[m] and MOD_MAP[m].color) or nil
-    return (MOD_MAP[m] and MOD_MAP[m].text) or m
+    local result = (MOD_MAP[m] and MOD_MAP[m].text) or m
+    return result or '     ?     '
 end
 
 local function tabs(from, to)
