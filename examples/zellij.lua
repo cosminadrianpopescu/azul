@@ -152,7 +152,7 @@ set_resize_shortcuts('j', 'res +5')
 set_resize_shortcuts('k', 'res -5')
 set_resize_shortcuts('l', 'vert res +5')
 
-map({'n', 't'}, '<a-n>', '', {
+map({'a', 't'}, '<a-n>', '', {
     callback = azul.toggle_nested_mode
 })
 

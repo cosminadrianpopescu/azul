@@ -9,18 +9,6 @@ local options = require('options')
 
 M.ini_shortcuts = {}
 
-cmd('TermClose', {
-    pattern = "*", callback = function()
-        local azul = require('azul')
-        if azul.get_current_workflow() ~= 'zellij' and azul.get_current_workflow() ~= 'tmux' then
-            return
-        end
-        vim.fn.timer_start(1, function()
-            -- vim.fn.feedkeys('i')
-        end)
-    end
-})
-
 cmd({'TabNew', 'VimEnter'}, {
     pattern = "*", callback = function()
         local azul = require('azul')
@@ -57,7 +45,7 @@ local actions = {
 }
 
 local modes = {
-    terminal = 't', azul = 'n', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v', passthrough = 'P',
+    terminal = 't', azul = 'a', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v', passthrough = 'P',
     modifier = 'M',
 }
 
@@ -90,7 +78,7 @@ M.default_config = {
                     m = 'm',
                     s = 's',
                     T = 'T',
-                    n = 'n',
+                    a = 'n',
                     v = 'v',
                     P = 'P',
                 },
@@ -243,7 +231,7 @@ M.default_config = {
                     v = '<C-S-v>',
                     s = '<C-s>',
                     T = '<C-S-t>',
-                    n = '<C-a>',
+                    a = '<C-a>',
                     m = '<C-s-m>',
                     P = '<C-s-p>',
                 },
@@ -447,18 +435,18 @@ local set_shortcut = function(action, shortcut, mode, arg)
             s = 'split',
             T = 'tabs',
             t = 'terminal',
-            n = 'azul',
+            a = 'azul',
             v = 'visual',
             P = 'passthrough',
         }
-        if arg == 'n' or arg == 'v' then
-            if mode == 'n' and arg == 'v' then
+        if arg == 'n' or arg == 'v' or arg == 'a' then
+            if (mode == 'n' or mode == 'a') and arg == 'v' then
                 return
             end
             local suf = (arg == 'v' and 'v') or ''
             map(mode, shortcut, '', {
                 callback = function()
-                    azul.enter_mode('n')
+                    azul.enter_mode('a')
                     azul.feedkeys('<C-\\><C-n>' .. suf, 't')
                 end,
                 desc = 'Enter ' .. mapping[arg] .. ' mode',

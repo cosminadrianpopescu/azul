@@ -213,7 +213,7 @@ end
 local _do_action_with_modifier = function(action, arg, events, callback)
     local shortcut_mode = 't'
     if options.workflow == 'tmux' then
-        shortcut_mode = 'n'
+        shortcut_mode = 'a'
     elseif options.workflow == 'zellij' then
         shortcut_mode = 'p'
     end

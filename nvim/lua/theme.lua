@@ -56,6 +56,10 @@ local MOD_MAP = {
         text = '    AZUL   ',
         color = colors.normal.a.fg,
     },
+    a = {
+        text = '    AZUL   ',
+        color = colors.normal.a.fg,
+    },
     v = {
         text = '   VISUAL  ',
         color = colors.visual.a.fg,

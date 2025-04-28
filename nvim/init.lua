@@ -23,6 +23,7 @@ if not funcs.is_marionette() then
 
     cfg.run_init_lua()
 else
+    require('insert')
     azul.set_workflow('emacs')
     vim.o.laststatus = 0
     vim.o.cmdheight = 0
@@ -42,7 +43,7 @@ else
     vim.o.timeoutlen = 300
 
     azul.persistent_on('ModeChanged', function(args)
-        vim.o.laststatus = (args[2] == 'n' and 3) or 0
+        vim.o.laststatus = ((args[2] == 'n' or args[2] == 'a') and 3) or 0
     end)
 
     local config_file = files.config_dir .. '/init.lua'

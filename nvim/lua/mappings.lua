@@ -3,8 +3,6 @@ local funcs = require('functions')
 local options = require('options')
 local FILES = require('files')
 
-local ns_id = nil
-
 local get_mappings_for_mode = function(mode)
     local result = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
     table.sort(result, function(m1, m2)
@@ -46,6 +44,7 @@ local generic_key_handler = function()
     end
 
     local reset = function()
+        funcs.log("REINITIALIZE COLLECTION FOR " .. vim.inspect(mode))
         collection = get_mappings_for_mode(mode)
         buffer = ''
         c = ''
@@ -66,11 +65,14 @@ local generic_key_handler = function()
 
     azul.persistent_on('ModeChanged', function(args)
         local old_mode = args[1]
-        mode = args[2]
-        if mode == 'M' then
-            mode_before_modifier = old_mode
-        end
-        collection = get_mappings_for_mode(mode)
+        vim.fn.timer_start(1, function()
+            mode = azul.current_mode()
+            funcs.log("SET MODE TO " .. vim.inspect(mode))
+            if mode == 'M' then
+                mode_before_modifier = old_mode
+            end
+            collection = get_mappings_for_mode(mode)
+        end)
     end)
 
     local run_map = function(map)
@@ -101,8 +103,8 @@ local generic_key_handler = function()
             azul.send_to_current(options.modifier, true)
             return ''
         end
-        if options.workflow == 'tmux' and azul.current_mode() ~= 'n' then
-            azul.enter_mode('n')
+        if options.workflow == 'tmux' and azul.current_mode() ~= 'n' and azul.current_mode() ~= 'a' then
+            azul.enter_mode('a')
             azul.feedkeys('<C-\\><C-n>', 't')
             run_after(2, function()
                 vim.fn.timer_start(1, function()
@@ -129,7 +131,7 @@ local generic_key_handler = function()
                 ignored_keys_count = 0
                 run_after_ignore()
             end
-            return nil
+            return 'skip'
         end
         if funcs.compare_shortcuts(trans, options.modifier)
             and azul.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
@@ -189,6 +191,7 @@ local generic_key_handler = function()
                     azul.feedkeys(after, mode)
                 elseif mode_before ~= azul.current_mode() then
                     collection = get_mappings_for_mode(azul.current_mode())
+                    funcs.log("CALLING RECURSIVE")
                     me(trans, me)
                 end
                 reset()
@@ -208,7 +211,7 @@ local generic_key_handler = function()
         return ''
     end
 
-    ns_id = vim.on_key(function(_, key)
+    vim.on_key(function(_, key)
         if key == "" then
             reset()
             return nil
@@ -220,6 +223,20 @@ local generic_key_handler = function()
             reset()
             return ''
         end
+        funcs.log("GOT RESULT " .. vim.inspect(result) .. " IN " .. vim.fn.mode())
+        local vim_mode = vim.fn.mode()
+        if result == nil and (vim_mode == 'i' or vim_mode == 'n') then
+            local t = azul.get_current_terminal()
+            if azul.remote_state(t) == 'disconnected' then
+                funcs.log("CAUGHT DISCONNECTED")
+                reset()
+                return ''
+            end
+        end
+        if result == 'skip' then
+            return nil
+        end
+        funcs.log("RETURNING " .. vim.inspect(result))
         return result
     end)
 end

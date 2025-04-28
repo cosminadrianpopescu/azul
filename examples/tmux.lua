@@ -31,7 +31,7 @@ map('M', 'c', '', {
 local set_mode_escape = function(shortcut)
     map({'r', 'p', 'm', 's', 'T'}, shortcut, '', {
         callback = function()
-            azul.enter_mode('n')
+            azul.enter_mode('a')
             vim.fn.timer_start(1, function()
                 vim.api.nvim_command('startinsert')
             end)
@@ -217,7 +217,7 @@ map('M', '<space>p', '', {
     end,
 })
 
-map('n', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
+map('a', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
 map('M', 'N', '', {
     callback = azul.toggle_nested_mode
 })

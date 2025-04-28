@@ -421,7 +421,7 @@ local recall_passthrough = function()
 end
 
 --- Enters a custom mode. Use this function for changing custom modes
----@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'
+---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'|'a'
 M.enter_mode = function(new_mode)
     funcs.log("ENTERING MODE " .. vim.inspect(new_mode))
     local old_mode = mode
@@ -689,17 +689,18 @@ cmd({'ModeChanged'}, {
         end
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
-        -- if M.remote_state(M.get_current_terminal()) == 'disconnected' then
-        --     -- Block insert or visual mode for a disconnected buffer
-        --     if to == 'i' or to == 'v' then
-        --         vim.fn.timer_start(1, function()
-        --             -- vim.api.nvim_command('stopinsert')
-        --             -- M.feedkeys('<Esc>', to)
-        --         end)
+        if M.remote_state(M.get_current_terminal()) == 'disconnected' then
+            -- Block insert or visual mode for a disconnected buffer
+            if to == 'i' or to == 'v' then
+                vim.fn.timer_start(1, function()
+                    funcs.log("STOPPED INSERT")
+                    vim.api.nvim_command('stopinsert')
+                    -- M.feedkeys('<Esc>', to)
+                end)
 
-        --         return
-        --     end
-        -- end
+                return
+            end
+        end
         if to ~= from and mode ~= 'P' then
             local t = M.get_current_terminal()
             if not is_dressing and (t == nil or M.remote_state(t) ~= 'disconnected') then
@@ -792,6 +793,7 @@ M.toggle_floats = function(group)
 end
 
 M.feedkeys = function(what, mode)
+    funcs.log("AZUL FEEDING " .. vim.inspect(what) .. " IN " .. vim.inspect(mode))
     local codes = vim.api.nvim_replace_termcodes(what, true, false, true)
     vim.api.nvim_feedkeys(codes, mode, false)
 end
@@ -965,7 +967,7 @@ end
 
 M.current_mode = function()
     local t = M.get_current_terminal()
-    if t ~= nil and (mode == 'i' or mode == 'n') and M.remote_state(t) == 'disconnected' then
+    if t ~= nil and (mode == 'i' or mode == 'n' or mode == 'a') and M.remote_state(t) == 'disconnected' then
         return 't'
     end
     return mode
@@ -1550,9 +1552,7 @@ M.get_mode_mappings = function()
 end
 
 M.user_input = function(opts, callback, force)
-    M.suspend()
     vim.ui.input(opts, function(input)
-        M.resume()
         if (input ~= nil and input ~= '') or force then
             callback(input)
         end
@@ -1738,7 +1738,7 @@ M.is_modifier_mode = function(m)
         return false
     end
 
-    return (workflow == 'tmux' and m == 'n') or (workflow == 'azul' and m == 't')
+    return (workflow == 'tmux' and (m == 'n' or m == 'a')) or (workflow == 'azul' and m == 't')
 end
 
 local just_close_windows = function(floats)
