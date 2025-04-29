@@ -69,6 +69,8 @@ local events = {
 
     UserInputPrompt = {},
     Edit = {},
+    LeaveDisconnectedPane = {},
+    EnterDisconnectedPane = {}
 }
 
 local persistent_events = {}
@@ -682,6 +684,18 @@ cmd({'WinNew', 'WinEnter'}, {
     end
 })
 
+cmd({'BufLeave', 'BufEnter'}, {
+    pattern = {'*'}, callback = function(ev)
+        local t = L.term_by_buf_id(ev.buf)
+        if t == nil then
+            return
+        end
+        if M.remote_state(t) == 'disconnected' then
+            trigger_event((ev.event == 'BufLeave' and 'LeaveDisconnectedPane') or 'EnterDisconnectedPane', {t})
+        end
+    end
+})
+
 cmd({'ModeChanged'}, {
     pattern = {'*'}, callback = function(ev)
         if is_suspended then
@@ -790,6 +804,9 @@ M.toggle_floats = function(group)
     else
         M.hide_floats()
     end
+    vim.fn.timer_start(1, function()
+        M.enter_mode('t')
+    end)
 end
 
 M.feedkeys = function(what, mode)
