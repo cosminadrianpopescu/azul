@@ -223,16 +223,16 @@ local generic_key_handler = function()
             reset()
             return ''
         end
-        funcs.log("GOT RESULT " .. vim.inspect(result) .. " IN " .. vim.fn.mode())
-        local vim_mode = vim.fn.mode()
-        if result == nil and (vim_mode == 'i' or vim_mode == 'n') then
-            local t = azul.get_current_terminal()
-            if azul.remote_state(t) == 'disconnected' then
-                funcs.log("CAUGHT DISCONNECTED")
-                reset()
-                return ''
-            end
-        end
+        -- funcs.log("GOT RESULT " .. vim.inspect(result) .. " IN " .. vim.fn.mode())
+        -- local vim_mode = vim.fn.mode()
+        -- if result == nil and (vim_mode == 'i' or vim_mode == 'n') then
+        --     local t = azul.get_current_terminal()
+        --     if azul.remote_state(t) == 'disconnected' then
+        --         funcs.log("CAUGHT DISCONNECTED")
+        --         reset()
+        --         return ''
+        --     end
+        -- end
         if result == 'skip' then
             return nil
         end
