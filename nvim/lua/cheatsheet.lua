@@ -268,7 +268,7 @@ azul.persistent_on('ModeChanged', function(args)
     end
     local mappings = get_mappings_for_mode(new_mode)
     close_window()
-    if azul.is_modifier_mode(new_mode) or #mappings == 0 or new_mode == 't' then
+    if azul.is_modifier_mode(new_mode) or #mappings == 0 or new_mode == 't' or new_mode == 'P' then
         close_mode_window()
         return
     end

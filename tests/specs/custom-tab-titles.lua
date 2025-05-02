@@ -9,7 +9,7 @@ local get_title = function(idx)
 end
 
 local feedkeys = function(what, mode)
-    if options.workflow ~= 'tmux' then
+    if options.workflow ~= 'tmux' and options.workflow ~='emacs' then
         azul.feedkeys(what, mode)
         return
     end
@@ -78,8 +78,6 @@ t.wait_events({TabTitleChanged = 1}, function()
         end)
     end)
 end)
-t.single_shot('AzulStarted', function()
-    vim.fn.timer_start(500, function()
-        azul.feedkeys('test 1<cr>', 'i')
-    end)
+vim.fn.timer_start(500, function()
+    azul.feedkeys('test 1<cr>', 'i')
 end)

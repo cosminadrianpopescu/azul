@@ -44,7 +44,6 @@ local generic_key_handler = function()
     end
 
     local reset = function()
-        funcs.log("REINITIALIZE COLLECTION FOR " .. vim.inspect(mode))
         collection = get_mappings_for_mode(mode)
         buffer = ''
         c = ''
@@ -67,7 +66,6 @@ local generic_key_handler = function()
         local old_mode = args[1]
         vim.fn.timer_start(1, function()
             mode = azul.current_mode()
-            funcs.log("SET MODE TO " .. vim.inspect(mode))
             if mode == 'M' then
                 mode_before_modifier = old_mode
             end
@@ -85,7 +83,6 @@ local generic_key_handler = function()
         if map == nil then
             local t = azul.get_current_terminal()
             if t.term_id == nil then
-                funcs.log("FEEDING " .. vim.inspect(c))
                 azul.feedkeys(c, 'n')
             else
                 azul.send_to_current(c, true)
@@ -168,12 +165,7 @@ local generic_key_handler = function()
             buffer = c
         end
         c = c .. trans
-        funcs.log("SEARCH FOR " .. vim.inspect(c) .. " IN " .. #collection)
         collection = vim.tbl_filter(function(x) return funcs.shortcut_starts_with(x.ls, c) end, collection)
-        funcs.log("FOUND " .. vim.inspect(#collection))
-        if #collection < 3 then
-            funcs.log(vim.inspect(collection))
-        end
         if timer == nil then
             try_select(collection, c)
             return ''
@@ -191,7 +183,6 @@ local generic_key_handler = function()
                     azul.feedkeys(after, mode)
                 elseif mode_before ~= azul.current_mode() then
                     collection = get_mappings_for_mode(azul.current_mode())
-                    funcs.log("CALLING RECURSIVE")
                     me(trans, me)
                 end
                 reset()
@@ -199,7 +190,6 @@ local generic_key_handler = function()
             end
             -- azul.feedkeys(c, vim.fn.mode())
             reset()
-            funcs.log("IGNORE KEYS" .. vim.inspect(vim.fn.mode()))
             return nil
         end
 
@@ -216,27 +206,30 @@ local generic_key_handler = function()
             reset()
             return nil
         end
-        funcs.log("PROCESSING " .. vim.inspect(_) .. " AND " .. vim.inspect(key))
         local safe, result = pcall(function() return process_input(key, process_input) end)
         if not safe then
             print(result)
             reset()
             return ''
         end
-        -- funcs.log("GOT RESULT " .. vim.inspect(result) .. " IN " .. vim.fn.mode())
-        -- local vim_mode = vim.fn.mode()
-        -- if result == nil and (vim_mode == 'i' or vim_mode == 'n') then
-        --     local t = azul.get_current_terminal()
-        --     if azul.remote_state(t) == 'disconnected' then
-        --         funcs.log("CAUGHT DISCONNECTED")
-        --         reset()
-        --         return ''
-        --     end
-        -- end
+        local vim_mode = vim.fn.mode()
+        if result == nil and vim_mode == 'n' and (key == 'q' or key == 'r') then
+            local t = azul.get_current_terminal()
+            if azul.remote_state(t) == 'disconnected' then
+                reset()
+                pcall(function()
+                    if key == 'q' then
+                        azul.remote_quit(t)
+                    else
+                        azul.remote_reconnect(t)
+                    end
+                end)
+                return ''
+            end
+        end
         if result == 'skip' then
             return nil
         end
-        funcs.log("RETURNING " .. vim.inspect(result))
         return result
     end)
 end

@@ -1,25 +1,20 @@
 local azul = require('azul')
-local funcs = require('functions')
 local options = require('options')
 
 local mode_before_disconnected = nil
 
 local start_insert = function(force)
-    funcs.log("STARTING INSERT" .. vim.fn.mode())
     if options.workflow == 'tmux' and not force then
         return
     end
-    -- if vim.fn.mode() == 'n' and azul.remote_state(azul.get_current_terminal()) ~= 'disconnected' then
-    --     azul.feedkeys('<esc>', 'n')
-    --     azul.feedkeys('i', 'n')
-    -- end
     vim.api.nvim_command('startinsert')
-    vim.fn.timer_start(50, function()
-        funcs.log("AND AFTER " .. vim.fn.mode())
-    end)
 end
 
-azul.persistent_on({'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit', 'AzulStarted', 'FloatOpened'}, function()
+azul.persistent_on({
+    'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
+    'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
+    'WinIdSet', 'ConfigReloaded',
+}, function()
     vim.fn.timer_start(50, function()
         start_insert(true)
     end)
@@ -27,7 +22,7 @@ end)
 
 azul.persistent_on('ModeChanged', function(args)
     local new_mode = args[2]
-    if new_mode ~= 't' then
+    if new_mode ~= 't' and new_mode ~= 'P' then
         return
     end
     vim.fn.timer_start(50, function()
@@ -41,7 +36,6 @@ azul.persistent_on('EnterDisconnectedPane', function()
         return
     end
     vim.fn.timer_start(1, function()
-        funcs.log("REENTER " .. vim.inspect(mode_before_disconnected))
         azul.enter_mode(mode_before_disconnected)
     end)
 end)
@@ -51,8 +45,5 @@ azul.persistent_on('LeaveDisconnectedPane', function()
         return
     end
 
-    -- azul.suspend()
-    funcs.log("VIM MODE IS " .. vim.inspect(vim.fn.mode()))
-        start_insert()
-    -- azul.resume()
+    start_insert()
 end)

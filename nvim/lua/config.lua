@@ -375,20 +375,6 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     end
 
-    local start_insert = function()
-        vim.fn.timer_start(1, function()
-            vim.api.nvim_command('startinsert')
-        end)
-    end
-
-    local wrap_for_insert = function(callback)
-        callback()
-        if wf ~= 'zellij' and wf ~= 'tmux' then
-            return
-        end
-        start_insert()
-    end
-
     if action == 'select_terminal' or action == 'select_session' then
         local callback = (action == 'select_terminal' and require('sessions').term_select) or require('sessions').sessions_list
         t(shortcut, callback, action:gsub('select_', ''))
@@ -408,9 +394,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'tab_select' then
         map(mode, shortcut, '', {
             callback = function()
-                wrap_for_insert(function()
-                    azul.select_tab(arg)
-                end)
+                azul.select_tab(arg)
             end,
             desc = 'Go to tab ' .. arg,
             action = action,
@@ -419,9 +403,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'toggle_floats' then
         map(mode, shortcut, '', {
             callback = function()
-                wrap_for_insert(function()
-                    azul.toggle_floats(funcs.current_float_group())
-                end)
+                azul.toggle_floats(funcs.current_float_group())
             end,
             desc = "Toggle floats visibility",
             action = action,
@@ -456,9 +438,6 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 azul.enter_mode(arg)
-                if arg == 't' and (wf == 'tmux' or wf == 'zellij') then
-                    start_insert()
-                end
             end,
             desc = "Enter " .. mapping[arg] .. " mode",
             action = action,
@@ -467,13 +446,11 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'create_float' then
         map(mode, shortcut, '', {
             callback = function()
-                wrap_for_insert(function()
-                    if funcs.is_handling_remote() then
-                        azul.open_float_remote()
-                    else
-                        azul.open_float()
-                    end
-                end)
+                if funcs.is_handling_remote() then
+                    azul.open_float_remote()
+                else
+                    azul.open_float()
+                end
             end,
             desc = "Create float",
             action = action,
@@ -777,7 +754,6 @@ M.reload_config = function()
     M.set_vim_options()
     M.run_init_lua()
     vim.fn.timer_start(1, function()
-        vim.api.nvim_command('startinsert')
         require('azul').anounce_config_reloaded()
     end)
 end

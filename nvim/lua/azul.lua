@@ -70,7 +70,10 @@ local events = {
     UserInputPrompt = {},
     Edit = {},
     LeaveDisconnectedPane = {},
-    EnterDisconnectedPane = {}
+    EnterDisconnectedPane = {},
+    TabCreated = {},
+    CommandSet = {},
+    WinIdSet = {},
 }
 
 local persistent_events = {}
@@ -82,12 +85,10 @@ end
 local L = {}
 
 local current_win_has_no_pane = function()
-    funcs.log("PANE SEARCH FOR " .. vim.inspect(vim.fn.bufnr('%')))
     local t = L.term_by_buf_id(vim.fn.bufnr('%'))
     if t == nil then
         return vim.b.terminal_job_id == nil
     end
-    funcs.log("STATE IS " .. vim.inspect(M.remote_state(t)) .. " FOR " .. vim.inspect(t.buf))
     return vim.b.terminal_job_id == nil and M.remote_state(t) ~= 'disconnected'
 end
 
@@ -111,7 +112,6 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -269,7 +269,6 @@ local OnEnter = function(ev)
     vim.inspect("ENTER WITH " .. vim.inspect(ev))
 
     if M.is_float(crt) == false then
-        funcs.log("HIDE FLOATS ON ENTER")
         M.hide_floats()
     end
     crt.last_access = last_access
@@ -325,7 +324,6 @@ end
 ---@param buf number The buffer in which to open the terminal
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
 M.open = function(start_edit, buf, callback)
-    funcs.log("OPEN A NEW TERM")
     if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and buf == nil then
         L.open_params = {start_edit, buf, callback}
         vim.api.nvim_command('$tabnew')
@@ -425,7 +423,6 @@ end
 --- Enters a custom mode. Use this function for changing custom modes
 ---@param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'|'a'
 M.enter_mode = function(new_mode)
-    funcs.log("ENTERING MODE " .. vim.inspect(new_mode))
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then
@@ -707,7 +704,6 @@ cmd({'ModeChanged'}, {
             -- Block insert or visual mode for a disconnected buffer
             if to == 'i' or to == 'v' then
                 vim.fn.timer_start(1, function()
-                    funcs.log("STOPPED INSERT")
                     vim.api.nvim_command('stopinsert')
                     -- M.feedkeys('<Esc>', to)
                 end)
@@ -728,7 +724,6 @@ local restore_float = function(t)
     if t == nil or not vim.api.nvim_buf_is_valid(_buf(t)) then
         return
     end
-    funcs.log("RESTORING BUF " .. vim.inspect(_buf(t)))
     vim.api.nvim_open_win(_buf(t), true, t.win_config)
     if t.editing_buf == nil then
         refresh_buf(t.buf)
@@ -741,7 +736,6 @@ M.show_floats = function(group)
     local floatings = vim.tbl_filter(function(t) return M.is_float(t) and t.group == g end, terminals)
     table.sort(floatings, function(a, b) return a.last_access < b.last_access end)
     for _, f in ipairs(floatings) do
-        funcs.log("RESTORING " .. vim.inspect(f))
         restore_float(f)
     end
     vim.fn.timer_start(1, function()
@@ -785,7 +779,6 @@ M.open_float = function(group, opts, to_restore)
         _opts[k] = v
     end
     vim.api.nvim_open_win(buf, true, _opts)
-    funcs.log("OPENED " .. vim.inspect(buf))
     vim.fn.timer_start(1, function()
         local opened = L.term_by_buf_id(buf)
         trigger_event('FloatOpened', {opened})
@@ -810,7 +803,6 @@ M.toggle_floats = function(group)
 end
 
 M.feedkeys = function(what, mode)
-    funcs.log("AZUL FEEDING " .. vim.inspect(what) .. " IN " .. vim.inspect(mode))
     local codes = vim.api.nvim_replace_termcodes(what, true, false, true)
     vim.api.nvim_feedkeys(codes, mode, false)
 end
@@ -1393,6 +1385,7 @@ M.set_win_id = function(id)
     local t = L.term_by_buf_id(vim.fn.bufnr('%'))
     t.azul_win_id = id
     update_titles()
+    trigger_event('WinIdSet', {id})
 end
 
 M.set_tab_variable = function(key, value)
@@ -1403,6 +1396,7 @@ M.set_cmd = function(cmd)
     local t = L.term_by_buf_id(vim.fn.bufnr('%'))
     t.azul_cmd = cmd
     update_titles()
+    trigger_event('CommandSet', {cmd})
 end
 
 M.get_current_workflow = function()
@@ -1736,7 +1730,6 @@ M.get_current_modifier = function()
 end
 
 M.run_map = function(m)
-    funcs.log("RUNNING ACTION " .. vim.inspect(m))
     if m.options.callback ~= nil then
         m.options.callback()
     elseif m.rs ~= nil then
@@ -1802,6 +1795,9 @@ end
 
 M.create_tab = function()
     M.open()
+    vim.fn.timer_start(1, function()
+        trigger_event('TabCreated')
+    end)
 end
 
 M.create_tab_remote = function()
@@ -1870,14 +1866,21 @@ M.remote_reconnect = function(t)
             M.resume()
         end)
     end
+    M.suspend()
     M.open(true, t.buf)
+    M.resume()
     trigger_event('RemoteReconnected', {t})
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
+    update_titles()
 end
 
 M.remote_quit = function(t)
     t.remote_command = nil
-    vim.fn.jobstop(funcs.safe_get_buf_var(t.buf, 'terminal_job_id'))
+    local term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
+    if term_id ~= nil then
+        vim.fn.jobstop(funcs.safe_get_buf_var(t.buf, 'terminal_job_id'))
+    end
+    OnTermClose({buf = t.buf})
 end
 
 --- Opens a new float

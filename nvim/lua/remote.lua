@@ -44,7 +44,7 @@ end
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
     pattern = "*", callback = function(ev)
         local t = funcs.find(function(t) return (t.win_id or '') .. '' == ev.file end, azul.get_terminals())
-        if t == nil or t.remote_command == nil or azul.remote_state(t) ~= 'disconnected' then
+        if t == nil or t.remote_command == nil or azul.remote_state(t) ~= 'disconnected' or t.win_id == nil then
             return
         end
         t.win_config = vim.api.nvim_win_get_config(t.win_id)
@@ -62,7 +62,6 @@ local remote_disconnected = function(t)
         vim.api.nvim_win_set_buf(t.win_id, t.buf)
     end
     local content = get_disconnected_content(t)
-    funcs.log("FOUND " .. vim.inspect(content))
     vim.api.nvim_buf_set_lines(t.buf, 0, #content, false, content)
     -- vim.api.nvim_buf_call(t.buf, function()
     --     vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
@@ -71,7 +70,6 @@ local remote_disconnected = function(t)
     vim.api.nvim_set_option_value('filetype', 'AzulRemoteTerm', {buf = t.buf})
     t.term_id = nil
     vim.api.nvim_buf_delete(old_buf, {force = true})
-    funcs.log("FINISH REMOTE DISCONNECTED")
     -- vim.api.nvim_buf_set_keymap(t.buf, 't', 'r', '', {
     --     callback = function()
     --         azul.remote_reconnect(t)

@@ -6,6 +6,6 @@ end
 
 local t = require('test-env')
 
-t.single_shot('PaneChanged', function()
+t.single_shot('AzulStarted', function()
     require('spec')
 end)

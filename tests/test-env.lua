@@ -210,22 +210,6 @@ L.action_shortcut = function(action, mode, arg, with_modifier)
     return map.shortcut
 end
 
-local _do_action_with_modifier = function(action, arg, events, callback)
-    local shortcut_mode = 't'
-    if options.workflow == 'tmux' then
-        shortcut_mode = 'a'
-    elseif options.workflow == 'zellij' then
-        shortcut_mode = 'p'
-    end
-    local shortcut = L.action_shortcut(action, shortcut_mode, arg, false)
-    wait_events(events, callback)
-    if options.workflow == 'azul' or options.workflow == 'tmux' then
-        L.simulate_keys({options.modifier}, 1, function()
-            L.simulate_keys(extract_chars(shortcut), 1)
-        end)
-    end
-end
-
 local simulate_map = function(ls, mode, callback)
     local map = funcs.find(function(m) return m.ls == ls and m.m == mode end, azul.get_mode_mappings())
     if map == nil then
@@ -253,14 +237,6 @@ local simulate_maps = function(lss, mode, events, callback)
     L.do_simulate_maps(lss, mode, 1)
 end
 
-local do_action = function(action, callback)
-    _do_action_with_modifier(action, nil, {PaneChanged = 1}, callback)
-end
-
-local enter_mode = function(mode, callback)
-    _do_action_with_modifier('enter_mode', mode, {ModeChanged = (options.workflow == 'tmux' and 2) or 1}, callback)
-end
-
 return {
     set_env = function(uid, test)
         file_copy("./" .. test .. ".spec.lua", "/tmp/" .. uid .. "/nvim/" .. test .. "lua")
@@ -279,10 +255,12 @@ return {
         wait_events(events, function()
             do_exec = true
         end)
-        L.simulate_keys(extract_chars(what), 1, function()
-            if (events == nil and after ~= nil) or (after ~= nil and (do_exec or #vim.tbl_keys(events) == 0)) then
-                vim.fn.timer_start((events or {}).Timeout or 0, after)
-            end
+        vim.fn.timer_start(100, function()
+            L.simulate_keys(extract_chars(what), 1, function()
+                if (events == nil and after ~= nil) or (after ~= nil and (do_exec or #vim.tbl_keys(events) == 0)) then
+                    vim.fn.timer_start((events or {}).Timeout or 0, after)
+                end
+            end)
         end)
     end,
     wait_events = wait_events,
@@ -291,8 +269,6 @@ return {
     set_test_running = function(which)
         test_running = which
     end,
-    do_action = do_action,
-    enter_mode = enter_mode,
     simulate_maps = simulate_maps,
     reverse = reverse,
     get_current_term_lines = get_lines,
