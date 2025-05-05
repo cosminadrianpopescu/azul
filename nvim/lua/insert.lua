@@ -13,7 +13,7 @@ end
 azul.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
-    'WinIdSet', 'ConfigReloaded',
+    'WinIdSet', 'ConfigReloaded', 'AzulConnected'
 }, function()
     vim.fn.timer_start(50, function()
         start_insert(true)

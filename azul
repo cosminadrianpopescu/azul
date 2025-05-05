@@ -148,7 +148,7 @@ then
             export AZUL_SESSION=`cat $check_file`
         fi
     done
-    if [ -f $AZUL_CHILD_FILE ]
+    if [ -f "$AZUL_CHILD_FILE" ]
     then
         rm $AZUL_CHILD_FILE
     fi

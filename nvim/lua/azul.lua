@@ -74,6 +74,7 @@ local events = {
     TabCreated = {},
     CommandSet = {},
     WinIdSet = {},
+    AzulConnected = {},
 }
 
 local persistent_events = {}
@@ -445,6 +446,15 @@ M.enter_mode = function(new_mode)
         trigger_event('ModeChanged', {old_mode, new_mode})
     end
 end
+
+cmd({'UIEnter'}, {
+    pattern = "*", callback = function()
+        if not azul_started then
+            return
+        end
+        trigger_event('AzulConnected')
+    end
+})
 
 cmd({'TabNew', 'VimEnter'}, {
     pattern = "*", callback = function()
