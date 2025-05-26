@@ -1097,11 +1097,12 @@ end
 
 --- Disconnects the current session.
 M.disconnect = function()
-    for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
-        vim.fn.timer_start(1, function()
-            vim.fn.chanclose(ui.chan)
-        end)
-    end
+    vim.api.nvim_command('detach')
+    -- for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
+    --     vim.fn.timer_start(1, function()
+    --         vim.fn.chanclose(ui.chan)
+    --     end)
+    -- end
 end
 
 local deserialize = function(var)
