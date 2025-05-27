@@ -737,6 +737,8 @@ local restore_float = function(t)
     vim.api.nvim_open_win(_buf(t), true, t.win_config)
     if t.editing_buf == nil then
         refresh_buf(t.buf)
+    else
+        t.win_id = vim.fn.win_getid(vim.fn.winnr())
     end
 end
 
