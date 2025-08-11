@@ -644,6 +644,16 @@ remotely.
 
 If the current pane is a remote pane, it will be put in scrolling mode.
 
+#### remote_state
+
+**Parameters**: 
+
+* t The pane for which the remote state is being checked
+
+Returns the remote state of a pane. If the pane is not a remote pane, `nil` is
+returned. Otherwise, `connected` is returned if the pane is connected or
+`disconnected` is returned if the pane is disconnected.
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will
@@ -762,10 +772,54 @@ triggered when a remote pane gets opened.
 
 #### UserInput
 
+**Parameters**:
+
 * `args[1]` The input from the user
 
 Triggered every time the user inputs data (like selecting a file or a tab or
 pane name).
+
+#### UserInputPrompt
+
+Triggered after an user input prompt has been displayed
+
+#### Edit
+
+**Parameters**:
+
+* `args[1]` The pane in which the editor is being opened
+* `args[2]` The file being edited
+
+Triggered every time when an editor is overriding a pane (like for example
+when calling the command `AzulEditConfig`)
+
+#### LeaveDisconnectedPane
+
+Triggered every time when a remote pane that has been disconnected is losing
+focus
+
+#### EnterDisconnectedPane
+
+Triggered every time when a remote pane that has been disconnected is
+refocused.
+
+#### TabCreated
+
+Triggered every time when a new tab is being created.
+
+#### CommandSet
+
+Triggered every time an azul custom command is being set on a panel by using
+`AzulSetCmd` command.
+
+#### WinIdSet
+
+Triggered every time an azul custom id is being set on a panel, by using
+`AzulSetWinId` command.
+
+#### AzulConnected
+
+Triggered every time when an azul session is begin reconnected.
 
 ### Configuring via init.lua
 
