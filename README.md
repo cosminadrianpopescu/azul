@@ -53,7 +53,7 @@ A nvim based terminal multiplexer.
 
 ### Requirements
 
-* `Neovim` >= 0.11 (latest development build)
+* `Neovim` >= 0.11
 
 You can install `azul` in several ways.
 
@@ -198,28 +198,6 @@ At the moment, `neovim` supports limited text reflow of the terminals. See
 current terminal, but only the current view (not the scrollback buffer). We'll
 have to wait for this issue to be closed and then `azul` will also have proper
 text reflow.
-
-### Cursor support
-
-Cursor in `neovim` in terminal mode is a kind of hack. See
-[here](https://github.com/neovim/neovim/issues/3681) and
-[here](https://github.com/neovim/neovim/issues/3681) for more details. Until
-these issues are being fixed, `azul` will have to live with the block cursor
-inside its terminals. The only thing that we have in `azul` for configuring
-the cursor is `:highlight TermCursor`.
-
-If this is something that you cannot live without (having a proper cursor
-inside your terminal), again, `azul` is probably not for you yet.
-
-This is currently solved in the latest nightly neovim. You can use the latest
-nvim 0.11-dev to take advantage of a fully functional cursor. See [this
-PR](https://github.com/neovim/neovim/pull/31562).
-
-If you want to just test the new cursor, but you don't want yet to switch
-fully to neovim nightly, you can download the nightly nvim in `/opt`, and then
-run the install like this: `AZUL_NVIM_EXE=/opt/nvim.appimage ./install.sh`.
-This will use the nvim nightly only for `azul`, while when doing `nvim` in
-your `azul` environment will start your current `nvim` version.
 
 ## Terminology
 
