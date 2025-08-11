@@ -694,6 +694,8 @@ or the action directly, for the `emacs` workflow. For more info see the
   (`bottom`, `top` or `auto`). Auto means that depending on where the cursor
   is situated when showing the cheatsheet, the window will be displayed top or
   bottom as to not hide the cursor (default: `bottom`)
+* **term** The setting of the `TERM` variable to be applied in linux like
+  linux like environments (default st-256color)
 
 **Note**:
 

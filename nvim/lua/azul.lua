@@ -342,7 +342,7 @@ M.open = function(start_edit, buf, callback)
         env = {
             VIM = '',
             VIMRUNTIME='',
-            TERM='st-256color'
+            TERM = options.term,
         },
     }
 
