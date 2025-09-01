@@ -3,8 +3,18 @@ local options = require('options')
 local funcs = require('functions')
 
 local dressing_opts = {
-    input = {enabled = false},
-    select = {enabled = false},
+    bigfile = { enabled = false },
+    dashboard = { enabled = false },
+    explorer = { enabled = false },
+    indent = { enabled = false },
+    input = { enabled = false },
+    picker = { enabled = false },
+    notifier = { enabled = false },
+    quickfile = { enabled = false },
+    scope = { enabled = false },
+    scroll = { enabled = false },
+    statuscolumn = { enabled = false },
+    words = { enabled = false },
 }
 if options.use_dressing then
     local opts = {
@@ -14,10 +24,10 @@ if options.use_dressing then
         relative = 'editor',
         border = "double",
     }
-    dressing_opts.input = opts
-    dressing_opts.select = opts
+    dressing_opts.input.enabled = true
+    dressing_opts.picker.enabled = true
 end
-require('dressing').setup(dressing_opts)
+require('snacks').setup(dressing_opts)
 
 if not options.use_lualine then
     return

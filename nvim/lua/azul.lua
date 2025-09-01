@@ -6,7 +6,7 @@ local options = require('options')
 local M = {}
 
 local is_suspended = false
-local is_dressing = false
+local is_user_editing = false
 
 local updating_titles = true
 local azul_started = false
@@ -112,6 +112,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGER " .. vim.inspect(ev) .. ' in ' .. vim.inspect(vim.o.filetype))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -646,9 +647,11 @@ cmd('TermEnter', {
 })
 
 cmd({'FileType', 'BufEnter'}, {
-    pattern = "*", callback = function()
-        is_dressing = vim.o.filetype == 'DressingInput'
-        if is_dressing then
+    pattern = "*", callback = function(ev)
+        funcs.log(vim.inspect(ev))
+        local was_user_editing = is_user_editing
+        is_user_editing = vim.o.filetype == 'snacks_input'
+        if is_user_editing and not was_user_editing then
             trigger_event('UserInputPrompt')
         end
     end
@@ -722,7 +725,7 @@ cmd({'ModeChanged'}, {
         end
         if to ~= from and mode ~= 'P' then
             local t = M.get_current_terminal()
-            if not is_dressing and (t == nil or M.remote_state(t) ~= 'disconnected') then
+            if not is_user_editing and (t == nil or M.remote_state(t) ~= 'disconnected') then
                 M.enter_mode(to)
             end
         end
@@ -1640,7 +1643,9 @@ end
 M.rename_tab = function(tab)
     local tab_id = vim.api.nvim_list_tabpages()[tab]
     local def = get_tab_title(tab)
+    M.suspend()
     M.user_input({propmt = "Tab new name: ", default = def}, function(result)
+        M.resume()
         if result == '' then
             funcs.safe_del_tab_var(tab_id, 'azul_tab_title_overriden')
         elseif result ~= nil then
