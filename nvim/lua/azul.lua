@@ -112,7 +112,6 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    funcs.log("TRIGGER " .. vim.inspect(ev) .. ' in ' .. vim.inspect(vim.o.filetype))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -648,7 +647,6 @@ cmd('TermEnter', {
 
 cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function(ev)
-        funcs.log(vim.inspect(ev))
         local was_user_editing = is_user_editing
         is_user_editing = vim.o.filetype == 'snacks_input'
         if is_user_editing and not was_user_editing then
@@ -1951,6 +1949,10 @@ M.persistent_on('PaneChanged', function(args)
     end
 
     set_current_panel(t.tab_id)
+end)
+
+M.persistent_on('Error', function()
+    M.resume()
 end)
 
 return M

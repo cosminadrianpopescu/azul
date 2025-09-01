@@ -456,7 +456,7 @@ Returns all the azul mappings
 Gets some user input using `vim.ui.input`. Call this function rather than
 invoking directly `vim.ui.input`. If you are using a library which will
 produce float windows (like
-[dressing.nvim](https://github.com/stevearc/dressing.nvim)) and you call
+[snacks.nvim](https://github.com/folke/snacks.nvim)) and you call
 directly `vim.ui.input`, you will break `azul`. This function will call first
 `azul.suspend` to allow the floating window to be created without `azul`
 intervening and then will call `azul.resume()` in the next event loop.

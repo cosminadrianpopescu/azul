@@ -2,6 +2,7 @@ local azul = require('azul')
 local funcs = require('functions')
 local options = require('options')
 local FILES = require('files')
+local INS = require('insert')
 
 local get_mappings_for_mode = function(mode)
     local result = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
@@ -96,6 +97,9 @@ local generic_key_handler = function()
     end
 
     local process_modifier = function()
+        if INS.is_editing() then
+            return nil
+        end
         if azul.current_mode() == 'P' then
             azul.send_to_current(options.modifier, true)
             return ''

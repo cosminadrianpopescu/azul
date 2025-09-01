@@ -3,6 +3,9 @@ local options = require('options')
 
 local mode_before_disconnected = nil
 
+local M = {}
+local is_editing = false
+
 local start_insert = function(force)
     if options.workflow == 'tmux' and not force then
         return
@@ -13,7 +16,7 @@ end
 azul.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
-    'WinIdSet', 'ConfigReloaded', 'AzulConnected'
+    'WinIdSet', 'ConfigReloaded', 'AzulConnected', 'Error'
 }, function()
     vim.fn.timer_start(50, function()
         start_insert(true)
@@ -47,3 +50,17 @@ azul.persistent_on('LeaveDisconnectedPane', function()
 
     start_insert()
 end)
+
+azul.persistent_on('UserInputPrompt', function()
+    is_editing = true
+end)
+
+azul.persistent_on('UserInput', function()
+    is_editing = false
+end)
+
+M.is_editing = function()
+    return is_editing
+end
+
+return M

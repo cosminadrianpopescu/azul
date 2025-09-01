@@ -673,7 +673,7 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **opacity** The opacity of the floating windows, from 0 - non transparent to
   100 - fully transparent (default 0)
 * **use_dressing** If true, use the
-  [dressing.nvim](https://github.com/stevearc/dressing.nvim) plugin for user
+  [snacks.nvim](https://github.com/folke/snacks.nvim) plugin for user
   input, for example, for file locations when saving and restoring layouts
   (default true)
 * **tab_title** The default tab title. See the [placeholders](#placeholders)

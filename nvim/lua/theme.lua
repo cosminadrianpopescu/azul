@@ -1,8 +1,8 @@
 local mx = require('azul')
 local options = require('options')
-local funcs = require('functions')
+local INS = require('insert')
 
-local dressing_opts = {
+local snacks_opts = {
     bigfile = { enabled = false },
     dashboard = { enabled = false },
     explorer = { enabled = false },
@@ -24,10 +24,10 @@ if options.use_dressing then
         relative = 'editor',
         border = "double",
     }
-    dressing_opts.input.enabled = true
-    dressing_opts.picker.enabled = true
+    snacks_opts.input.enabled = true
+    snacks_opts.picker.enabled = true
 end
-require('snacks').setup(dressing_opts)
+require('snacks').setup(snacks_opts)
 
 if not options.use_lualine then
     return
@@ -102,11 +102,19 @@ local MOD_MAP = {
         text = '    ...    ',
         color = colors.inactive.b.bg,
     },
+    UI = {
+        text = '     UI    ',
+        color = colors.inactive.b.bg,
+    }
 }
 
 local last_color = nil
 
 local function my_mode()
+    if INS.is_editing() then
+        last_color = MOD_MAP.UI.color
+        return MOD_MAP.UI.text
+    end
     local m = mx.current_mode()
     if m == 'i' then
         m = 't'
