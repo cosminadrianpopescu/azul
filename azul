@@ -4,6 +4,7 @@ usage() {
     echo ""
     echo "Options: "
     echo "    -a <session-name> Attach to an existing session or create it if it does not exists"
+    echo "    -t <session-name> Create a new session if it doesn't exists and don't attach to it"
     echo "    -l                List the existing sessions"
     echo "    -m                Start in marionette mode"
     echo "    -r                If AZUL_REMOTE_CONNECTION var is set, then the first tab will also be remote"
@@ -64,11 +65,15 @@ export AZUL_SESSION=""
 export AZUL_LIST=""
 AZUL_CMD=""
 
-while getopts "a:lrmhs:c:" o
+while getopts "a:t:lrmhs:c:" o
 do
     case "${o}" in
         a)
             AZUL_SESSION=$OPTARG
+            ;;
+        t)
+            AZUL_SESSION=$OPTARG
+            AZUL_SKIP_CONNECT=1
             ;;
         l)
             list_sessions
@@ -132,6 +137,11 @@ then
             rm $AZUL_RUN_DIR/$AZUL_SESSION
         fi
         setsid $AZUL_NVIM_EXE --listen $AZUL_RUN_DIR/$AZUL_SESSION --headless >/dev/null 2>&1 0< /dev/null &!
+
+    fi
+    if [ "$AZUL_SKIP_CONNECT" == "1" ]
+    then
+        exit 0
     fi
 
     sleep 0.2

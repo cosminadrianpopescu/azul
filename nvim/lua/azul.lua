@@ -66,7 +66,6 @@ local events = {
     RemoteDisconnected = {},
     RemoteReconnected = {},
     UserInput = {},
-
     UserInputPrompt = {},
     Edit = {},
     LeaveDisconnectedPane = {},
