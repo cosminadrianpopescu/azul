@@ -112,6 +112,7 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
+    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -1790,7 +1791,13 @@ M.select_tab = function(n)
     if not hidden then
         just_close_windows(floats)
     end
-    vim.api.nvim_command('tabn ' .. n)
+    local safe, result = pcall(function()
+        vim.api.nvim_command('tabn ' .. n)
+    end)
+    if not safe then
+        L.error(result)
+        return
+    end
     floats = vim.tbl_filter(function(t) return M.is_float(t) and t.group == funcs.current_float_group() end, terminals)
     if not hidden then
         just_open_windows(floats)

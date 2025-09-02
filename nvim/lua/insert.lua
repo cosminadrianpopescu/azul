@@ -55,7 +55,7 @@ azul.persistent_on('UserInputPrompt', function()
     is_editing = true
 end)
 
-azul.persistent_on('UserInput', function()
+azul.persistent_on({'UserInput', 'Error'}, function()
     is_editing = false
 end)
 

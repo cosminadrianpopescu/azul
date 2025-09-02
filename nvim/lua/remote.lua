@@ -1,5 +1,4 @@
 local cmd = vim.api.nvim_create_autocmd
-local FILES = require('files')
 local funcs = require('functions')
 local azul = require('azul')
 

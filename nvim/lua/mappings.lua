@@ -140,6 +140,10 @@ local generic_key_handler = function()
         then
             return process_modifier()
         end
+        -- Do I really want to ignore ':' in case of non azul or modifier mode?!
+        -- if trans == ':' and azul.current_mode() ~= 'a' and azul.current_mode() ~= 'M' and not INS.is_editing() then
+        --     return ''
+        -- end
         reset_timer()
         timer = vim.fn.timer_start(options.modifer_timeout, function()
             try_select(collection, c)
