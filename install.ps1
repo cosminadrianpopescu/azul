@@ -54,9 +54,4 @@ else {
         cd $prefix\.config\azul\pack\start\telescope.nvim
         git checkout eae0d8fbde590b0eaa2f9481948cd6fd7dd21656 
     }
-    if (-not (Test-Path "$prefix\.config\azul\pack\start\snacks.nvim")) {
-        git clone https://github.com/folke/snacks.nvim $prefix\.config\azul\pack\start\snacks.nvim
-        cd $prefix\.config\azul\pack\start\snacks.nvim
-        git checkout bc0630e43be5699bb94dadc302c0d21615421d93
-    }
 }

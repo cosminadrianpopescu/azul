@@ -112,7 +112,6 @@ local add_to_history = function(buf, operation, params, tab_id)
 end
 
 local trigger_event = function(ev, args)
-    funcs.log("TRIGGER " .. vim.inspect(ev))
     for _, callback in ipairs(persistent_events[ev] or {}) do
         callback(args)
     end
@@ -649,7 +648,7 @@ cmd('TermEnter', {
 cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function(ev)
         local was_user_editing = is_user_editing
-        is_user_editing = vim.o.filetype == 'snacks_input'
+        is_user_editing = vim.o.filetype == 'azul_prompt'
         if is_user_editing and not was_user_editing then
             trigger_event('UserInputPrompt')
         end
@@ -1577,6 +1576,11 @@ M.get_mode_mappings = function()
 end
 
 M.user_input = function(opts, callback, force)
+    if not options.use_dressing then
+        vim.fn.timer_start(1, function()
+            trigger_event('UserInputPrompt')
+        end)
+    end
     vim.ui.input(opts, function(input)
         if (input ~= nil and input ~= '') or force then
             callback(input)
@@ -1642,9 +1646,7 @@ end
 M.rename_tab = function(tab)
     local tab_id = vim.api.nvim_list_tabpages()[tab]
     local def = get_tab_title(tab)
-    M.suspend()
-    M.user_input({propmt = "Tab new name: ", default = def}, function(result)
-        M.resume()
+    M.user_input({prompt = "Tab new name: ", default = def}, function(result)
         if result == '' then
             funcs.safe_del_tab_var(tab_id, 'azul_tab_title_overriden')
         elseif result ~= nil then

@@ -42,7 +42,7 @@ local s = t.action_shortcut('enter_mode', nil, 's') .. ' '
     .. t.action_shortcut('split_right', 's') .. ' ' .. x .. x
     .. t.action_shortcut('split_left', 's') .. ' ' .. t.action_shortcut('split_up', 's')
 
-vim.fn.timer_start(100, function()
+t.wait_events({TabTitleChanged = 1}, function()
     t.simulate_keys(s, {PaneChanged = 5}, function()
         local events = {ModeChanged = 1}
         if options.workflow == 'emacs' then

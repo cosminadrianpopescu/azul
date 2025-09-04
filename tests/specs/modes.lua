@@ -14,7 +14,7 @@ local assert_first_line = function(what)
     t.assert(line:match(what .. "$"), "The first line should end in " .. what)
 end
 
-vim.fn.timer_start(TIMEOUT, function()
+t.wait_events({TabTitleChanged = 1}, function()
     local lines = t.reverse(t.get_current_term_lines())
     t.assert(lines[1] ~= "", "The first line should not be empty")
     t.simulate_keys("j")
@@ -60,4 +60,3 @@ vim.fn.timer_start(TIMEOUT, function()
         end)
     end)
 end)
-

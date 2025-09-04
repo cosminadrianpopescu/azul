@@ -1,15 +1,16 @@
 {
-  "name": "azul-test-runner",
-  "version": "0.0.1",
-  "description": "Wrapper to help running the azul tests",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Cosmin Popescu",
-  "license": "GPL-3.0-or-later",
-  "dependencies": {
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
-  }
+    "name": "azul-test-runner",
+    "version": "0.0.1",
+    "description": "Wrapper to help running the azul tests",
+    "main": "index.js",
+    "scripts": {
+        "build": "tsc",
+        "test": ""
+    },
+    "author": "Cosmin Popescu",
+    "license": "GPL-3.0-or-later",
+    "dependencies": {
+        "@types/node": "^22.10.2",
+        "typescript": "^5.7.2"
+    }
 }

@@ -566,7 +566,10 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     elseif action == 'rename_tab' then
         map(mode, shortcut, '', {
-            callback = azul.rename_current_tab,
+            callback = function()
+                vim.defer_fn(azul.rename_current_tab, 1);
+                -- azul.rename_current_tab()
+            end,
             desc = 'Renames the current tab',
             action = action,
             arg = arg,

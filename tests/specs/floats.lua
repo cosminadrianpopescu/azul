@@ -1,6 +1,7 @@
 local t = require('test-env')
 local azul = require('azul')
 local options = require('options')
+local funcs = require('functions')
 
 local by_state = function(state)
     return (state and 'floating') or 'embedded'
@@ -16,7 +17,7 @@ local assert_terminals_for_floating = function(no, state)
     t.assert(#terms == no, 'There should be ' .. no .. ' ' .. by_state(state) .. ' terminals. Instead, I found ' .. #terms)
 end
 
-vim.fn.timer_start((options.workflow == 'emacs' and 500) or 100, function()
+t.wait_events({TabTitleChanged = 1}, function()
     t.simulate_keys(t.action_shortcut('create_float'), {PaneChanged = 1}, function()
         assert_current_terminal(true)
         t.simulate_keys(t.action_shortcut('toggle_floats'), {PaneChanged = 1}, function()
@@ -58,4 +59,7 @@ vim.fn.timer_start((options.workflow == 'emacs' and 500) or 100, function()
             end)
         end)
     end)
+end)
+
+vim.fn.timer_start((options.workflow == 'emacs' and 500) or 100, function()
 end)

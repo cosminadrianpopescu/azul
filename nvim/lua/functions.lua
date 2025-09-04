@@ -217,6 +217,20 @@ local session_child_file = function(for_parent)
     return os.getenv('AZUL_RUN_DIR') .. '/' .. name .. '-child'
 end
 
+local safe_put_text_to_buffer = function(buf, row, col, txt, after, me)
+    local safe, _ = pcall(function()
+        vim.api.nvim_buf_set_text(buf, row, col, row, col, {txt})
+    end)
+
+    if not safe then
+        vim.fn.timer_start(1, function()
+            me(buf, row, col, txt, after, me)
+        end)
+    else
+        after()
+    end
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
@@ -224,6 +238,9 @@ return {
     session_child_file = session_child_file,
     safe_close_window = safe_close_window,
     safe_buf_delete = safe_buf_delete,
+    safe_put_text_to_buffer = function(buf, row, col, txt, after)
+        safe_put_text_to_buffer(buf, row, col, txt, after, safe_put_text_to_buffer)
+    end,
     find = find,
     uuid = uuid,
     log = log,

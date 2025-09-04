@@ -74,6 +74,13 @@ const do_tab_titles = () => {
     test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_cheatsheet: 'false'});
     test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_cheatsheet: 'false'});
     test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_cheatsheet: 'false'});
+    test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_dressing: 'false'})
+    test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_dressing: 'false'})
+    test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_dressing: 'false'})
+    test_factory('custom-tab-titles', {workflow: 'emacs', tab_title: tab_title, use_dressing: 'false'})
+    test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
+    test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
+    test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
 }
 
 const do_misc = () => {

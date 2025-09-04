@@ -18,7 +18,7 @@ azul.persistent_on({
     'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
     'WinIdSet', 'ConfigReloaded', 'AzulConnected', 'Error'
 }, function()
-    vim.fn.timer_start(50, function()
+    vim.fn.timer_start(100, function()
         start_insert(true)
     end)
 end)

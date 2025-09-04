@@ -73,6 +73,7 @@ cp $AZUL_DIR/nvim/lua/mappings.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/options.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/remote.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/insert.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/vim_ui.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/init.lua $AZUL_PREFIX/share/azul/nvim
 
 if [ ! -d $AZUL_CONFIG ]
@@ -96,6 +97,5 @@ fi
 install_from_github "nvim-lualine" "lualine.nvim" "b431d228b7bbcdaea818bdc3e25b8cdbe861f056"
 install_from_github "nvim-lua" "plenary.nvim" "2d9b06177a975543726ce5c73fca176cedbffe9d"
 install_from_github "nvim-telescope" "telescope.nvim" "eae0d8fbde590b0eaa2f9481948cd6fd7dd21656"
-install_from_github "folke" "snacks.nvim" "bc0630e43be5699bb94dadc302c0d21615421d93"
 
 echo "Installation done in $AZUL_PREFIX. Run azul"

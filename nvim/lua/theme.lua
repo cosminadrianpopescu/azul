@@ -1,33 +1,11 @@
 local mx = require('azul')
 local options = require('options')
 local INS = require('insert')
+local funcs = require('functions')
 
-local snacks_opts = {
-    bigfile = { enabled = false },
-    dashboard = { enabled = false },
-    explorer = { enabled = false },
-    indent = { enabled = false },
-    input = { enabled = false },
-    picker = { enabled = false },
-    notifier = { enabled = false },
-    quickfile = { enabled = false },
-    scope = { enabled = false },
-    scroll = { enabled = false },
-    statuscolumn = { enabled = false },
-    words = { enabled = false },
-}
 if options.use_dressing then
-    local opts = {
-        enabled = true,
-        title_pos = 'center',
-        start_mode = 'normal',
-        relative = 'editor',
-        border = "double",
-    }
-    snacks_opts.input.enabled = true
-    snacks_opts.picker.enabled = true
+    require('vim_ui')
 end
-require('snacks').setup(snacks_opts)
 
 if not options.use_lualine then
     return

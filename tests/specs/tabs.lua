@@ -25,7 +25,7 @@ local first_tab_shortcut = function()
 end
 
 t.assert(#azul.get_terminals() == 1, "Initially, there should be one tab created")
-vim.fn.timer_start(TIMEOUT, function()
+t.wait_events({TabTitleChanged = 1}, function()
     azul.feedkeys('ls<cr>', 't')
     vim.fn.timer_start(TIMEOUT, function()
         assert_ls(true)
