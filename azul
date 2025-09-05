@@ -107,6 +107,14 @@ then
     exit 1
 fi
 
+export AZUL_FAILED_FILE="$AZUL_RUN_DIR/$AZUL_SESSION-failed"
+
+if [ -f "$AZUL_FAILED_FILE" ]
+then
+    rm $AZUL_FAILED_FILE
+fi
+
+
 if [[ "$AZUL_CMD" != "" && "$AZUL_SESSION" != "" ]]
 then
     check_session $AZUL_SESSION
@@ -162,6 +170,12 @@ then
     then
         rm $AZUL_CHILD_FILE
     fi
+
+    if [ -f "$AZUL_FAILED_FILE" ]
+    then
+        echo "There is an issue running azul. Check your shell setting in the config file. Azul will exit now"
+    fi
+
 else
     list_sessions
 fi
