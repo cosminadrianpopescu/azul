@@ -1729,6 +1729,18 @@ M.edit = function(t, file, on_finish)
     local buf = vim.api.nvim_create_buf(false, true)
     t.editing_buf = buf
     vim.api.nvim_win_set_buf(t.win_id, buf)
+    local on_exit = function()
+        M.suspend()
+        t.editing_buf = nil
+        vim.api.nvim_win_set_buf(t.win_id, t.buf)
+        vim.fn.timer_start(10, function()
+            M.resume()
+            refresh_buf(t.buf)
+            if on_finish ~= nil then
+                on_finish()
+            end
+        end)
+    end
     local opts = {
         cdw = vim.fn.getcwd(),
         env = {
@@ -1736,20 +1748,15 @@ M.edit = function(t, file, on_finish)
             VIM = '',
             VIMRUNTIME='',
         },
-        on_exit = function()
-            M.suspend()
-            t.editing_buf = nil
-            vim.api.nvim_win_set_buf(t.win_id, t.buf)
-            vim.fn.timer_start(10, function()
-                M.resume()
-                refresh_buf(t.buf)
-                if on_finish ~= nil then
-                    on_finish()
-                end
-            end)
-        end
+        on_exit = on_exit
     }
-    vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
+    local safe, _ = pcall(function()
+        vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
+    end)
+    if not safe then
+        on_exit()
+        L.error("The EDITOR variable does not seem to be set properly.")
+    end
     M.resume()
     trigger_event('Edit', {t, file})
 end
