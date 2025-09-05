@@ -16,7 +16,8 @@ end
 azul.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
-    'WinIdSet', 'ConfigReloaded', 'AzulConnected', 'Error'
+    'WinIdSet', 'ConfigReloaded', 'AzulConnected', 'Error', 'LayoutRestored',
+    'LayoutSaved',
 }, function()
     vim.fn.timer_start(100, function()
         start_insert(true)

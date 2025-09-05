@@ -159,8 +159,9 @@ M.debug = function(ev)
     -- print("TITLE IS ALREADY" .. vim.b.term_title)
     -- print("JOB ID IS " .. vim.b.terminal_job_id)
     -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
-    print("MAPPINGS ARE" .. vim.inspect(vim.tbl_filter(function(m) return m.m == 'P' end, mode_mappings)))
+    -- print("MAPPINGS ARE" .. vim.inspect(vim.tbl_filter(function(m) return m.m == 'P' end, mode_mappings)))
     -- print("MODE IS" .. mode)
+    -- print("HISTORY IS " .. vim.inspect(history))
 end
 
 local refresh_tab_page = function(t)
@@ -1184,15 +1185,13 @@ M.save_layout = function(where)
         table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_placeholders') or {})
         table.insert(title_overrides, funcs.safe_get_tab_var(id, 'azul_tab_title_overriden') or '')
     end
-    local f = io.open(where, "w")
-    f:write(vim.inspect({
+    FILES.write_file(where, vim.inspect({
         floats = vim.tbl_filter(function(x) return M.is_float(x) end, terminals),
         history = history_to_save,
         customs = get_custom_values(),
         azul_placeholders = placeholders,
         title_overrides = title_overrides,
     }))
-    f:close()
     trigger_event("LayoutSaved")
 end
 
@@ -1425,6 +1424,7 @@ M.restore_layout = function(where, callback)
     vim.fn.jobstop(t.term_id)
     vim.api.nvim_buf_delete(old_buf, {force = true})
     do_remove_term_buf(t.buf)
+    history = {}
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
 end
