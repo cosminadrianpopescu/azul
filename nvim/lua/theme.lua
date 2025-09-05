@@ -262,7 +262,7 @@ mx.persistent_on({'PaneChanged'}, function(args)
     local repl = (mx.is_float(crt) and 'AzulCurrentFloat') or 'AzulInactiveWin'
     vim.api.nvim_set_option_value('winhl', what .. ':' .. repl, {win = crt.win_id, scope = 'local'})
     for _, t in ipairs(mx.get_terminals()) do
-        if t.win_id ~= crt.win_id and t.win_id ~= nil then
+        if t.win_id ~= crt.win_id and t.win_id ~= nil and vim.api.nvim_win_is_valid(t.win_id) then
             vim.api.nvim_set_option_value('winhl', 'Normal:AzulInactiveWin,FloatBorder:AzulInactiveWin,CursorLine:AzulInactiveWin,CursorColumn:AzulInactiveWin,FloatTitle:AzulInactiveWin', {win = t.win_id, scope = 'local'})
         end
     end

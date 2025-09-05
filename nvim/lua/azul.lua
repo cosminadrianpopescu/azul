@@ -7,12 +7,14 @@ local M = {}
 
 local is_suspended = false
 local is_user_editing = false
+local is_started = false
 
 local updating_titles = true
 local azul_started = false
 local last_access = 0
 local remote_command = nil
 local to_save_remote_command = nil
+local dead_terminal = nil
 
 --- @class terminals
 --- @field is_current boolean If true, it means that this is the current terminal
@@ -226,9 +228,16 @@ local set_current_panel = function(tab_id)
     t.current_selected_pane = true
 end
 
+local close_win = function(win_id)
+    if not vim.api.nvim_win_is_valid(win_id) then
+        return
+    end
+    vim.api.nvim_win_close(win_id, true)
+end
+
 local close_float = function(float)
     refresh_win_config(float)
-    vim.api.nvim_win_close(float.win_id, true)
+    close_win(float.win_id)
     float.win_id = nil
     vim.fn.timer_start(1, function()
         local t = M.get_current_terminal()
@@ -260,6 +269,10 @@ end
 local OnEnter = function(ev)
     if is_suspended then
         return
+    end
+    if dead_terminal ~= nil then
+        dead_terminal.callback({buf = dead_terminal.term.buf})
+        dead_terminal = nil
     end
     local crt = refresh_buf(ev.buf)
     if crt == nil then
@@ -355,7 +368,18 @@ M.open = function(start_edit, buf, callback)
     end
 
     local do_open = function()
-        local result = vim.fn.jobstart(remote_command or vim.o.shell, opts)
+        local cmd = (remote_command == nil and {vim.o.shell}) or remote_command
+        if not is_started and remote_command == nil then
+            local safe, _ = pcall(function()
+                vim.fn.jobstart(cmd, opts)
+            end)
+            if not safe then
+                FILES.write_file(os.getenv('AZUL_RUN_DIR') .. '/' .. os.getenv('AZUL_SESSION') .. '-failed', '')
+                vim.api.nvim_command('quit!')
+            end
+        else
+            vim.fn.jobstart(cmd, opts)
+        end
     end
     to_save_remote_command = remote_command
     if buf == nil then
@@ -391,7 +415,7 @@ local OnTermClose = function(ev)
     end
     if t ~= nil then
         if funcs.find(function(t2) return t2.win_id == t.win_id end, terminals) == nil then
-            vim.api.nvim_win_close(t.win_id, true)
+            close_win(t.win_id)
         else
             vim.api.nvim_command('bnext')
         end
@@ -587,7 +611,7 @@ M.hide_floats = function()
     end)
 end
 
-cmd({"VimLeave", "QuitPre"},{
+cmd({"VimLeave"},{
     desc = "launch ExitAzul event",
     callback = do_exit,
 })
@@ -632,6 +656,17 @@ cmd('TermOpen',{
         end
         panel_id = panel_id + 1
         azul_win_id = azul_win_id + 1
+    end
+})
+
+cmd({'TabClosed'}, {
+    pattern = '*', callback = function(ev)
+        local t = L.term_by_buf_id(ev.buf)
+        if t == nil then
+            return
+        end
+        vim.fn.jobstop(t.term_id)
+        dead_terminal = {callback = OnTermClose, term = t}
     end
 })
 
@@ -1772,7 +1807,7 @@ end
 local just_close_windows = function(floats)
     M.suspend()
     for _, f in ipairs(floats) do
-        vim.api.nvim_win_close(f.win_id, true)
+        close_win(f.win_id)
         f.win_id = nil
     end
     M.resume()
@@ -1944,6 +1979,7 @@ M.persistent_on = function(ev, callback)
 end
 
 M.persistent_on('AzulStarted', function()
+    is_started = true
     vim.fn.timer_start(200, function()
         updating_titles = false
         update_titles()
