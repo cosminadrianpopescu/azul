@@ -74,6 +74,7 @@ cp $AZUL_DIR/nvim/lua/options.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/remote.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/insert.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/vim_ui.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/environment.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/init.lua $AZUL_PREFIX/share/azul/nvim
 
 if [ ! -d $AZUL_CONFIG ]

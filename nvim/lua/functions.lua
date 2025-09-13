@@ -1,5 +1,24 @@
 math.randomseed()
 
+local split = function(s, delimiter)
+    local result = {};
+    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+        table.insert(result, match);
+    end
+    return vim.tbl_filter(function(x) return x ~= '' end, result);
+end
+
+local run_process = function(cmd)
+    local x = io.popen(cmd)
+    local result = x:read('*all')
+    x:close()
+    return vim.fn.substitute(result, '\\v[\\n]+$', '', 'g')
+end
+
+local run_process_list = function(cmd)
+    return split(run_process(cmd), '\n')
+end
+
 local compare_shortcuts = function(s1, s2)
     local p1 = '\\v(\\<[^\\>]+\\>)'
     if vim.fn.match(s1, p1) == -1 or vim.fn.match(s2, p1) == -1 then
@@ -255,4 +274,6 @@ return {
     map_by_action = map_by_action,
     current_float_group = current_float_group,
     regexp_group = regexp_group,
+    run_process = run_process,
+    run_process_list = run_process_list,
 }

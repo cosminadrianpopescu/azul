@@ -5,6 +5,7 @@ local M = {
     shell = nil,
     mouse = "a",
     cmdheight = 0,
+    editor = nil,
     theme = 'dracula',
     termguicolors = true,
     scrollback = 2000,
@@ -23,5 +24,9 @@ local M = {
     modes_cheatsheet_position = 'bottom',
     term = 'st-256color',
 }
+
+M.set_option = function(key, value)
+    M[key] = value
+end
 
 return M;

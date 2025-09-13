@@ -568,7 +568,7 @@ Renames the currently selected tab.
 #### AzulEdit
 
 Edits a file in the current terminal by opening in the editor set by the
-`$EDITOR` variable on your system.
+`editor` options or the `$EDITOR` variable on your system.
 
 **Parameters**:
 
@@ -576,14 +576,14 @@ Edits a file in the current terminal by opening in the editor set by the
 
 #### AzulEditScrollback
 
-Edits the current terminal's buffer in the editor set by the `$EDITOR`
-variable on your system.
+Edits the current terminal's buffer in the editor set by the `editor` option
+or the `$EDITOR` variable on your system.
 
 #### AzulEditScrollbackLog
 
-Edits the current terminal's scrollback log in the editor set by the `$EDITOR`
-variable on your system. If the logging is not started using
-`AzulStartLogging` command, an error message is thrown.
+Edits the current terminal's scrollback log in the editor set by the `editor`
+option or the `$EDITOR` variable on your system. If the logging is not started
+using `AzulStartLogging` command, an error message is thrown.
 
 #### AzulRenameCurrentFloat
 
@@ -695,6 +695,8 @@ or the action directly, for the `emacs` workflow. For more info see the
   bottom as to not hide the cursor (default: `bottom`)
 * **term** The setting of the `TERM` variable to be applied in linux like
   linux like environments (default st-256color)
+* **editor** The editor to use when editing a pane or the config. This will
+  override the `$EDITOR` variable in that case (default not set)
 
 **Note**:
 
@@ -713,7 +715,7 @@ azul.set_key_map('t', '[', '', {
 ```
 
 Then, just like in `tmux`, doing `<C-s>[` will open your scrollback buffer log
-in your current `$EDITOR`.
+in your current editor set by the the `editor` option or the `$EDITOR` variable.
 
 #### Placeholders
 
@@ -1355,8 +1357,8 @@ connection indicated in the `AZUL_REMOTE_CONNECTION` variable.
 A remote pane has to be closed in 2 steps. Since the remote connection can be
 dropped due to external factors, the pane will not be discarded, as not to
 break the current layout. If the remote connection is lost, then the pane will
-open the editor set in your `EDITOR` variable with a temporary file anouncing
-you that you can try to press `r` in this pane in order to try to reconnect,
+display a message letting you know that the connection for that pane is gone
+and that you can try to press `r` in this pane in order to try to reconnect,
 or `q` to close also the pane.
 
 As a consequence, even if you close the remote pane on purpose by typing
@@ -1364,9 +1366,6 @@ As a consequence, even if you close the remote pane on purpose by typing
 replaced by the dialog mentioned above. You will have then to also press `q`
 if you want to really close the pane as to remove the pane from the layout
 also.
-
-So, if you use remote panes, be sure to set your `EDITOR` variable to point to
-a real editor that can be run.
 
 #### Scrolling
 

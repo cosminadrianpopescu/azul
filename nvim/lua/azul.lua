@@ -162,6 +162,7 @@ M.debug = function(ev)
     -- print("MAPPINGS ARE" .. vim.inspect(vim.tbl_filter(function(m) return m.m == 'P' end, mode_mappings)))
     -- print("MODE IS" .. mode)
     -- print("HISTORY IS " .. vim.inspect(history))
+    funcs.log("ENV IS " .. vim.inspect(require('environment').get_environment()))
 end
 
 local refresh_tab_page = function(t)
@@ -349,14 +350,13 @@ M.open = function(start_edit, buf, callback)
         callback = L.open_params[3]
         L.open_params = nil
     end
+    local environment = require('environment').get_environment()
+    environment['VIM'] = ''
+    environment['VIMRUNTIME'] = ''
     local opts = {
         term = true,
         cdw = vim.fn.getcwd(),
-        env = {
-            VIM = '',
-            VIMRUNTIME='',
-            TERM = options.term,
-        },
+        env = environment,
     }
 
     if callback ~= nil then
@@ -1743,15 +1743,10 @@ M.edit = function(t, file, on_finish)
     end
     local opts = {
         cdw = vim.fn.getcwd(),
-        env = {
-            EDITOR = os.getenv('EDITOR'),
-            VIM = '',
-            VIMRUNTIME='',
-        },
         on_exit = on_exit
     }
     local safe, _ = pcall(function()
-        vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
+        vim.fn.termopen({options.editor or os.getenv('EDITOR'), file}, opts)
     end)
     if not safe then
         on_exit()

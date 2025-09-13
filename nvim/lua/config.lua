@@ -6,6 +6,7 @@ local funcs = require('functions')
 local cmd = vim.api.nvim_create_autocmd
 local tabs = 0
 local options = require('options')
+local env = require('environment')
 
 M.ini_shortcuts = {}
 
@@ -619,19 +620,26 @@ local set_shortcut = function(action, shortcut, mode, arg)
     end
 end
 
+local set_key_value = function(section, default)
+    local result = default or {}
+    for key, value in pairs(section) do
+        if value == 'true' then
+            value = true
+        elseif value == 'false' then
+            value = false
+        elseif tonumber(value) ~= nil then
+            value = tonumber(value)
+        end
+        result[key] = value
+    end
+
+    return result
+end
+
 M.load_config = function(where)
     local t = files.read_ini(where)
     if t.options ~= nil then
-        for key, value in pairs(t.options) do
-            if value == 'true' then
-                value = true
-            elseif value == 'false' then
-                value = false
-            elseif tonumber(value) ~= nil then
-                value = tonumber(value)
-            end
-            options[key] = value
-        end
+        options = set_key_value(t.options, options)
     end
 
     local wf = options.workflow
@@ -659,6 +667,10 @@ M.load_config = function(where)
                 end
             end
         end
+    end
+
+    if t.environment ~= nil then
+        env.set_environment(set_key_value(t.environment))
     end
 end
 

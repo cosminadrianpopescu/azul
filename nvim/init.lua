@@ -52,6 +52,8 @@ else
     end
 end
 
+require('environment').load_from_lua()
+
 vim.o.shadafile = files.config_dir .. '/nvim/shada'
 
 vim.fn.timer_start(1, function()

@@ -6,24 +6,10 @@ local pickers = require "telescope.pickers"
 local finders = require "telescope.finders"
 local previewers = require('telescope.previewers')
 local conf = require("telescope.config").values
+local funcs = require('functions')
 -- local sorters = require "telescope.sorters"
 
 local _sessions = {}
-
-local split = function(s, delimiter)
-    local result = {};
-    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-        table.insert(result, match);
-    end
-    return vim.tbl_filter(function(x) return x ~= '' end, result);
-end
-
-local run_process = function(cmd)
-    local x = io.popen(cmd)
-    local result = split(x:read('*all'), '\n')
-    x:close()
-    return result
-end
 
 local act_close = actions.close
 actions.close = function(bufnr)
@@ -84,7 +70,7 @@ local sessions_list = function(opts)
         return
     end
     azul.suspend()
-    local sessions = run_process(os.getenv("AZUL_PREFIX") .. "/bin/azul -l")
+    local sessions = funcs.run_process_list(os.getenv("AZUL_PREFIX") .. "/bin/azul -l")
     pickers.new(opts, {
         prompt_title = "Sessions",
         cache_picker = false,

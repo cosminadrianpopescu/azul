@@ -1,8 +1,7 @@
 import { writeFileSync } from "fs";
 import { test } from "./test";
 
-function test_factory(test_case: string, options: {[key: string]: any} = {}, which = test) {
-    which(test_case, (base_path: string) => {
+const build_config = (base_path: string, options: {[key: string]: any}) => {
         let config = `
 [Options]
 
@@ -21,13 +20,19 @@ ${Object.keys(ss).map(k => `${k} = ${ss[k]}`).join("\n")}
         }
         console.log(config)
         writeFileSync(`${base_path}/config/config.ini`, config);
+}
+
+function test_factory(test_case: string, options: {[key: string]: any} = {}, which = test) {
+    options.shell = 'bash';
+    which(test_case, (base_path: string) => {
+        build_config(base_path, options);
         return {};
     });
 }
 
 test('test-started');
 const do_floats = () => {
-    test('floats');
+    test_factory('floats', {workflow: 'azul'})
     test_factory('floats', {workflow: 'tmux'});
     test_factory('floats', {workflow: 'zellij', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
     test_factory('floats', {workflow: 'emacs'});
@@ -37,7 +42,7 @@ const do_floats = () => {
 }
 
 const do_splits = () => {
-    test('splits');
+    test_factory('splits', {workflow: 'azul'})
     test_factory('splits', {workflow: 'tmux'});
     test_factory('splits', {workflow: 'zellij'});
     test_factory('splits', {workflow: 'emacs'});
@@ -47,7 +52,7 @@ const do_splits = () => {
 }
 
 const do_modes = () => {
-    test('modes');
+    test_factory('modes', {workflow: 'azul'});
     test_factory('modes', {workflow: 'tmux'});
     test_factory('modes', {workflow: 'zellij'});
     test_factory('modes', {workflow: 'azul', use_cheatsheet: 'false'});
@@ -56,7 +61,7 @@ const do_modes = () => {
 }
 
 const do_tabs = () => {
-    test('tabs');
+    test_factory('tabs', {workflow: 'azul'});
     test_factory('tabs', {workflow: 'tmux'});
     test_factory('tabs', {workflow: 'zellij'});
     test_factory('tabs', {workflow: 'emacs'});
@@ -84,18 +89,20 @@ const do_tab_titles = () => {
 }
 
 const do_misc = () => {
-    test('custom-titles');
-    test('reload-config');
+    test_factory('custom-titles');
+    test_factory('reload-config');
     test_factory('reload-config', {workflow: 'tmux'});
     test('remotes', (base_path: string) => {
+        build_config(base_path, {shell: 'bash'});
         return {
             AZUL_REMOTE_CONNECTION: `azul://${base_path}/bin/azul`,
+            SHELL: 'bash'
         }
     });
 }
 
 const do_layout = () => {
-    test('layout');
+    test_factory('layout', {workflow: 'azul'});
     test_factory('layout', {workflow: 'tmux'});
     test_factory('layout', {workflow: 'zellij'});
     test_factory('layout', {workflow: 'emacs'});
