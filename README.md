@@ -36,6 +36,9 @@ A nvim based terminal multiplexer.
   - [Options](#options)
   - [Shortcuts](#shortcuts)
     + [Possible actions](#possible-actions)
+  - [Environment](#environment)
+    + [Via ini file](via-ini-file)
+    + [Via lua file](via-lua-file)
   - [Copy/Pasting](#copypasting)
 * [Remote panes](#remote-panes)
   - [Closing a remote pane](#closing-a-remote-pane)
@@ -1290,6 +1293,56 @@ session
     + `tmux`: `terminal.remote_scroll = [`
     + `zellij`: `terminal.remote_scroll = [`
     + `emacs`: `remote_scroll = <C-x>[`
+
+## Environment
+
+You can set up the environment variables of every opened pane in `azul` either
+by the `config.ini` file or by the `~/.config/azul/env.lua` file.
+
+### Via ini file
+
+In the config file, you can set an `Environment` section. The section should
+be a series of key/values. Every opened terminal will have the variables set.
+For example: 
+
+```ini
+[Options]
+...
+
+[Shortcuts]
+...
+
+[Environment]
+DISPLAY = xterm-256color
+PATH = $PATH:~/bin
+```
+
+Every opened pane with the above config file, will have the environment
+variables `$DISPLAY` and `$PATH` set with the values from the `ini` file.
+
+You can also script the environment via
+
+### Via the `env.lua` file
+
+In the config folder (`~/.config/nvim` by default), you can add the `env.lua`
+file. This file should return a lua table with key/value pairs. Each key
+represents the name of an environment variable and each value represents the
+value of the respective environment variable.
+
+For example: 
+
+```lua
+local term = (os.getenv('AZUL_SESSION') == 'for-tty' and 'screen') or 'xterm-256color'
+
+return {
+    TERM = term,
+    PATH = os.getenv('PATH') .. ':' .. os.getenv('HOME') .. '/bin',
+}
+```
+
+If you place this file, then, depending on the session name, each opened pane
+will have the `$TERM` variable set either as `screen` or as `xterm-256color`
+and the '~/bin' folder added to the `$PATH` variable.
 
 ## Copy/pasting
 
