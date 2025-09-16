@@ -13,15 +13,23 @@ local start_insert = function(force)
     vim.api.nvim_command('startinsert')
 end
 
+local do_start_insert = function()
+    vim.fn.timer_start(100, function()
+        start_insert(true)
+    end)
+end
+
 azul.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
     'WinIdSet', 'ConfigReloaded', 'AzulConnected', 'Error', 'LayoutRestored',
-    'LayoutSaved',
-}, function()
-    vim.fn.timer_start(100, function()
-        start_insert(true)
-    end)
+}, do_start_insert)
+
+azul.persistent_on('LayoutSaved', function(args)
+    if args[1] == true then
+        return
+    end
+    do_start_insert()
 end)
 
 azul.persistent_on('ModeChanged', function(args)

@@ -8,6 +8,7 @@ local M = {}
 local is_suspended = false
 local is_user_editing = false
 local is_started = false
+local is_restoring = false
 
 local updating_titles = true
 local azul_started = false
@@ -76,6 +77,10 @@ local events = {
     CommandSet = {},
     WinIdSet = {},
     AzulConnected = {},
+
+    HistoryChanged = {},
+    PaneResized = {},
+    FloatMoved = {},
 }
 
 local persistent_events = {}
@@ -86,12 +91,44 @@ end
 
 local L = {}
 
+local session_extension = '.azul'
+
+local is_autosave = function()
+    return os.getenv('AZUL_NO_AUTOSAVE') == nil and options.autosave
+end
+
+local sessions_folder = function()
+    local result = FILES.config_dir .. '/sessions'
+    if vim.fn.isdirectory(result) == 0 then
+        vim.fn.mkdir(result)
+    end
+    return result
+end
+
+local session_save_name = function()
+    return sessions_folder() .. '/' .. os.getenv('AZUL_SESSION') .. session_extension
+end
+
+local session_exists = function()
+    return FILES.exists(session_save_name())
+end
+
 local current_win_has_no_pane = function()
     local t = L.term_by_buf_id(vim.fn.bufnr('%'))
     if t == nil then
         return vim.b.terminal_job_id == nil
     end
     return vim.b.terminal_job_id == nil and M.remote_state(t) ~= 'disconnected'
+end
+
+local trigger_event = function(ev, args)
+    for _, callback in ipairs(persistent_events[ev] or {}) do
+        callback(args)
+    end
+
+    for _, callback in ipairs(events[ev] or {}) do
+        callback(args)
+    end
 end
 
 local add_to_history = function(buf, operation, params, tab_id)
@@ -111,16 +148,7 @@ local add_to_history = function(buf, operation, params, tab_id)
         el.from = t.panel_id
     end
     table.insert(history, el)
-end
-
-local trigger_event = function(ev, args)
-    for _, callback in ipairs(persistent_events[ev] or {}) do
-        callback(args)
-    end
-
-    for _, callback in ipairs(events[ev] or {}) do
-        callback(args)
-    end
+    trigger_event('HistoryChanged', {el})
 end
 
 local do_exit = function()
@@ -161,8 +189,7 @@ M.debug = function(ev)
     -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MAPPINGS ARE" .. vim.inspect(vim.tbl_filter(function(m) return m.m == 'P' end, mode_mappings)))
     -- print("MODE IS" .. mode)
-    -- print("HISTORY IS " .. vim.inspect(history))
-    funcs.log("ENV IS " .. vim.inspect(require('environment').get_environment()))
+    print("HISTORY IS " .. vim.inspect(history))
 end
 
 local refresh_tab_page = function(t)
@@ -955,6 +982,7 @@ M.move_current_float = function(dir, inc)
     if t ~= nil then
         t.win_config = conf
     end
+    trigger_event('FloatMoved', {t})
 end
 
 M.select_pane = function(buf)
@@ -1097,6 +1125,7 @@ M.position_current_float = function(where)
     end
     vim.api.nvim_win_set_config(0, conf)
     refresh_win_config(t)
+    trigger_event('FloatMoved', {t})
 end
 
 M.redraw = function()
@@ -1131,6 +1160,7 @@ M.resize = function(direction)
     }
     vim.api.nvim_command(args[direction])
     refresh_win_config(t)
+    trigger_event('PaneResized', {t, direction})
 end
 
 --- Disconnects the current session.
@@ -1172,8 +1202,7 @@ local get_custom_values = function()
     return result
 end
 
-M.save_layout = function(where)
-    M.hide_floats()
+M.save_layout = function(where, auto)
     for _, t in ipairs(terminals) do
         refresh_tab_page(t)
     end
@@ -1191,8 +1220,12 @@ M.save_layout = function(where)
         customs = get_custom_values(),
         azul_placeholders = placeholders,
         title_overrides = title_overrides,
+        geometry = {
+            columns = vim.o.columns,
+            lines = vim.o.lines
+        }
     }))
-    trigger_event("LayoutSaved")
+    trigger_event("LayoutSaved", {auto})
 end
 
 L.error = function(msg, h)
@@ -1271,7 +1304,9 @@ L.restore_remotes = function()
     end
     updating_titles = false
     update_titles()
+    is_restoring = false
     trigger_event("LayoutRestored")
+    M.enter_mode('t')
 end
 
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
@@ -1309,6 +1344,8 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         local buf = nil
         if j == 1 and i == 1 then
             buf = vim.fn.bufnr('%')
+            vim.api.nvim_tabpage_get_var(0, 'azul_tab_id')
+            vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', tab_id)
         end
         M.open(true, buf)
         vim.fn.timer_start(10, function()
@@ -1425,6 +1462,10 @@ M.restore_layout = function(where, callback)
     vim.api.nvim_buf_delete(old_buf, {force = true})
     do_remove_term_buf(t.buf)
     history = {}
+    if h.geometry ~= nil then
+        vim.o.columns = h.geometry.columns
+        vim.o.lines = h.geometry.lines
+    end
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
 end
@@ -1976,11 +2017,61 @@ M.remote_state = function(t)
     return (t.term_id == nil and 'disconnected') or 'connected'
 end
 
+M.auto_save_layout = function()
+    if not is_autosave() or is_restoring or funcs.is_marionette() then
+        return
+    end
+    funcs.log("AUTO SAVE")
+    M.save_layout(session_save_name(), true)
+end
+
+M.auto_restore_layout = function()
+    local callback = nil
+    if FILES.exists(session_save_name() .. '.lua') then
+        callback = FILES.load_as_module(os.getenv('AZUL_SESSION') .. session_extension, sessions_folder())
+    end
+    M.open()
+    vim.defer_fn(function()
+        M.restore_layout(session_save_name(), callback)
+    end, 1)
+end
+
+M.start = function()
+    if funcs.is_marionette() then
+        M.open()
+        return
+    end
+
+    if is_autosave() and session_exists() then
+        is_restoring = true
+        M.auto_restore_layout()
+        return
+    end
+
+    if funcs.is_handling_remote() and os.getenv('AZUL_START_REMOTE') == '1' then
+        M.open_remote()
+    else
+        M.open()
+    end
+end
+
 M.persistent_on = function(ev, callback)
     add_event(ev, callback, persistent_events)
 end
 
-M.persistent_on('AzulStarted', function()
+M.persistent_on({
+    'CommandSet', 'WinIdSet', 'TabTitleChanged', 'HistoryChanged', 'PaneResized',
+    'FloatMoved', 'FloatOpened', 'PaneClosed', 'FloatTitleChanged'
+}, function()
+    vim.defer_fn(function()
+        M.auto_save_layout()
+    end, 1)
+end)
+
+M.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
+    if is_restoring then
+        return
+    end
     is_started = true
     vim.fn.timer_start(200, function()
         updating_titles = false

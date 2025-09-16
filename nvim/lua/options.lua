@@ -23,6 +23,7 @@ local M = {
     auto_start_logging = false,
     modes_cheatsheet_position = 'bottom',
     term = 'st-256color',
+    autosave = true,
 }
 
 M.set_option = function(key, value)

@@ -146,13 +146,6 @@ local function current_name()
     return vim.b.term_title or ''
 end
 
-local function modifier()
-    if wf ~= 'tmux' and wf ~= 'azul' then
-        return ''
-    end
-    return (is_modifier and mx.get_current_modifier()) or ''
-end
-
 local line_utils = require('lualine.utils.utils')
 
 local obj = require('lualine.components.filename');
@@ -227,11 +220,7 @@ require('lualine').setup {
         lualine_c = {
             {current_name}
         },
-        lualine_x = {{
-            modifier,
-            separator = { right = '', left = ''},
-            color = {bg = colors.terminal.a.bg, fg = colors.terminal.a.fg},
-        }, 'encoding', 'fileformat', 'filetype'},
+        lualine_x = {'encoding', 'fileformat', 'filetype'},
         lualine_y = {'progress'},
         lualine_z = {'location'}
     },

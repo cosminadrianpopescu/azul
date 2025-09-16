@@ -98,13 +98,13 @@ M.read_ini = function(which)
     return result
 end
 
-M.load_as_module = function(which)
-    local env_file = M.config_dir .. '/' .. which .. '.lua'
+M.load_as_module = function(which, path)
+    local env_file = (path or M.config_dir) .. '/' .. which .. '.lua'
     if not M.exists(env_file) then
         return nil
     end
 
-    local module_name = '__azul_' .. which .. '_lua__'
+    local module_name = '__azul_' .. vim.fn.substitute(which, '\\v\\.', '-', 'g') .. '_lua__'
     local path = vim.fn.getcwd() .. '/' .. module_name .. '.lua'
     local safe, result = pcall(function()
         M.write_file(path, M.read_file(env_file))
