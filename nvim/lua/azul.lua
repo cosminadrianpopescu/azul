@@ -8,7 +8,7 @@ local M = {}
 local is_suspended = false
 local is_user_editing = false
 local is_started = false
-local is_restoring = false
+local can_save_layout = true
 
 local updating_titles = true
 local azul_started = false
@@ -48,6 +48,7 @@ local workflow = 'azul'
 local mod = nil
 local global_last_status = nil
 local quit_on_last = true
+local current_in_saved_layout = nil
 
 local events = {
     FloatClosed = {},
@@ -171,6 +172,10 @@ end
 local remove_term_buf = function(buf)
     do_remove_term_buf(buf)
     if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
+        can_save_layout = false
+        if session_exists() then
+            os.remove(session_save_name())
+        end
         do_exit()
         vim.api.nvim_command('quit!')
     end
@@ -1185,6 +1190,10 @@ L.term_by_buf_id = function(id)
     return funcs.find(function(t) return _buf(t) == 1 * id end, terminals)
 end
 
+L.term_by_azul_win_id = function(id)
+    return funcs.find(function(t) return t.azul_win_id == id end, terminals)
+end
+
 L.terms_by_tab_id = function(id)
     return vim.tbl_filter(function(x) return x.tab_id == id end, M.get_terminals())
 end
@@ -1214,12 +1223,23 @@ M.save_layout = function(where, auto)
         table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_placeholders') or {})
         table.insert(title_overrides, funcs.safe_get_tab_var(id, 'azul_tab_title_overriden') or '')
     end
+    local t = M.get_current_terminal()
+    local current = nil
+    if t ~= nil then
+        current = {
+            tab_id = t.tab_id,
+            azul_win_id = t.azul_win_id,
+            tab_page = t.tab_page,
+            pane_id = t.panel_id,
+        }
+    end
     FILES.write_file(where, vim.inspect({
         floats = vim.tbl_filter(function(x) return M.is_float(x) end, terminals),
         history = history_to_save,
         customs = get_custom_values(),
         azul_placeholders = placeholders,
         title_overrides = title_overrides,
+        current = current,
         geometry = {
             columns = vim.o.columns,
             lines = vim.o.lines
@@ -1304,8 +1324,21 @@ L.restore_remotes = function()
     end
     updating_titles = false
     update_titles()
-    is_restoring = false
+    can_save_layout = true
     trigger_event("LayoutRestored")
+    if current_in_saved_layout then
+        if current_in_saved_layout.tab_page ~= nil then
+            M.select_tab(current_in_saved_layout.tab_page)
+        end
+        local t = L.term_by_azul_win_id(current_in_saved_layout.azul_win_id)
+        if not M.is_float(t) then
+            M.hide_floats()
+        end
+        vim.defer_fn(function()
+            M.select_pane(t.buf)
+            current_in_saved_layout = nil
+        end, 1)
+    end
     M.enter_mode('t')
 end
 
@@ -1466,6 +1499,7 @@ M.restore_layout = function(where, callback)
         vim.o.columns = h.geometry.columns
         vim.o.lines = h.geometry.lines
     end
+    current_in_saved_layout = h.current
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
 end
@@ -2018,10 +2052,9 @@ M.remote_state = function(t)
 end
 
 M.auto_save_layout = function()
-    if not is_autosave() or is_restoring or funcs.is_marionette() then
+    if not is_autosave() or not can_save_layout or funcs.is_marionette() then
         return
     end
-    funcs.log("AUTO SAVE")
     M.save_layout(session_save_name(), true)
 end
 
@@ -2043,7 +2076,7 @@ M.start = function()
     end
 
     if is_autosave() and session_exists() then
-        is_restoring = true
+        can_save_layout = false
         M.auto_restore_layout()
         return
     end
@@ -2061,7 +2094,7 @@ end
 
 M.persistent_on({
     'CommandSet', 'WinIdSet', 'TabTitleChanged', 'HistoryChanged', 'PaneResized',
-    'FloatMoved', 'FloatOpened', 'PaneClosed', 'FloatTitleChanged'
+    'FloatMoved', 'FloatOpened', 'PaneClosed', 'FloatTitleChanged', 'PaneChanged',
 }, function()
     vim.defer_fn(function()
         M.auto_save_layout()
@@ -2069,7 +2102,7 @@ M.persistent_on({
 end)
 
 M.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
-    if is_restoring then
+    if not can_save_layout then
         return
     end
     is_started = true

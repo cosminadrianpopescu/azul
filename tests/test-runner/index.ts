@@ -47,6 +47,10 @@ async function wait_proc(cmd: string, args: Array<string> = [], options: Object 
 
 async function run_azul(azul_env = {}) {
     const final_env = Object.assign({}, process.env, azul_env);
+    const sess_file = `${base_path}/config/sessions/${UUID}.azul`;
+    if (existsSync(sess_file)) {
+        rmSync(sess_file);
+    }
     const [code, result, err] = await wait_proc(`${base_path}/bin/azul`, ['-a', UUID, '-c', `${base_path}/config`], {env: final_env});
     // console.log(`AZUL RAN ${code}, ${result}, ${err}`)
 }
