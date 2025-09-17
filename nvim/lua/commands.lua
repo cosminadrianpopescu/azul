@@ -123,5 +123,8 @@ return {
         vim.api.nvim_create_user_command('AzulEditConfig', function()
             require('config').edit_config()
         end, {desc = "Edits the current config in the current selected pane"})
+        vim.api.nvim_create_user_command('AzulQuit', function()
+            vim.api.nvim_command('quitall!')
+        end, {desc = 'Exits azul'})
     end
 }

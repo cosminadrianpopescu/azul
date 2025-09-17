@@ -95,11 +95,11 @@ local L = {}
 local session_extension = '.azul'
 
 local is_autosave = function()
-    return os.getenv('AZUL_NO_AUTOSAVE') == nil and options.autosave
+    return os.getenv('AZUL_NO_AUTOSAVE') == nil and (options.autosave == 'always' or options.autosave == 'often')
 end
 
 local sessions_folder = function()
-    local result = FILES.config_dir .. '/sessions'
+    local result = options.autosave_location or (FILES.config_dir .. '/sessions')
     if vim.fn.isdirectory(result) == 0 then
         vim.fn.mkdir(result)
     end
@@ -181,7 +181,7 @@ local remove_term_buf = function(buf)
     end
 end
 
-M.debug = function(ev)
+M.debug = function()
     -- print(vim.inspect(vim.tbl_filter(function(t) return M.is_float(t) end, M.get_terminals())))
     -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
     -- print("OPTIONS ARE " .. vim.inspect(options))
@@ -312,8 +312,6 @@ local OnEnter = function(ev)
     if crt == nil then
         return
     end
-
-    vim.inspect("ENTER WITH " .. vim.inspect(ev))
 
     if M.is_float(crt) == false then
         M.hide_floats()
@@ -714,7 +712,7 @@ cmd('TermEnter', {
 })
 
 cmd({'FileType', 'BufEnter'}, {
-    pattern = "*", callback = function(ev)
+    pattern = "*", callback = function()
         local was_user_editing = is_user_editing
         is_user_editing = vim.o.filetype == 'azul_prompt'
         if is_user_editing and not was_user_editing then
@@ -2092,13 +2090,22 @@ M.persistent_on = function(ev, callback)
     add_event(ev, callback, persistent_events)
 end
 
-M.persistent_on({
-    'CommandSet', 'WinIdSet', 'TabTitleChanged', 'HistoryChanged', 'PaneResized',
-    'FloatMoved', 'FloatOpened', 'PaneClosed', 'FloatTitleChanged', 'PaneChanged',
-}, function()
+local do_autosave = function()
     vim.defer_fn(function()
         M.auto_save_layout()
     end, 1)
+end
+
+M.persistent_on({
+    'CommandSet', 'WinIdSet', 'TabTitleChanged', 'HistoryChanged',
+    'FloatOpened', 'PaneClosed', 'FloatTitleChanged',
+}, do_autosave)
+
+M.persistent_on({'FloatMoved', 'PaneChanged', 'PaneResized'}, function()
+    if options.autosave ~= 'always' then
+        return
+    end
+    do_autosave()
 end)
 
 M.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
