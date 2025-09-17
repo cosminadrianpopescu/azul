@@ -654,6 +654,11 @@ Returns the remote state of a pane. If the pane is not a remote pane, `nil` is
 returned. Otherwise, `connected` is returned if the pane is connected or
 `disconnected` is returned if the pane is disconnected.
 
+#### autosave_layout
+
+If `autosave` option is set to `always` or `often`, it saves the current
+layout in the `autosave_location` folder, or by default in `~/.config/azul/sessions`
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will
@@ -820,6 +825,32 @@ Triggered every time an azul custom id is being set on a panel, by using
 #### AzulConnected
 
 Triggered every time when an azul session is begin reconnected.
+
+#### HistoryChanged
+
+**Parameters**:
+
+* `args[1]` The element that has been added to the history
+
+Triggered every time a record is added to the history (based on which the
+`layout`) will be restored
+
+#### PaneResized
+
+**Parameters**:
+
+* `args[1]` The pane being resized
+* `args[2]` The direction in which the pane is being resized
+
+Triggered every time a pane is resized.
+
+#### FloatMoved
+
+**Parameters**:
+
+* `args[1]` The float being moved
+
+Triggered every time a float is being moved.
 
 ### Configuring via init.lua
 

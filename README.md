@@ -45,9 +45,10 @@ A nvim based terminal multiplexer.
   - [Scrolling](#scrolling)
   - [Remote providers](#remote-providers)
 * [Passthrough mode](#passthrough-mode)
-* [Session restore](#session-restore)
+* [Session support](#session-support)
   - [AzulSetCmd](#azulsetcmd)
   - [AzulSetWinId](#azulsetwinid)
+  - [Autosave](#autosave)
 * [Lua Api](#lua-api)
 * [Why](#why)
 * [Azul workflow cheatsheet](#cheatsheet)
@@ -504,7 +505,7 @@ file name where you wish to save your layout. You can type a full path to a
 file, using `tab` for autocompletion.
 
 `Azul` has very powerfull features for saving and restoring saved sessions.
-See the [Session restore section](#session-restore)
+See the [Session support section](#session-support)
 
 **Parameters**:
 
@@ -518,7 +519,7 @@ file name where you wish to save your layout. You can type a full path to a
 file, using `tab` for autocompletion.
 
 `Azul` has very powerfull features for saving and restoring saved sessions.
-See the [Session restore section](#session-restore)
+See the [Session support section](#session-support)
 
 **Parameters**:
 
@@ -527,7 +528,7 @@ See the [Session restore section](#session-restore)
 #### AzulSetCmd
 
 Sets a command to be launched uppon a restore. For more info, see the [Session
-restore section](#session-restore).
+support section](#session-support).
 
 **Parameters**:
 
@@ -551,7 +552,7 @@ If started, stops the current terminal logging of the scroll buffer.
 #### AzulSetWinId
 
 Sets an azul windows id for the currently selected pane. See the [Session
-restore section](#session-restore) for why you would set and how you would use
+support section](#session-support) for why you would set and how you would use
 this id
 
 **Parameters**:
@@ -700,6 +701,10 @@ or the action directly, for the `emacs` workflow. For more info see the
   linux like environments (default st-256color)
 * **editor** The editor to use when editing a pane or the config. This will
   override the `$EDITOR` variable in that case (default not set)
+* **autosave** If `always` or `often`, the session will be tracked; see [the
+  autosave](#autosave) section
+* **autosave_location** The location where to track the sections; see [the
+  autosave](#autosave) section
 
 **Note**:
 
@@ -1474,7 +1479,7 @@ In order to escape back to the host main session, by default you have to press
 inside the second session `<C-\><C-s>`. This is the default modifier. This
 will send the control back to the host main session.
 
-## Session restore
+## Session support
 
 `Azul` has very powerfull options to save and restore a session. By invoking
 the azul command `AzulSaveLayout`, your layout will be saved in the selected
@@ -1513,7 +1518,7 @@ For example: `:AzulSaveLayout<cr>`, and then
 `~/azul-sessions/my-saved-session.layout<cr>`. This will save the current
 layout in the `~/azul-sessions/my-saved-session.layout` file.
 
-Then, to restore it, create the following script and saved it in
+Then, to restore it, create the following script and save it in
 `~/azul-sessions/my-saved-session.lua` file:
 
 ```lua
@@ -1527,7 +1532,7 @@ require('azul').restore_layout('~/azul-sessions/my-saved-session.layout', functi
 end)
 ```
 
-Then, in azul, you can do: `<C-s>n` (this will put azul in `AZUL` mode) and
+Then, in `azul`, you can do: `<C-s>n` (this will put azul in `AZUL` mode) and
 then `:luafile ~/tmp/my-saved-session.lua<cr>`. This will run the above
 script, which in turn, for the pane with the id `vifm` (split, tab or float)
 will execute `vifm<cr>`, wait one second for `vifm` to open and then execute
@@ -1539,6 +1544,45 @@ a remote buffer, this callback will be called before the buffer is
 reconnected. So, you'll need probably to wait until the buffer is reconnected.
 You might want to send a `r` key to the pane if you are sure that the remote
 is still alive.
+
+### Autosave
+
+If the *autosave* option is set to `always` (the default value) or `often`,
+`azul` will track the current session continously in the folder set by
+`autosave_location` option or in the `~/.config/azul/sessions` folder if the
+`autosave_location` option is not set with the name `$AZUL_SESSION.azul`. For
+example, if you start `azul` like this: `azul -a demo`, then by default, in
+the folder `~/.config/azul/sessions` the file `demo.azul` will be created. In
+this file, the current session will be tracked.
+
+After you close this session, if the `autosave` options is still true, when
+you connect again to the same session (`azul -a demo`), the layout will be
+restored. If in the `autosave_location` folder (default
+`~/.config/azul/sessions`) you also add a file called with the name of the
+layout file and followed by the `.lua` extension (for example
+`demo.azul.lua`), then this file will be parsed when restoring the layout and
+it's expected that it will return a callback that will be called for every
+restored pane. 
+
+For example, if you define the following `demo.azul.lua` file:
+
+```lua
+return function(t, id)
+    if id == "vifm" then
+        azul.send_to_buf(t.buf, 'vifm<cr>', true)
+        vim.fn.timer_start(1000, function()
+            azul.send_to_buf(t.buf, ':session my-vifm-session<cr>', true)
+        end)
+    end
+end
+```
+
+and then you connect to `azul` like this: `azul -a demo`, in the pane with
+the `azul` id `vifm`, the `vifm` command will be launched, and after one
+second (so that `vifm` has time to open), the session `my-vifm-session` will
+be open inside `vifm`.
+
+This allows you to script your session restore via `lua`.
 
 ## Lua API
 
