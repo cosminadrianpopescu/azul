@@ -764,12 +764,14 @@ M.reload_config = function()
         local cmd = 'tunmap ' .. options.modifier
         pcall(function() vim.api.nvim_command(cmd) end)
     end
-    require('core').clear_mappings()
+    local core = require('core')
+    core.clear_mappings()
     M.apply_config()
     M.set_vim_options()
     M.run_init_lua()
     vim.fn.timer_start(1, function()
-        require('core').anounce_config_reloaded()
+        core.update_titles()
+        core.trigger_event('ConfigReloaded')
     end)
 end
 

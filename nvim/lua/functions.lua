@@ -1,3 +1,5 @@
+local options = require('options')
+
 math.randomseed()
 
 local split = function(s, delimiter)
@@ -254,6 +256,10 @@ local deserialize = function(var)
     return loadstring("return " .. string.gsub(var, "\\n", "\n"))()
 end
 
+local is_autosave = function()
+    return os.getenv('AZUL_NO_AUTOSAVE') == nil and (options.autosave == 'always' or options.autosave == 'often')
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
@@ -281,4 +287,5 @@ return {
     run_process = run_process,
     run_process_list = run_process_list,
     deserialize = deserialize,
+    is_autosave = is_autosave,
 }
