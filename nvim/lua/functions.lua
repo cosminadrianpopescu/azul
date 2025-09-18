@@ -250,6 +250,10 @@ local safe_put_text_to_buffer = function(buf, row, col, txt, after, me)
     end
 end
 
+local deserialize = function(var)
+    return loadstring("return " .. string.gsub(var, "\\n", "\n"))()
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
@@ -276,4 +280,5 @@ return {
     regexp_group = regexp_group,
     run_process = run_process,
     run_process_list = run_process_list,
+    deserialize = deserialize,
 }

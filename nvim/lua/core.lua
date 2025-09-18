@@ -1081,7 +1081,7 @@ end
 M.split = function(dir)
     local t = M.get_current_terminal()
     if M.is_float(t) then
-        M.error("You can only split an embeded pane", nil)
+        L.error("You can only split an embeded pane", nil)
         return
     end
     add_to_history(vim.fn.bufnr("%"), "split", {dir}, t.tab_id)
@@ -1114,7 +1114,7 @@ M.position_current_float = function(where)
     local conf = vim.api.nvim_win_get_config(0)
     local t = M.get_current_terminal()
     if not M.is_float(t) then
-        M.error("You can only position a floating window", nil)
+        L.error("You can only position a floating window", nil)
     end
 
     if where == "top" then
@@ -1246,7 +1246,7 @@ M.save_layout = function(where, auto)
     trigger_event("LayoutSaved", {auto})
 end
 
-M.error = function(msg, h)
+L.error = function(msg, h)
     local _m = msg
     if h ~= nil then
         _m = _m .. " at " .. vim.inspect(h)
@@ -1288,7 +1288,7 @@ end
 L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     if timeout > 100 then
         updating_titles = false
-        M.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
+        L.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
     end
 
     if panel_id_wait ~= nil then
@@ -1343,7 +1343,7 @@ end
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if timeout > 100 then
         updating_titles = false
-        M.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
+        L.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
     end
 
     if panel_id_wait ~= nil then
@@ -1389,7 +1389,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         panel_id = h.to
         local t = L.term_by_panel_id(h.from)
         if t == nil then
-            M.error("Error found loading the layout file", h)
+            L.error("Error found loading the layout file", h)
         end
         M.select_pane(t.buf)
         M.split(h.params[1])
@@ -1402,7 +1402,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "close" then
         local t = L.term_by_panel_id(h.from)
         if t == nil then
-            M.error("Error found loading the layout file", h)
+            L.error("Error found loading the layout file", h)
         end
         vim.fn.chanclose(t.term_id)
         vim.fn.timer_start(10, function()
@@ -1414,7 +1414,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "resize" then
         local t = L.term_by_panel_id(h.from)
         if t == nil then
-            M.error("Error found loading the layout file", h)
+            L.error("Error found loading the layout file", h)
         end
         M.select_pane(t.buf)
         M.resize(h.params[1])
@@ -1427,7 +1427,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "rotate_panel" then
         local t = L.term_by_panel_id(h.from)
         if t == nil then
-            M.error("Error found loading the layout file", h)
+            L.error("Error found loading the layout file", h)
         end
         M.select_pane(t.buf)
         M.rotate_panel()
@@ -1474,12 +1474,12 @@ end
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
     if #terminals > 1 then
-        M.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
+        L.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
         return
     end
     local f = io.open(where, "r")
     if f == nil then
-        M.error("Could not open " .. where, nil)
+        L.error("Could not open " .. where, nil)
     end
     local h = deserialize(f:read("*a"))
     h.callback = callback
@@ -1656,7 +1656,7 @@ local add_event = function(ev, callback, where)
 
     for _, e in ipairs(to_add) do
         if not vim.tbl_contains(vim.tbl_keys(events), e) then
-            M.error(e .. " event does not exists", nil)
+            L.error(e .. " event does not exists", nil)
         end
 
         table.insert(where[e], callback)
@@ -1669,7 +1669,7 @@ end
 
 M.clear_event = function(ev, callback)
     if not vim.tbl_contains(vim.tbl_keys(events), ev) then
-        M.error(ev .. " event does not exists", nil)
+        L.error(ev .. " event does not exists", nil)
     end
     if callback == nil then
         events[ev] = {}
@@ -1770,7 +1770,7 @@ M.rename_floating_pane = function(pane)
         return
     end
     if not M.is_float(pane) then
-        M.error('You can only rename floating panes')
+        L.error('You can only rename floating panes')
     end
     local def = get_float_title(pane)
     M.user_input({propmt = "Pane new name: ", default = def}, function(result)
