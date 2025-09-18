@@ -654,11 +654,6 @@ Returns the remote state of a pane. If the pane is not a remote pane, `nil` is
 returned. Otherwise, `connected` is returned if the pane is connected or
 `disconnected` is returned if the pane is disconnected.
 
-#### autosave_layout
-
-If `autosave` option is set to `always` or `often`, it saves the current
-layout in the `autosave_location` folder, or by default in `~/.config/azul/sessions`
-
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will

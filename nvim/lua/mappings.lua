@@ -75,7 +75,7 @@ local generic_key_handler = function()
     end)
 
     local run_map = function(map)
-        azul.run_map(map)
+        require('core').run_map(map)
         reset()
     end
 

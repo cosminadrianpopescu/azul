@@ -1,5 +1,5 @@
 local t = require('test-env')
-local azul = require('azul')
+local azul = require('core')
 local funcs = require('functions')
 
 
