@@ -8,7 +8,6 @@ local M = {}
 local is_suspended = false
 local is_user_editing = false
 local is_started = false
-local can_save_layout = true
 
 local updating_titles = true
 local azul_started = false
@@ -91,24 +90,6 @@ end
 
 local L = {}
 
-local session_extension = '.azul'
-
-local sessions_folder = function()
-    local result = options.autosave_location or (FILES.config_dir .. '/sessions')
-    if vim.fn.isdirectory(result) == 0 then
-        vim.fn.mkdir(result)
-    end
-    return result
-end
-
-local session_save_name = function()
-    return sessions_folder() .. '/' .. os.getenv('AZUL_SESSION') .. session_extension
-end
-
-local session_exists = function()
-    return FILES.exists(session_save_name())
-end
-
 local current_win_has_no_pane = function()
     local t = L.term_by_buf_id(vim.fn.bufnr('%'))
     if t == nil then
@@ -167,10 +148,6 @@ end
 local remove_term_buf = function(buf)
     M.do_remove_term_buf(buf)
     if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
-        can_save_layout = false
-        if session_exists() then
-            os.remove(session_save_name())
-        end
         do_exit()
         vim.api.nvim_command('quit!')
     end
@@ -192,7 +169,7 @@ M.debug = function()
     print("HISTORY IS " .. vim.inspect(history))
 end
 
-local refresh_tab_page = function(t)
+M.refresh_tab_page = function(t)
     if M.is_float(t) then
         return
     end
@@ -202,7 +179,7 @@ end
 local refresh_win_config = function(t)
     local old_config = t.win_config
     t.win_config = vim.api.nvim_win_get_config(t.win_id)
-    refresh_tab_page(t)
+    M.refresh_tab_page(t)
     if t.win_config['height'] == nil then
         t.win_config.height = vim.api.nvim_win_get_height(t.win_id)
     end
@@ -1179,56 +1156,6 @@ L.terms_by_tab_id = function(id)
     return vim.tbl_filter(function(x) return x.tab_id == id end, M.get_terminals())
 end
 
-local get_custom_values = function()
-    local result = {}
-    for _, t in ipairs(terminals) do
-        result[t.panel_id .. ""] = {
-            azul_win_id = t.azul_win_id,
-            azul_cmd = t.azul_cmd or nil,
-            remote_command = t.remote_command
-        }
-    end
-
-    return result
-end
-
-M.save_layout = function(where, auto)
-    for _, t in ipairs(terminals) do
-        refresh_tab_page(t)
-    end
-    local history_to_save = {}
-    local placeholders = {}
-    local title_overrides = {}
-    for _, id in ipairs(vim.api.nvim_list_tabpages()) do
-        table.insert(history_to_save, L.histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), history))
-        table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_placeholders') or {})
-        table.insert(title_overrides, funcs.safe_get_tab_var(id, 'azul_tab_title_overriden') or '')
-    end
-    local t = M.get_current_terminal()
-    local current = nil
-    if t ~= nil then
-        current = {
-            tab_id = t.tab_id,
-            azul_win_id = t.azul_win_id,
-            tab_page = t.tab_page,
-            pane_id = t.panel_id,
-        }
-    end
-    FILES.write_file(where, vim.inspect({
-        floats = vim.tbl_filter(function(x) return M.is_float(x) end, terminals),
-        history = history_to_save,
-        customs = get_custom_values(),
-        azul_placeholders = placeholders,
-        title_overrides = title_overrides,
-        current = current,
-        geometry = {
-            columns = vim.o.columns,
-            lines = vim.o.lines
-        }
-    }))
-    trigger_event("LayoutSaved", {auto})
-end
-
 M.error = function(msg, h)
     local _m = msg
     if h ~= nil then
@@ -1241,10 +1168,6 @@ M.error = function(msg, h)
     else
         error(_m)
     end
-end
-
-L.histories_by_tab_id = function(tab_id, history)
-    return vim.tbl_filter(function(h) return h.tab_id == tab_id end, history)
 end
 
 M.set_win_id = function(id)
@@ -1789,57 +1712,24 @@ M.remote_state = function(t)
     return (t.term_id == nil and 'disconnected') or 'connected'
 end
 
-M.auto_save_layout = function()
-    if not funcs.is_autosave() or not can_save_layout or funcs.is_marionette() then
-        return
-    end
-    M.save_layout(session_save_name(), true)
-end
-
-M.auto_restore_layout = function()
-    local callback = nil
-    if FILES.exists(session_save_name() .. '.lua') then
-        callback = FILES.load_as_module(os.getenv('AZUL_SESSION') .. session_extension, sessions_folder())
-    end
-    M.open()
-    vim.defer_fn(function()
-        M.restore_layout(session_save_name(), callback)
-    end, 1)
-end
-
-M.start = function()
-    if funcs.is_marionette() then
-        M.open()
-        return
-    end
-
-    if funcs.is_autosave() and session_exists() then
-        can_save_layout = false
-        M.auto_restore_layout()
-        return
-    end
-
-    if funcs.is_handling_remote() and os.getenv('AZUL_START_REMOTE') == '1' then
-        M.open_remote()
-    else
-        M.open()
-    end
-end
-
 M.persistent_on = function(ev, callback)
     add_event(ev, callback, persistent_events)
 end
 
 M.stop_updating_titles = function()
-    updating_titles = false
+    updating_titles = true
 end
 
 M.start_updating_titles = function()
-    updating_titles = true
+    updating_titles = false
 end
 
 M.reset_history = function()
     history = {}
+end
+
+M.get_history = function()
+    return history
 end
 
 M.set_global_panel_id = function(id)
@@ -1862,33 +1752,8 @@ M.trigger_event = function(ev, args)
     trigger_event(ev, args)
 end
 
-local do_autosave = function()
-    vim.defer_fn(function()
-        M.auto_save_layout()
-    end, 1)
-end
-
-M.persistent_on({
-    'CommandSet', 'WinIdSet', 'TabTitleChanged', 'HistoryChanged',
-    'FloatOpened', 'PaneClosed', 'FloatTitleChanged',
-}, do_autosave)
-
-M.persistent_on({'FloatMoved', 'PaneChanged', 'PaneResized'}, function()
-    if options.autosave ~= 'always' then
-        return
-    end
-    do_autosave()
-end)
-
 M.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
     is_started = true
-    if funcs.is_autosave() then
-        return
-    end
-    vim.fn.timer_start(200, function()
-        updating_titles = false
-        M.update_titles()
-    end)
 end)
 
 M.persistent_on('PaneChanged', function(args)

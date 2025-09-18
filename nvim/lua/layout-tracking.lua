@@ -1,5 +1,7 @@
-local azul = require('core')
+local core = require('core')
 local funcs = require('functions')
+local FILES = require('files')
+local options = require('options')
 
 local M = {}
 local L = {}
@@ -7,11 +9,28 @@ local current_in_saved_layout = nil
 local can_save_layout = true
 
 local term_by_azul_win_id = function(id)
-    return funcs.find(function(t) return t.azul_win_id == id end, azul.get_terminals())
+    return funcs.find(function(t) return t.azul_win_id == id end, core.get_terminals())
 end
 
 local term_by_panel_id = function(id)
-    return funcs.find(function(t) return t.panel_id == id end, azul.get_terminals())
+    return funcs.find(function(t) return t.panel_id == id end, core.get_terminals())
+end
+
+local histories_by_tab_id = function(tab_id, history)
+    return vim.tbl_filter(function(h) return h.tab_id == tab_id end, history)
+end
+
+local get_custom_values = function()
+    local result = {}
+    for _, t in ipairs(core.get_terminals()) do
+        result[t.panel_id .. ""] = {
+            azul_win_id = t.azul_win_id,
+            azul_cmd = t.azul_cmd or nil,
+            remote_command = t.remote_command
+        }
+    end
+
+    return result
 end
 
 local post_restored = function(t, customs, callback)
@@ -39,44 +58,62 @@ local post_restored = function(t, customs, callback)
     end
 end
 
+local session_extension = '.azul'
+
+local sessions_folder = function()
+    local result = options.autosave_location or (FILES.config_dir .. '/sessions')
+    if vim.fn.isdirectory(result) == 0 then
+        vim.fn.mkdir(result)
+    end
+    return result
+end
+
+local session_save_name = function()
+    return sessions_folder() .. '/' .. os.getenv('AZUL_SESSION') .. session_extension
+end
+
+local session_exists = function()
+    return FILES.exists(session_save_name())
+end
+
 L.restore_remotes = function()
-    local remotes = vim.tbl_filter(function(t) return t.remote_command ~= nil end, azul.get_terminals())
+    local remotes = vim.tbl_filter(function(t) return t.remote_command ~= nil end, core.get_terminals())
     for _, r in ipairs(remotes) do
         vim.fn.jobstop(r.term_id)
     end
-    azul.stop_updating_titles()
-    azul.update_titles()
+    core.stop_updating_titles()
+    core.update_titles()
     can_save_layout = true
-    azul.trigger_event("LayoutRestored")
+    core.trigger_event("LayoutRestored")
     if current_in_saved_layout then
         if current_in_saved_layout.tab_page ~= nil then
-            azul.select_tab(current_in_saved_layout.tab_page)
+            core.select_tab(current_in_saved_layout.tab_page)
         end
         local t = term_by_azul_win_id(current_in_saved_layout.azul_win_id)
-        if not azul.is_float(t) then
-            azul.hide_floats()
+        if not core.is_float(t) then
+            core.hide_floats()
         end
         vim.defer_fn(function()
-            azul.select_pane(t.buf)
+            core.select_pane(t.buf)
             current_in_saved_layout = nil
         end, 1)
     end
-    M.enter_mode('t')
+    core.enter_mode('t')
 end
 
 L.restore_ids = function(title_placeholders, title_overrides)
-    azul.set_global_panel_id(0)
-    azul.set_global_tab_id(0)
-    for _, t in ipairs(azul.get_terminals()) do
-        if t.panel_id > panel_id then
-            azul.set_global_panel_id(t.panel_id)
+    core.set_global_panel_id(0)
+    core.set_global_tab_id(0)
+    for _, t in ipairs(core.get_terminals()) do
+        if t.panel_id > core.get_global_panel_id() then
+            core.set_global_panel_id(t.panel_id)
         end
-        if t.tab_id > tab_id then
-            azul.set_global_tab_id(t.tab_id)
+        if t.tab_id > core.get_global_tab_id() then
+            core.set_global_tab_id(t.tab_id)
         end
     end
-    azul.set_global_tab_id(azul.get_global_tab_id() + 1)
-    azul.set_global_tab_id(azul.get_global_tab_id() + 1)
+    core.set_global_tab_id(core.get_global_tab_id() + 1)
+    core.set_global_tab_id(core.get_global_tab_id() + 1)
     for i, p in ipairs(title_placeholders or {}) do
         vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_placeholders', p)
     end
@@ -91,8 +128,8 @@ end
 
 L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     if timeout > 100 then
-        azul.stop_updating_titles()
-        azul.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
+        core.stop_updating_titles()
+        core.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
     end
 
     if panel_id_wait ~= nil then
@@ -113,16 +150,16 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
 
     local f = histories.floats[idx]
 
-    azul.set_global_panel_id(f.panel_id)
-    azul.open_float(f.group, f.win_config, f)
+    core.set_global_panel_id(f.panel_id)
+    core.open_float(f.group, f.win_config, f)
 
     L.restore_floats(histories, idx + 1, f.panel_id, 0)
 end
 
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if timeout > 100 then
-        azul.stop_updating_titles()
-        azul.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
+        core.stop_updating_titles()
+        core.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
     end
 
     if panel_id_wait ~= nil then
@@ -149,15 +186,15 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     local h = histories.history[i][j]
 
     if h.operation == "create" then
-        azul.set_global_panel_id(h.to)
-        azul.set_global_tab_id(h.tab_id)
+        core.set_global_panel_id(h.to)
+        core.set_global_tab_id(h.tab_id)
         local buf = nil
         if j == 1 and i == 1 then
             buf = vim.fn.bufnr('%')
             vim.api.nvim_tabpage_get_var(0, 'azul_tab_id')
-            vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', tab_id)
+            vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', core.get_global_tab_id())
         end
-        azul.open(true, buf)
+        core.open(true, buf)
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)
@@ -165,13 +202,13 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 
     if h.operation == "split" then
-        azul.set_global_panel_id(h.to)
+        core.set_global_panel_id(h.to)
         local t = term_by_panel_id(h.from)
         if t == nil then
-            azul.error("Error found loading the layout file", h)
+            core.error("Error found loading the layout file", h)
         end
-        azul.select_pane(t.buf)
-        azul.split(h.params[1])
+        core.select_pane(t.buf)
+        core.split(h.params[1])
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)
@@ -181,11 +218,11 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "close" then
         local t = term_by_panel_id(h.from)
         if t == nil then
-            azul.error("Error found loading the layout file", h)
+            core.error("Error found loading the layout file", h)
         end
         vim.fn.chanclose(t.term_id)
         vim.fn.timer_start(10, function()
-            azul.restore_tab_history(histories, i, j + 1, nil, 0)
+            core.restore_tab_history(histories, i, j + 1, nil, 0)
         end)
         return
     end
@@ -193,10 +230,10 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "resize" then
         local t = term_by_panel_id(h.from)
         if t == nil then
-            azul.error("Error found loading the layout file", h)
+            core.error("Error found loading the layout file", h)
         end
-        azul.select_pane(t.buf)
-        azul.resize(h.params[1])
+        core.select_pane(t.buf)
+        core.resize(h.params[1])
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, nil, 0)
         end)
@@ -206,10 +243,10 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "rotate_panel" then
         local t = term_by_panel_id(h.from)
         if t == nil then
-            azul.error("Error found loading the layout file", h)
+            core.error("Error found loading the layout file", h)
         end
-        azul.select_pane(t.buf)
-        azul.rotate_panel()
+        core.select_pane(t.buf)
+        core.rotate_panel()
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, nil, 0)
         end)
@@ -223,8 +260,8 @@ end
 --- @param callback function(t) callback called after each terminal is restored. 
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
-    if #azul.get_terminals() > 1 then
-        azul.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
+    if #core.get_terminals() > 1 then
+        core.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
         return
     end
     local f = io.open(where, "r")
@@ -233,16 +270,16 @@ M.restore_layout = function(where, callback)
     end
     local h = funcs.deserialize(f:read("*a"))
     h.callback = callback
-    azul.start_updating_titles()
+    core.start_updating_titles()
     funcs.safe_del_tab_var(0, 'azul_placeholders')
-    local t = azul.get_current_terminal()
+    local t = core.get_current_terminal()
     local old_buf = t.buf
     t.buf = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_win_set_buf(t.win_id, t.buf)
     vim.fn.jobstop(t.term_id)
     vim.api.nvim_buf_delete(old_buf, {force = true})
-    azul.do_remove_term_buf(t.buf)
-    azul.reset_history()
+    core.do_remove_term_buf(t.buf)
+    core.reset_history()
     if h.geometry ~= nil then
         vim.o.columns = h.geometry.columns
         vim.o.lines = h.geometry.lines
@@ -252,8 +289,117 @@ M.restore_layout = function(where, callback)
     f:close()
 end
 
-azul.persistent_on('ExitAzul', function()
+core.persistent_on('ExitAzul', function()
     can_save_layout = false
+end)
+
+M.save_layout = function(where, auto)
+    for _, t in ipairs(core.get_terminals()) do
+        core.refresh_tab_page(t)
+    end
+    local history_to_save = {}
+    local placeholders = {}
+    local title_overrides = {}
+    for _, id in ipairs(vim.api.nvim_list_tabpages()) do
+        table.insert(history_to_save, histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), core.get_history()))
+        table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_placeholders') or {})
+        table.insert(title_overrides, funcs.safe_get_tab_var(id, 'azul_tab_title_overriden') or '')
+    end
+    local t = core.get_current_terminal()
+    local current = nil
+    if t ~= nil then
+        current = {
+            tab_id = t.tab_id,
+            azul_win_id = t.azul_win_id,
+            tab_page = t.tab_page,
+            pane_id = t.panel_id,
+        }
+    end
+    FILES.write_file(where, vim.inspect({
+        floats = vim.tbl_filter(function(x) return core.is_float(x) end, core.get_terminals()),
+        history = history_to_save,
+        customs = get_custom_values(),
+        azul_placeholders = placeholders,
+        title_overrides = title_overrides,
+        current = current,
+        geometry = {
+            columns = vim.o.columns,
+            lines = vim.o.lines
+        }
+    }))
+    core.trigger_event("LayoutSaved", {auto})
+end
+
+M.auto_save_layout = function()
+    if not funcs.is_autosave() or not can_save_layout or funcs.is_marionette() then
+        return
+    end
+    M.save_layout(session_save_name(), true)
+end
+
+M.auto_restore_layout = function()
+    local callback = nil
+    if FILES.exists(session_save_name() .. '.lua') then
+        callback = FILES.load_as_module(os.getenv('AZUL_SESSION') .. session_extension, sessions_folder())
+    end
+    core.open()
+    vim.defer_fn(function()
+        M.restore_layout(session_save_name(), callback)
+    end, 1)
+end
+
+M.start = function()
+    if funcs.is_marionette() then
+        core.open()
+        return
+    end
+
+    if funcs.is_autosave() and session_exists() then
+        can_save_layout = false
+        M.auto_restore_layout()
+        return
+    end
+
+    if funcs.is_handling_remote() and os.getenv('AZUL_START_REMOTE') == '1' then
+        core.open_remote()
+    else
+        core.open()
+    end
+end
+
+core.persistent_on('ExitAzul', function()
+    can_save_layout = false
+    if session_exists() and #core.get_terminals() == 0 then
+        os.remove(session_save_name())
+    end
+end)
+
+local do_autosave = function()
+    vim.defer_fn(function()
+        M.auto_save_layout()
+    end, 1)
+end
+
+core.persistent_on({
+    'CommandSet', 'WinIdSet', 'TabTitleChanged', 'HistoryChanged',
+    'FloatOpened', 'PaneClosed', 'FloatTitleChanged',
+}, do_autosave)
+
+core.persistent_on({'FloatMoved', 'PaneChanged', 'PaneResized'}, function()
+    if options.autosave ~= 'always' then
+        return
+    end
+    do_autosave()
+end)
+
+core.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
+    if not can_save_layout then
+        return
+    end
+    vim.fn.timer_start(200, function()
+        core.start_updating_titles()
+        core.update_titles()
+    end)
 end)
 
 return M
