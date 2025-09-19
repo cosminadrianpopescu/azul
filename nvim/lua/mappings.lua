@@ -1,11 +1,12 @@
-local azul = require('azul')
+local core = require('core')
+local EV = require('events')
 local funcs = require('functions')
 local options = require('options')
 local FILES = require('files')
 local INS = require('insert')
 
 local get_mappings_for_mode = function(mode)
-    local result = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
+    local result = vim.tbl_filter(function(x) return x.m == mode end, core.get_mode_mappings())
     table.sort(result, function(m1, m2)
         if m1.options.action == 'show_mode_cheatsheet' then
             return false
@@ -25,7 +26,7 @@ local get_mappings_for_mode = function(mode)
 end
 
 local generic_key_handler = function()
-    local mode = azul.current_mode()
+    local mode = core.current_mode()
     local collection = get_mappings_for_mode(mode)
     local c = ''
     local buffer = ''
@@ -51,8 +52,8 @@ local generic_key_handler = function()
         timer_set = false
         reset_timer()
 
-        if mode_before_modifier ~= nil and azul.current_mode() == 'M' then
-            azul.enter_mode(mode_before_modifier)
+        if mode_before_modifier ~= nil and core.current_mode() == 'M' then
+            core.enter_mode(mode_before_modifier)
         end
         mode_before_modifier = nil
     end
@@ -63,10 +64,10 @@ local generic_key_handler = function()
         run_after_ignore = callback
     end
 
-    azul.persistent_on('ModeChanged', function(args)
+    EV.persistent_on('ModeChanged', function(args)
         local old_mode = args[1]
         vim.fn.timer_start(1, function()
-            mode = azul.current_mode()
+            mode = core.current_mode()
             if mode == 'M' then
                 mode_before_modifier = old_mode
             end
@@ -82,11 +83,11 @@ local generic_key_handler = function()
     local try_select = function(collection, c)
         local map = funcs.find(function(x) return funcs.compare_shortcuts(x.ls, c) end, collection)
         if map == nil then
-            local t = azul.get_current_terminal()
+            local t = core.get_current_terminal()
             if t.term_id == nil then
-                azul.feedkeys(c, 'n')
+                core.feedkeys(c, 'n')
             else
-                azul.send_to_current(c, true)
+                core.send_to_current(c, true)
             end
             -- reset()
             return false
@@ -100,20 +101,20 @@ local generic_key_handler = function()
         if INS.is_editing() then
             return nil
         end
-        if azul.current_mode() == 'P' then
-            azul.send_to_current(options.modifier, true)
+        if core.current_mode() == 'P' then
+            core.send_to_current(options.modifier, true)
             return ''
         end
-        if options.workflow == 'tmux' and azul.current_mode() ~= 'n' and azul.current_mode() ~= 'a' then
-            azul.enter_mode('a')
-            azul.feedkeys('<C-\\><C-n>', 't')
+        if options.workflow == 'tmux' and core.current_mode() ~= 'n' and core.current_mode() ~= 'a' then
+            core.enter_mode('a')
+            core.feedkeys('<C-\\><C-n>', 't')
             run_after(2, function()
                 vim.fn.timer_start(1, function()
-                    azul.enter_mode('M')
+                    core.enter_mode('M')
                 end)
             end)
         else
-            azul.enter_mode('M')
+            core.enter_mode('M')
         end
 
         return ''
@@ -135,13 +136,13 @@ local generic_key_handler = function()
             return 'skip'
         end
         if funcs.compare_shortcuts(trans, options.modifier)
-            and azul.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
+            and core.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
             and (options.workflow == 'tmux' or options.workflow == 'azul')
         then
             return process_modifier()
         end
         -- Do I really want to ignore ':' in case of non azul or modifier mode?!
-        -- if trans == ':' and azul.current_mode() ~= 'a' and azul.current_mode() ~= 'M' and not INS.is_editing() then
+        -- if trans == ':' and core.current_mode() ~= 'a' and core.current_mode() ~= 'M' and not INS.is_editing() then
         --     return ''
         -- end
         reset_timer()
@@ -150,7 +151,7 @@ local generic_key_handler = function()
             reset()
         end)
         timer_set = true
-        if azul.current_mode() == 'M' then
+        if core.current_mode() == 'M' then
             if funcs.compare_shortcuts(trans, "<C-c>") or funcs.compare_shortcuts(trans, "<esc>") then
                 reset()
                 vim.fn.timer_start(1, function()
@@ -163,7 +164,7 @@ local generic_key_handler = function()
                 return ''
             end
             if funcs.compare_shortcuts(trans, options.modifier) and c == '' then
-                azul.send_to_current(options.modifier, true)
+                core.send_to_current(options.modifier, true)
                 vim.fn.timer_start(1, function()
                     reset()
                     vim.api.nvim_command('startinsert')
@@ -183,25 +184,25 @@ local generic_key_handler = function()
             return ''
         end
         if #collection == 0 then
-            if azul.current_mode() == 'M' then
+            if core.current_mode() == 'M' then
                 local mode_before = mode
                 local result = try_select(vim.tbl_filter(function(x) return x.m == mode end, get_mappings_for_mode(mode)), buffer)
                 local after = c:gsub("^" .. buffer, "")
                 if not result then
-                    azul.feedkeys(after, mode)
-                elseif mode_before ~= azul.current_mode() then
-                    collection = get_mappings_for_mode(azul.current_mode())
+                    core.feedkeys(after, mode)
+                elseif mode_before ~= core.current_mode() then
+                    collection = get_mappings_for_mode(core.current_mode())
                     me(trans, me)
                 end
                 reset()
                 return ''
             end
-            -- azul.feedkeys(c, vim.fn.mode())
+            -- core.feedkeys(c, vim.fn.mode())
             reset()
             return nil
         end
 
-        if azul.current_mode() == 'M' then
+        if core.current_mode() == 'M' then
             return ''
         end
 
@@ -222,14 +223,14 @@ local generic_key_handler = function()
         end
         local vim_mode = vim.fn.mode()
         if result == nil and vim_mode == 'n' and (key == 'q' or key == 'r') then
-            local t = azul.get_current_terminal()
-            if azul.remote_state(t) == 'disconnected' then
+            local t = core.get_current_terminal()
+            if core.remote_state(t) == 'disconnected' then
                 reset()
                 pcall(function()
                     if key == 'q' then
-                        azul.remote_quit(t)
+                        core.remote_quit(t)
                     else
-                        azul.remote_reconnect(t)
+                        core.remote_reconnect(t)
                     end
                 end)
                 return ''
@@ -253,16 +254,16 @@ local has_child_sessions_in_passthrough = function()
 end
 
 
-azul.set_key_map('P', options.passthrough_escape, '', {
+core.set_key_map('P', options.passthrough_escape, '', {
     callback = function()
         if has_child_sessions_in_passthrough() then
-            azul.send_to_current(options.passthrough_escape, true)
+            core.send_to_current(options.passthrough_escape, true)
             return
         end
-        azul.enter_mode('t')
+        core.enter_mode('t')
     end
 })
 
-azul.persistent_on('AzulStarted', function()
+EV.persistent_on('AzulStarted', function()
     generic_key_handler()
 end)

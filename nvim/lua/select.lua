@@ -1,5 +1,5 @@
 -- local from_entry = require "telescope.from_entry"
-local azul = require('azul')
+local core = require('core')
 local sets = require('telescope.actions.set')
 local actions = require('telescope.actions')
 local pickers = require "telescope.pickers"
@@ -14,7 +14,7 @@ local _sessions = {}
 local act_close = actions.close
 actions.close = function(bufnr)
     act_close(bufnr)
-    azul.resume()
+    core.resume()
 end
 
 sets.select = function(bufnr)
@@ -31,10 +31,10 @@ sets.select = function(bufnr)
                 end
             end
         end
-        azul.disconnect()
+        core.disconnect()
     elseif entry.terminal then
-        if azul.is_float(entry.terminal) then
-            azul.show_floats(entry.terminal.group or nil)
+        if funcs.is_float(entry.terminal) then
+            core.show_floats(entry.terminal.group or nil)
         else
             local tab = vim.api.nvim_win_get_tabpage(entry.terminal.win_id)
             vim.api.nvim_command('tabn ' .. tab)
@@ -69,7 +69,7 @@ local sessions_list = function(opts)
     if os.getenv("AZUL_SESSION") == nil then
         return
     end
-    azul.suspend()
+    core.suspend()
     local sessions = funcs.run_process_list(os.getenv("AZUL_PREFIX") .. "/bin/azul -l")
     pickers.new(opts, {
         prompt_title = "Sessions",
@@ -105,20 +105,20 @@ local sessions_list = function(opts)
 end
 
 local term_select = function(opts)
-    azul.suspend()
+    core.suspend()
     opts = opts or {}
 
     pickers.new(opts, {
         prompt_title = "Tabs",
         cache_picker = false,
         finder = finders.new_table {
-            results = azul.get_terminals(),
+            results = core.get_terminals(),
             entry_maker = function(t)
                 local info = vim.fn.getbufinfo(t.buf)[1]
                 local name = (info.variables and info.variables.term_title) or info.name
                 local s = {
                     value = name, valid = true,
-                    ordinal = name, display = ((azul.is_float(t) and "Floating: ") or ("Tab " .. vim.api.nvim_win_get_tabpage(t.win_id) .. ": ")) .. name, terminal = t,
+                    ordinal = name, display = ((core.is_float(t) and "Floating: ") or ("Tab " .. vim.api.nvim_win_get_tabpage(t.win_id) .. ": ")) .. name, terminal = t,
                 }
                 return s
             end

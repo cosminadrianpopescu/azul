@@ -1,6 +1,7 @@
 local cmd = vim.api.nvim_create_autocmd
 local funcs = require('functions')
-local azul = require('azul')
+local core = require('core')
+local EV = require('events')
 
 local get_disconnected_content = function(t)
     local content = {
@@ -42,8 +43,8 @@ end
 
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
     pattern = "*", callback = function(ev)
-        local t = funcs.find(function(t) return (t.win_id or '') .. '' == ev.file end, azul.get_terminals())
-        if t == nil or t.remote_command == nil or azul.remote_state(t) ~= 'disconnected' or t.win_id == nil then
+        local t = funcs.find(function(t) return (t.win_id or '') .. '' == ev.file end, core.get_terminals())
+        if t == nil or t.remote_command == nil or core.remote_state(t) ~= 'disconnected' or t.win_id == nil then
             return
         end
         t.win_config = vim.api.nvim_win_get_config(t.win_id)
@@ -71,17 +72,17 @@ local remote_disconnected = function(t)
     vim.api.nvim_buf_delete(old_buf, {force = true})
     -- vim.api.nvim_buf_set_keymap(t.buf, 't', 'r', '', {
     --     callback = function()
-    --         azul.remote_reconnect(t)
+    --         core.remote_reconnect(t)
     --     end
     -- })
     -- vim.api.nvim_buf_set_keymap(t.buf, 't', 'q', '', {
     --     callback = function()
     --         -- t.remote_command = nil
-    --         azul.remote_quit(t)
+    --         core.remote_quit(t)
     --     end
     -- })
 end
 
-azul.persistent_on('RemoteDisconnected', function(args)
+EV.persistent_on('RemoteDisconnected', function(args)
     remote_disconnected(args[1])
 end)

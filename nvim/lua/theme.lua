@@ -1,6 +1,7 @@
-local mx = require('azul')
+local mx = require('core')
 local options = require('options')
 local INS = require('insert')
+local EV = require('events')
 local funcs = require('functions')
 
 if options.use_dressing then
@@ -11,11 +12,9 @@ if not options.use_lualine then
     return
 end
 
-local is_modifier = false
 local theme = options.theme
 local disabled = require('disabled-theme')
 local is_disabled = false
-local wf = mx.get_current_workflow()
 
 local M = {}
 
@@ -230,8 +229,7 @@ require('lualine').setup {
     extensions = {}
 }
 
-mx.persistent_on({'ModeChanged', 'TabTitleChanged'}, function(args)
-    is_modifier = args[2] == 'M'
+EV.persistent_on({'ModeChanged', 'TabTitleChanged'}, function(args)
     if is_disabled and mx.current_mode() ~= 'P' then
         require('lualine').setup({options = {theme = theme}})
         is_disabled = false
@@ -245,10 +243,10 @@ mx.persistent_on({'ModeChanged', 'TabTitleChanged'}, function(args)
     require('lualine').refresh()
 end)
 
-mx.persistent_on({'PaneChanged'}, function(args)
+EV.persistent_on({'PaneChanged'}, function(args)
     local crt = args[1]
-    local what = (mx.is_float(crt) and 'FloatBorder') or 'WinSeparator'
-    local repl = (mx.is_float(crt) and 'AzulCurrentFloat') or 'AzulInactiveWin'
+    local what = (funcs.is_float(crt) and 'FloatBorder') or 'WinSeparator'
+    local repl = (funcs.is_float(crt) and 'AzulCurrentFloat') or 'AzulInactiveWin'
     vim.api.nvim_set_option_value('winhl', what .. ':' .. repl, {win = crt.win_id, scope = 'local'})
     for _, t in ipairs(mx.get_terminals()) do
         if t.win_id ~= crt.win_id and t.win_id ~= nil and vim.api.nvim_win_is_valid(t.win_id) then

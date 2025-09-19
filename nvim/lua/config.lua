@@ -12,13 +12,13 @@ M.ini_shortcuts = {}
 
 cmd({'TabNew', 'VimEnter'}, {
     pattern = "*", callback = function()
-        local azul = require('azul')
+        local core = require('core')
         if not options.link_floats_with_tabs then
-            azul.set_tab_variable('float_group', 'default')
+            core.set_tab_variable('float_group', 'default')
             return
         end
         vim.fn.timer_start(1, function()
-            azul.set_tab_variable('float_group', 'tab-' .. tabs)
+            core.set_tab_variable('float_group', 'tab-' .. tabs)
             tabs = tabs + 1
         end)
     end
@@ -359,10 +359,10 @@ M.default_config = {
 
 local set_shortcut = function(action, shortcut, mode, arg)
     table.insert(M.ini_shortcuts, {action = action, shortcut = shortcut, mode = mode, arg = arg})
-    local azul = require('azul')
-    local map = azul.set_key_map
+    local core = require('core')
+    local map = core.set_key_map
     local map2 = vim.api.nvim_set_keymap
-    local wf = azul.get_current_workflow()
+    local wf = core.get_current_workflow()
 
     local t = function(key, callback, what)
         map(mode, key, '', {
@@ -383,9 +383,9 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 if funcs.is_handling_remote() then
-                    azul.create_tab_remote()
+                    core.create_tab_remote()
                 else
-                    azul.create_tab()
+                    core.create_tab()
                 end
             end,
             desc = 'Creates a new tab',
@@ -395,7 +395,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'tab_select' then
         map(mode, shortcut, '', {
             callback = function()
-                azul.select_tab(arg)
+                core.select_tab(arg)
             end,
             desc = 'Go to tab ' .. arg,
             action = action,
@@ -404,7 +404,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'toggle_floats' then
         map(mode, shortcut, '', {
             callback = function()
-                azul.toggle_floats(funcs.current_float_group())
+                core.toggle_floats(funcs.current_float_group())
             end,
             desc = "Toggle floats visibility",
             action = action,
@@ -429,8 +429,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
             local suf = (arg == 'v' and 'v') or ''
             map(mode, shortcut, '', {
                 callback = function()
-                    azul.enter_mode('a')
-                    azul.feedkeys('<C-\\><C-n>' .. suf, 't')
+                    core.enter_mode('a')
+                    core.feedkeys('<C-\\><C-n>' .. suf, 't')
                 end,
                 desc = 'Enter ' .. mapping[arg] .. ' mode',
             })
@@ -438,7 +438,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         end
         map(mode, shortcut, '', {
             callback = function()
-                azul.enter_mode(arg)
+                core.enter_mode(arg)
             end,
             desc = "Enter " .. mapping[arg] .. " mode",
             action = action,
@@ -448,9 +448,9 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 if funcs.is_handling_remote() then
-                    azul.open_float_remote()
+                    core.open_float_remote()
                 else
-                    azul.open_float()
+                    core.open_float()
                 end
             end,
             desc = "Create float",
@@ -459,7 +459,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     elseif action == 'disconnect' then
         map(mode, shortcut, '', {
-            callback = azul.disconnect,
+            callback = core.disconnect,
             desc = "Disconnect",
             action = action,
             arg = arg,
@@ -468,7 +468,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local where = action:gsub('resize_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.resize(where)
+                core.resize(where)
             end,
             desc = "Resize " .. where,
             action = action,
@@ -478,7 +478,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('select_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.select_next_pane(dir, funcs.current_float_group())
+                core.select_next_pane(dir, funcs.current_float_group())
             end,
             desc = 'Select a pane ' .. dir,
             action = action,
@@ -488,7 +488,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('move_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.move_current_float(dir, arg)
+                core.move_current_float(dir, arg)
             end,
             desc = 'Move a panel to ' .. dir,
             action = action,
@@ -499,9 +499,9 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 if funcs.is_handling_remote() then
-                    azul.split_remote(false, dir)
+                    core.split_remote(false, dir)
                 else
-                    azul.split(dir)
+                    core.split(dir)
                 end
             end,
             desc = 'Split ' .. dir,
@@ -512,7 +512,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('move_', '')
         map(mode, shortcut, '', {
             callback = function()
-                azul.position_current_float(dir)
+                core.position_current_float(dir)
             end,
             desc = 'Move current pane to ' .. dir,
             action = action,
@@ -544,13 +544,13 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'paste' then
         local callback = (wf == 'azul' and mode == 't' and shortcut:match('^<.*>$') and map2) or map
         callback(mode, shortcut, '', {
-            callback = azul.paste_from_clipboard,
+            callback = core.paste_from_clipboard,
             desc = 'Paste from clipboard',
         })
     elseif action == 'passthrough' then
         map(mode, shortcut, '', {
             callback = function()
-                azul.toggle_passthrough()
+                core.toggle_passthrough()
             end,
             desc = 'Toggle passthrough mode',
             action = action,
@@ -559,7 +559,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'rotate_panel' then
         map(mode, shortcut, '', {
             callback = function()
-                azul.rotate_panel()
+                core.rotate_panel()
             end,
             desc = 'Rotates the current panel',
             action = action,
@@ -568,8 +568,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'rename_tab' then
         map(mode, shortcut, '', {
             callback = function()
-                vim.defer_fn(azul.rename_current_tab, 1);
-                -- azul.rename_current_tab()
+                vim.defer_fn(core.rename_current_tab, 1);
             end,
             desc = 'Renames the current tab',
             action = action,
@@ -577,7 +576,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     elseif action == 'rename_float' then
         map(mode, shortcut, '', {
-            callback = azul.rename_current_pane,
+            callback = core.rename_current_pane,
             desc = 'Renames the current floating pane',
             action = action,
             arg = arg,
@@ -585,8 +584,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'edit_scrollback' then
         map(mode, shortcut, '', {
             callback = function()
-                azul.edit_current_scrollback()
-                azul.enter_mode('t')
+                core.edit_current_scrollback()
+                core.enter_mode('t')
             end,
             desc = 'Edits the scrollback buffer',
             action = action,
@@ -595,8 +594,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'edit_scrollback_log' then
         map(mode, shortcut, '', {
             callback = function()
-                azul.edit_current_scrollback_log()
-                azul.enter_mode('t')
+                core.edit_current_scrollback_log()
+                core.enter_mode('t')
             end,
             desc = 'Edits the scrollback log',
             action = action,
@@ -612,7 +611,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     elseif action == 'remote_scroll' then
         map(mode, shortcut, '', {
-            callback = azul.remote_enter_scroll_mode,
+            callback = core.remote_enter_scroll_mode,
             desc = "Scroll a remote pane",
             action = action,
             arg = arg,
@@ -701,7 +700,7 @@ M.apply_config = function(_config)
     if files.exists(files.config_dir .. '/config.ini') then
         M.load_config(files.config_dir .. '/config.ini')
     end
-    require('azul').set_workflow(options.workflow, options.modifier)
+    require('core').set_workflow(options.workflow, options.modifier)
 
     local config = _config or M.default_config
     local wf = options.workflow
@@ -720,7 +719,7 @@ M.overwrite_default_action = function(action, wf, mode, shortcut)
     end
     local old = M.default_config.shortcuts[wf][mode][action]
     if old ~= nil then
-        require('azul').remove_key_map(modes[mode], old)
+        require('core').remove_key_map(modes[mode], old)
     end
     M.default_config.shortcuts[wf][mode][action] = shortcut
 end
@@ -779,8 +778,8 @@ M.edit_config = function()
     if not files.exists(files.config_dir .. '/config.ini') then
         return
     end
-    local azul = require('azul')
-    azul.edit(azul.get_current_terminal(), files.config_dir .. '/config.ini', M.reload_config)
+    local core = require('core')
+    core.edit(core.get_current_terminal(), files.config_dir .. '/config.ini', M.reload_config)
 end
 
 return M

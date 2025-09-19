@@ -1,5 +1,5 @@
 local funcs = require('functions')
-local azul = require('azul')
+local core = require('core')
 
 local win_id = nil
 
@@ -60,9 +60,9 @@ local function wininput(opts, on_confirm, win_opts)
 end
 
 vim.ui.input = function(opts, on_confirm)
-    azul.suspend()
+    core.suspend()
     vim.fn.timer_start(1, function()
-        azul.resume()
+        core.resume()
     end)
     wininput(opts, function(input)
         on_confirm(input)

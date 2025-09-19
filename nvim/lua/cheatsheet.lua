@@ -1,4 +1,4 @@
-local azul = require('azul')
+local core = require('core')
 local funcs = require('functions')
 local options = require('options')
 local EV = require('events')
@@ -51,7 +51,7 @@ local close_mode_window = function()
 end
 
 local get_mappings_for_mode = function(mode)
-    local result = vim.tbl_filter(function(x) return x.m == mode end, azul.get_mode_mappings())
+    local result = vim.tbl_filter(function(x) return x.m == mode end, core.get_mode_mappings())
     table.sort(result, function(m1, m2)
         if m1.options.action == 'show_mode_cheatsheet' then
             return false
@@ -202,7 +202,7 @@ local create_window = function(mappings, full, position)
     local current_win = vim.api.nvim_get_current_win()
     local cols = get_cols_number()
     local height = math.ceil(#mappings / cols)
-    azul.suspend()
+    core.suspend()
     win_buffer = vim.api.nvim_create_buf(false, true)
     local extra_lines = 0
     if _full then
@@ -223,7 +223,7 @@ local create_window = function(mappings, full, position)
     vim.api.nvim_command("syn match AzulCheatsheetArrow '" .. ARROW .. "'")
     vim.api.nvim_set_current_win(current_win)
     vim.api.nvim_buf_set_lines(win_buffer, 0, height + 3, false, cheatsheet_content(mappings, height, _full))
-    azul.resume()
+    core.resume()
     if position == nil and options.modes_cheatsheet_position == 'auto' then
         position_timer = vim.fn.timer_start(100, function()
             if win_id == nil then
@@ -250,15 +250,15 @@ EV.on_action('show_mode_cheatsheet', function()
         close_mode_window()
         return
     end
-    local mode = azul.current_mode()
+    local mode = core.current_mode()
     local mappings = get_mappings_for_mode(mode)
-    if #mappings == 0 or azul.is_modifier_mode(mode) then
+    if #mappings == 0 or core.is_modifier_mode(mode) then
         return
     end
     mode_win_id = create_window(mappings, false)
 end)
 
-azul.persistent_on('ModeChanged', function(args)
+EV.persistent_on('ModeChanged', function(args)
     if not options.use_cheatsheet then
         return
     end
@@ -269,7 +269,7 @@ azul.persistent_on('ModeChanged', function(args)
     end
     local mappings = get_mappings_for_mode(new_mode)
     close_window()
-    if azul.is_modifier_mode(new_mode) or #mappings == 0 or new_mode == 't' or new_mode == 'P' then
+    if core.is_modifier_mode(new_mode) or #mappings == 0 or new_mode == 't' or new_mode == 'P' then
         close_mode_window()
         return
     end
@@ -281,7 +281,7 @@ azul.persistent_on('ModeChanged', function(args)
         x = #mappings
     end
     if more then
-        local maps = funcs.map_by_action(new_mode, 'show_mode_cheatsheet', azul.get_mode_mappings())
+        local maps = funcs.map_by_action(new_mode, 'show_mode_cheatsheet', core.get_mode_mappings())
         table.insert(mappings, (#maps > 0 and maps[1]) or "etc.")
     end
     win_id = create_window(mappings, false)

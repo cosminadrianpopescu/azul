@@ -1,4 +1,5 @@
-local azul = require('azul')
+local EV = require('events')
+local core = require('core')
 local options = require('options')
 
 local mode_before_disconnected = nil
@@ -19,20 +20,20 @@ local do_start_insert = function()
     end)
 end
 
-azul.persistent_on({
+EV.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
     'WinIdSet', 'ConfigReloaded', 'AzulConnected', 'Error', 'LayoutRestored',
 }, do_start_insert)
 
-azul.persistent_on('LayoutSaved', function(args)
+EV.persistent_on('LayoutSaved', function(args)
     if args[1] == true then
         return
     end
     do_start_insert()
 end)
 
-azul.persistent_on('ModeChanged', function(args)
+EV.persistent_on('ModeChanged', function(args)
     local new_mode = args[2]
     if new_mode ~= 't' and new_mode ~= 'P' then
         return
@@ -42,17 +43,17 @@ azul.persistent_on('ModeChanged', function(args)
     end)
 end)
 
-azul.persistent_on('EnterDisconnectedPane', function()
-    mode_before_disconnected = azul.current_mode()
+EV.persistent_on('EnterDisconnectedPane', function()
+    mode_before_disconnected = core.current_mode()
     if mode_before_disconnected == 'n' or mode_before_disconnected == 'a' or options.workflow == 'tmux' or mode_before_disconnected == 'M' then
         return
     end
     vim.fn.timer_start(1, function()
-        azul.enter_mode(mode_before_disconnected)
+        core.enter_mode(mode_before_disconnected)
     end)
 end)
 
-azul.persistent_on('LeaveDisconnectedPane', function()
+EV.persistent_on('LeaveDisconnectedPane', function()
     if mode_before_disconnected ~= 't' then
         return
     end
@@ -60,11 +61,11 @@ azul.persistent_on('LeaveDisconnectedPane', function()
     start_insert()
 end)
 
-azul.persistent_on('UserInputPrompt', function()
+EV.persistent_on('UserInputPrompt', function()
     is_editing = true
 end)
 
-azul.persistent_on({'UserInput', 'Error'}, function()
+EV.persistent_on({'UserInput', 'Error'}, function()
     is_editing = false
 end)
 

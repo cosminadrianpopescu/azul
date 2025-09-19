@@ -5,7 +5,8 @@ local funcs = require('functions')
 local options = require('options')
 local config = require('config')
 local test_running = nil
-local azul = require('azul')
+local core = require('core')
+local sess = require('session')
 local EV = require('events')
 
 vim.g.azul_errors_log = base_path .. "/runtime-errors"
@@ -97,8 +98,8 @@ local get_lines = function()
 end
 
 local single_shot = function(ev, callback)
-    azul.on(ev, function(args)
-        azul.clear_event(ev, callback)
+    EV.on(ev, function(args)
+        EV.clear_event(ev, callback)
         callback(args)
     end)
 end
@@ -114,7 +115,7 @@ L.simulate_keys = function(keys, idx, after)
         return
     end
     if keys[idx] ~= '' then
-        azul.feedkeys(keys[idx], 't')
+        core.feedkeys(keys[idx], 't')
     end
     vim.fn.timer_start(TIMEOUT_BETWEEN_KEYS - ((options.workflow == 'emacs' and 120) or 0), function()
         L.simulate_keys(keys, idx + 1, after)
@@ -140,7 +141,7 @@ local wait_events = function(events, after)
     local after_ran = false
     for ev, _ in pairs(events or {}) do
         if ev ~= 'Timeout' then
-            azul.on(ev, function()
+            EV.on(ev, function()
                 if ran[ev] == nil then
                     ran[ev] = 0
                 end
@@ -150,7 +151,7 @@ local wait_events = function(events, after)
                     return
                 end
 
-                azul.clear_event(ev)
+                EV.clear_event(ev)
                 if after_ran then
                     return
                 end
@@ -212,14 +213,14 @@ L.action_shortcut = function(action, mode, arg, with_modifier)
 end
 
 local simulate_map = function(ls, mode, callback)
-    local map = funcs.find(function(m) return m.ls == ls and m.m == mode end, azul.get_mode_mappings())
+    local map = funcs.find(function(m) return m.ls == ls and m.m == mode end, core.get_mode_mappings())
     if map == nil then
         quit("Could not find mapping for " .. ls .. " in mode " .. mode)
     end
     if map.options.callback ~= nil then
         map.options.callback()
     elseif map.rs ~= nil then
-        azul.feedkeys(map.rs, map.real_mode)
+        core.feedkeys(map.rs, map.real_mode)
     end
     callback()
 end
@@ -274,12 +275,12 @@ return {
     reverse = reverse,
     get_current_term_lines = get_lines,
     save_layout = function(name)
-        azul.save_layout(base_path .. "/" .. name)
+        sess.save_layout(base_path .. "/" .. name)
     end,
     get_root = function()
         return base_path
     end,
     restore_layout = function(name)
-        azul.restore_layout(base_path .. "/" .. name)
+        sess.restore_layout(base_path .. "/" .. name)
     end
 }
