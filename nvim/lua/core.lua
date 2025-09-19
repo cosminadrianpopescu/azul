@@ -1,6 +1,8 @@
 local cmd = vim.api.nvim_create_autocmd
 local funcs = require('functions')
 local FILES = require('files')
+local H = require('history')
+local EV = require('events')
 local options = require('options')
 
 local M = {}
@@ -38,8 +40,6 @@ local panel_id = 0
 
 local loggers = {}
 
-local history = {}
-
 local mode = nil
 local mode_mappings = {
 }
@@ -48,84 +48,14 @@ local mod = nil
 local global_last_status = nil
 local quit_on_last = true
 
-local events = {
-    FloatClosed = {},
-    ModeChanged = {},
-    FloatsVisible = {},
-    FloatOpened = {},
-    PaneChanged = {},
-    Error = {},
-    PaneClosed = {},
-    LayoutSaved = {},
-    LayoutRestored = {},
-    WinConfigChanged = {},
-    TabTitleChanged = {},
-    AzulStarted = {},
-    ActionRan = {},
-    ExitAzul = {},
-    FloatTitleChanged = {},
-    ConfigReloaded = {},
-    RemoteDisconnected = {},
-    RemoteReconnected = {},
-    UserInput = {},
-    UserInputPrompt = {},
-    Edit = {},
-    LeaveDisconnectedPane = {},
-    EnterDisconnectedPane = {},
-    TabCreated = {},
-    CommandSet = {},
-    WinIdSet = {},
-    AzulConnected = {},
-
-    HistoryChanged = {},
-    PaneResized = {},
-    FloatMoved = {},
-}
-
-local persistent_events = {}
-
-for k in pairs(events) do
-    persistent_events[k] = {}
-end
-
 local L = {}
 
 local current_win_has_no_pane = function()
-    local t = L.term_by_buf_id(vim.fn.bufnr('%'))
+    local t = M.term_by_buf_id(vim.fn.bufnr('%'))
     if t == nil then
         return vim.b.terminal_job_id == nil
     end
     return vim.b.terminal_job_id == nil and M.remote_state(t) ~= 'disconnected'
-end
-
-local trigger_event = function(ev, args)
-    for _, callback in ipairs(persistent_events[ev] or {}) do
-        callback(args)
-    end
-
-    for _, callback in ipairs(events[ev] or {}) do
-        callback(args)
-    end
-end
-
-local add_to_history = function(buf, operation, params, tab_id)
-    local t = L.term_by_buf_id(buf)
-    if t == nil or M.is_float(t) then
-        return
-    end
-    local el = {
-        operation = operation,
-        params = params,
-        to = (operation == "split" and -1) or nil,
-        tab_id = tab_id,
-    }
-    if operation == "create" then
-        el.to = t.panel_id
-    else
-        el.from = t.panel_id
-    end
-    table.insert(history, el)
-    trigger_event('HistoryChanged', {el})
 end
 
 local do_exit = function()
@@ -134,11 +64,7 @@ local do_exit = function()
     for _, c in ipairs(channels) do
         vim.fn.jobstop(c.id)
     end
-    trigger_event('ExitAzul')
-end
-
-M.is_float = function(t)
-    return t and t.win_config and t.win_config['zindex'] ~= nil
+    EV.trigger_event('ExitAzul')
 end
 
 M.do_remove_term_buf = function(buf)
@@ -147,14 +73,14 @@ end
 
 local remove_term_buf = function(buf)
     M.do_remove_term_buf(buf)
-    if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return M.is_float(t) == false end, terminals) == 0) then
+    if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return funcs.is_float(t) == false end, terminals) == 0) then
         do_exit()
         vim.api.nvim_command('quit!')
     end
 end
 
 M.debug = function()
-    -- print(vim.inspect(vim.tbl_filter(function(t) return M.is_float(t) end, M.get_terminals())))
+    -- print(vim.inspect(vim.tbl_filter(function(t) return funcs.is_float(t) end, M.get_terminals())))
     -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
     -- print("OPTIONS ARE " .. vim.inspect(options))
     -- print("LOGGERS ARE " .. vim.inspect(loggers))
@@ -166,11 +92,11 @@ M.debug = function()
     -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
     -- print("MAPPINGS ARE" .. vim.inspect(vim.tbl_filter(function(m) return m.m == 'P' end, mode_mappings)))
     -- print("MODE IS" .. mode)
-    print("HISTORY IS " .. vim.inspect(history))
+    -- print("HISTORY IS " .. vim.inspect(history))
 end
 
 M.refresh_tab_page = function(t)
-    if M.is_float(t) then
+    if funcs.is_float(t) then
         return
     end
     t.tab_page = vim.api.nvim_tabpage_get_number(vim.api.nvim_win_get_tabpage(t.win_id))
@@ -189,7 +115,7 @@ local refresh_win_config = function(t)
     if old_config == nil or old_config.col ~= t.win_config.col or old_config.height ~= t.win_config.height
         or old_config.row ~= t.win_config.row or old_config.width ~= t.win_config.width then
         vim.fn.timer_start(1, function()
-            trigger_event('WinConfigChanged', {t})
+            EV.trigger_event('WinConfigChanged', {t})
         end)
     end
 end
@@ -211,7 +137,7 @@ local refresh_buf = function(buf, with_win_id)
 end
 
 local get_visible_floatings = function()
-    return vim.tbl_filter(function(t) return M.is_float(t) and t.win_id ~= nil end, terminals)
+    return vim.tbl_filter(function(t) return funcs.is_float(t) and t.win_id ~= nil end, terminals)
 end
 
 local select_current_pane = function(tab_id)
@@ -285,7 +211,7 @@ local OnEnter = function(ev)
         return
     end
 
-    if M.is_float(crt) == false then
+    if funcs.is_float(crt) == false then
         M.hide_floats()
     end
     crt.last_access = last_access
@@ -299,7 +225,7 @@ local OnEnter = function(ev)
         vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
         t.is_current = _buf(t) == ev.buf
         if t.is_current and _buf(t) ~= is_current_terminal then
-            trigger_event('PaneChanged', {t, old})
+            EV.trigger_event('PaneChanged', {t, old})
         end
         if t.is_current and options.auto_start_logging and not L.is_logging_started(t.buf) then
             M.start_logging(os.tmpname())
@@ -307,7 +233,7 @@ local OnEnter = function(ev)
     end
     if not azul_started then
         azul_started = true
-        trigger_event('AzulStarted')
+        EV.trigger_event('AzulStarted')
     end
 end
 
@@ -341,7 +267,7 @@ end
 ---@param buf number The buffer in which to open the terminal
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
 M.open = function(start_edit, buf, callback)
-    if L.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and buf == nil then
+    if M.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and buf == nil then
         L.open_params = {start_edit, buf, callback}
         vim.api.nvim_command('$tabnew')
         return
@@ -405,13 +331,13 @@ local OnTermClose = function(ev)
         return
     end
     if t.remote_command ~= nil then
-        trigger_event('RemoteDisconnected', {t})
+        EV.trigger_event('RemoteDisconnected', {t})
         vim.fn.timer_start(1, function()
             refresh_buf(t.buf, false)
         end)
         return
     end
-    add_to_history(ev.buf, "close", nil, t.tab_id)
+    H.add_to_history(M.term_by_buf_id(ev.buf), "close", nil, t.tab_id)
     remove_term_buf(ev.buf)
     if #terminals == 0 then
         return
@@ -424,7 +350,7 @@ local OnTermClose = function(ev)
         end
     end
     vim.api.nvim_buf_delete(ev.buf, {force = true})
-    trigger_event("PaneClosed", {t})
+    EV.trigger_event("PaneClosed", {t})
     vim.fn.timer_start(1, function()
         ev.buf = vim.fn.bufnr()
         OnEnter(ev)
@@ -469,7 +395,7 @@ M.enter_mode = function(new_mode)
         anounce_passthrough()
     end
     if old_mode ~= new_mode then
-        trigger_event('ModeChanged', {old_mode, new_mode})
+        EV.trigger_event('ModeChanged', {old_mode, new_mode})
     end
 end
 
@@ -478,7 +404,7 @@ cmd({'UIEnter'}, {
         if not azul_started then
             return
         end
-        trigger_event('AzulConnected')
+        EV.trigger_event('AzulConnected')
     end
 })
 
@@ -560,7 +486,7 @@ M.update_titles = function(callback)
                 vim.api.nvim_tabpage_set_var(t, 'azul_placeholders', placeholders)
                 vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
                 if trigger then
-                    trigger_event('TabTitleChanged', {t, title})
+                    EV.trigger_event('TabTitleChanged', {t, title})
                 end
             end
         )
@@ -591,7 +517,7 @@ M.update_titles = function(callback)
                     vim.api.nvim_win_set_config(f.win_id, f.win_config)
                 end
                 if trigger then
-                    trigger_event('FloatTitleChanged', {f})
+                    EV.trigger_event('FloatTitleChanged', {f})
                 end
             end
         )
@@ -607,7 +533,7 @@ M.hide_floats = function()
         close_float(float)
     end
     if #floats > 0 then
-        trigger_event('FloatClosed')
+        EV.trigger_event('FloatClosed')
     end
     vim.fn.timer_start(1, function()
         M.update_titles()
@@ -649,12 +575,13 @@ cmd('TermOpen',{
         table.insert(terminals, new_terminal)
         L.current_group = nil
         OnEnter(ev)
+        local history = H.get_history()
         if #history > 0 and history[#history].to == -1 then
             history[#history].to = panel_id
         else
-            local t = L.term_by_buf_id(ev.buf)
-            if t and not M.is_float(t) then
-                add_to_history(ev.buf, "create", {}, t.tab_id)
+            local t = M.term_by_buf_id(ev.buf)
+            if t and not funcs.is_float(t) then
+                H.add_to_history(M.term_by_buf_id(ev.buf), "create", {}, t.tab_id)
             end
         end
         panel_id = panel_id + 1
@@ -664,7 +591,7 @@ cmd('TermOpen',{
 
 cmd({'TabClosed'}, {
     pattern = '*', callback = function(ev)
-        local t = L.term_by_buf_id(ev.buf)
+        local t = M.term_by_buf_id(ev.buf)
         if t == nil then
             return
         end
@@ -688,7 +615,7 @@ cmd({'FileType', 'BufEnter'}, {
         local was_user_editing = is_user_editing
         is_user_editing = vim.o.filetype == 'azul_prompt'
         if is_user_editing and not was_user_editing then
-            trigger_event('UserInputPrompt')
+            EV.trigger_event('UserInputPrompt')
         end
     end
 })
@@ -731,12 +658,12 @@ cmd({'WinNew', 'WinEnter'}, {
 
 cmd({'BufLeave', 'BufEnter'}, {
     pattern = {'*'}, callback = function(ev)
-        local t = L.term_by_buf_id(ev.buf)
+        local t = M.term_by_buf_id(ev.buf)
         if t == nil then
             return
         end
         if M.remote_state(t) == 'disconnected' then
-            trigger_event((ev.event == 'BufLeave' and 'LeaveDisconnectedPane') or 'EnterDisconnectedPane', {t})
+            EV.trigger_event((ev.event == 'BufLeave' and 'LeaveDisconnectedPane') or 'EnterDisconnectedPane', {t})
         end
     end
 })
@@ -783,19 +710,19 @@ end
 --- Shows all the floats
 M.show_floats = function(group)
     local g = group or 'default'
-    local floatings = vim.tbl_filter(function(t) return M.is_float(t) and t.group == g end, terminals)
+    local floatings = vim.tbl_filter(function(t) return funcs.is_float(t) and t.group == g end, terminals)
     table.sort(floatings, function(a, b) return a.last_access < b.last_access end)
     for _, f in ipairs(floatings) do
         restore_float(f)
     end
     vim.fn.timer_start(1, function()
-        trigger_event('FloatsVisible')
+        EV.trigger_event('FloatsVisible')
     end)
     M.update_titles()
 end
 
 local get_all_floats = function(group)
-    return vim.tbl_filter(function(t) return M.is_float(t) and ((group ~= nil and t.group == group) or group == nil) end, terminals)
+    return vim.tbl_filter(function(t) return funcs.is_float(t) and ((group ~= nil and t.group == group) or group == nil) end, terminals)
 end
 
 M.are_floats_hidden = function(group)
@@ -830,8 +757,8 @@ M.open_float = function(group, opts, to_restore)
     end
     vim.api.nvim_open_win(buf, true, _opts)
     vim.fn.timer_start(1, function()
-        local opened = L.term_by_buf_id(buf)
-        trigger_event('FloatOpened', {opened})
+        local opened = M.term_by_buf_id(buf)
+        EV.trigger_event('FloatOpened', {opened})
         if to_restore ~= nil then
             opened.azul_placeholders = to_restore.azul_placeholders or {}
             opened.overriden_title = to_restore.overriden_title
@@ -957,7 +884,7 @@ M.move_current_float = function(dir, inc)
     if t ~= nil then
         t.win_config = conf
     end
-    trigger_event('FloatMoved', {t})
+    EV.trigger_event('FloatMoved', {t})
 end
 
 M.select_pane = function(buf)
@@ -996,7 +923,7 @@ M.select_next_pane = function(dir, group)
     local factor = ((dir == "left" or dir == "up") and 1) or -1
     local c1 = get_row_or_col(crt, check1) * factor
     local c2 = get_row_or_col(crt, check2)
-    for _, t in ipairs(vim.tbl_filter(function(t) return t ~= crt and M.is_float(t) and t.win_id ~= nil end, terminals)) do
+    for _, t in ipairs(vim.tbl_filter(function(t) return t ~= crt and funcs.is_float(t) and t.win_id ~= nil end, terminals)) do
         local t1 = get_row_or_col(t, check1) * factor
         local t2 = get_row_or_col(t, check2)
         if found == nil and t1 >= c1 then
@@ -1052,11 +979,11 @@ end
 
 M.split = function(dir)
     local t = M.get_current_terminal()
-    if M.is_float(t) then
-        M.error("You can only split an embeded pane", nil)
+    if funcs.is_float(t) then
+        EV.error("You can only split an embeded pane", nil)
         return
     end
-    add_to_history(vim.fn.bufnr("%"), "split", {dir}, t.tab_id)
+    H.add_to_history(M.term_by_buf_id(vim.fn.bufnr("%")), "split", {dir}, t.tab_id)
     local cmd = 'new'
     if dir == 'left' or dir == 'right' then
         cmd = 'v' .. cmd
@@ -1085,8 +1012,8 @@ end
 M.position_current_float = function(where)
     local conf = vim.api.nvim_win_get_config(0)
     local t = M.get_current_terminal()
-    if not M.is_float(t) then
-        M.error("You can only position a floating window", nil)
+    if not funcs.is_float(t) then
+        EV.error("You can only position a floating window", nil)
     end
 
     if where == "top" then
@@ -1100,7 +1027,7 @@ M.position_current_float = function(where)
     end
     vim.api.nvim_win_set_config(0, conf)
     refresh_win_config(t)
-    trigger_event('FloatMoved', {t})
+    EV.trigger_event('FloatMoved', {t})
 end
 
 M.redraw = function()
@@ -1126,7 +1053,7 @@ end
 
 M.resize = function(direction)
     local t = M.get_current_terminal()
-    add_to_history(vim.fn.bufnr('%'), "resize", {direction}, t.tab_id)
+    H.add_to_history(M.term_by_buf_id(vim.fn.bufnr('%')), "resize", {direction}, t.tab_id)
     local args = {
         left = 'vert res -5',
         right = 'vert res +5',
@@ -1135,7 +1062,7 @@ M.resize = function(direction)
     }
     vim.api.nvim_command(args[direction])
     refresh_win_config(t)
-    trigger_event('PaneResized', {t, direction})
+    EV.trigger_event('PaneResized', {t, direction})
 end
 
 --- Disconnects the current session.
@@ -1148,7 +1075,7 @@ M.disconnect = function()
     -- end
 end
 
-L.term_by_buf_id = function(id)
+M.term_by_buf_id = function(id)
     return funcs.find(function(t) return _buf(t) == 1 * id end, terminals)
 end
 
@@ -1156,25 +1083,11 @@ L.terms_by_tab_id = function(id)
     return vim.tbl_filter(function(x) return x.tab_id == id end, M.get_terminals())
 end
 
-M.error = function(msg, h)
-    local _m = msg
-    if h ~= nil then
-        _m = _m .. " at " .. vim.inspect(h)
-    end
-    trigger_event("Error", {_m})
-    -- The test environment will disable the throwing of errors
-    if vim.g.azul_errors_log ~= nil then
-        funcs.log(vim.inspect(_m), vim.g.azul_errors_log)
-    else
-        error(_m)
-    end
-end
-
 M.set_win_id = function(id)
-    local t = L.term_by_buf_id(vim.fn.bufnr('%'))
+    local t = M.term_by_buf_id(vim.fn.bufnr('%'))
     t.azul_win_id = id
     M.update_titles()
-    trigger_event('WinIdSet', {id})
+    EV.trigger_event('WinIdSet', {id})
 end
 
 M.set_tab_variable = function(key, value)
@@ -1182,10 +1095,10 @@ M.set_tab_variable = function(key, value)
 end
 
 M.set_cmd = function(cmd)
-    local t = L.term_by_buf_id(vim.fn.bufnr('%'))
+    local t = M.term_by_buf_id(vim.fn.bufnr('%'))
     t.azul_cmd = cmd
     M.update_titles()
-    trigger_event('CommandSet', {cmd})
+    EV.trigger_event('CommandSet', {cmd})
 end
 
 M.get_current_workflow = function()
@@ -1197,7 +1110,7 @@ M.paste_from_clipboard = function()
 end
 
 local snapshot = function(buf)
-    local t = L.term_by_buf_id(buf)
+    local t = M.term_by_buf_id(buf)
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     local height = vim.fn.winheight(t.win_id)
     if #lines <= height then
@@ -1315,36 +1228,8 @@ end
 
 M.rotate_panel = function()
     local t = M.get_current_terminal()
-    add_to_history(vim.fn.bufnr("%"), "rotate_panel", nil, t.tab_id)
+    H.add_to_history(M.term_by_buf_id(vim.fn.bufnr("%")), "rotate_panel", nil, t.tab_id)
     vim.api.nvim_command('wincmd x')
-end
-
-local add_event = function(ev, callback, where)
-    local to_add = (type(ev) == 'string' and {ev}) or ev
-
-    for _, e in ipairs(to_add) do
-        if not vim.tbl_contains(vim.tbl_keys(events), e) then
-            M.error(e .. " event does not exists", nil)
-        end
-
-        table.insert(where[e], callback)
-    end
-end
-
-M.on = function(ev, callback)
-    add_event(ev, callback, events)
-end
-
-M.clear_event = function(ev, callback)
-    if not vim.tbl_contains(vim.tbl_keys(events), ev) then
-        M.error(ev .. " event does not exists", nil)
-    end
-    if callback == nil then
-        events[ev] = {}
-        return
-    end
-
-    events[ev] = vim.tbl_filter(function(c) return c == callback end, events[ev])
 end
 
 M.get_mode_mappings = function()
@@ -1354,14 +1239,14 @@ end
 M.user_input = function(opts, callback, force)
     if not options.use_dressing then
         vim.fn.timer_start(1, function()
-            trigger_event('UserInputPrompt')
+            EV.trigger_event('UserInputPrompt')
         end)
     end
     vim.ui.input(opts, function(input)
         if (input ~= nil and input ~= '') or force then
             callback(input)
         end
-        trigger_event("UserInput", {input})
+        EV.trigger_event("UserInput", {input})
     end)
 end
 
@@ -1437,8 +1322,8 @@ M.rename_floating_pane = function(pane)
     if pane == nil then
         return
     end
-    if not M.is_float(pane) then
-        M.error('You can only rename floating panes')
+    if not funcs.is_float(pane) then
+        EV.error('You can only rename floating panes')
     end
     local def = get_float_title(pane)
     M.user_input({propmt = "Pane new name: ", default = def}, function(result)
@@ -1464,7 +1349,7 @@ end
 
 M.edit = function(t, file, on_finish)
     if t.editing_buf ~= nil then
-        M.error('The current terminal is already displaying an editor')
+        EV.error('The current terminal is already displaying an editor')
     end
     M.suspend()
     local buf = vim.api.nvim_create_buf(false, true)
@@ -1491,10 +1376,10 @@ M.edit = function(t, file, on_finish)
     end)
     if not safe then
         on_exit()
-        M.error("The EDITOR variable does not seem to be set properly.")
+        EV.error("The EDITOR variable does not seem to be set properly.")
     end
     M.resume()
-    trigger_event('Edit', {t, file})
+    EV.trigger_event('Edit', {t, file})
 end
 
 M.edit_scrollback = function(t)
@@ -1508,7 +1393,7 @@ end
 
 M.edit_scrollback_log = function(t)
     if not L.is_logging_started(t.buf) then
-        M.error("The current buffer is not being logged", nil)
+        EV.error("The current buffer is not being logged", nil)
     end
     M.edit(t, loggers[t.buf .. ''].location)
 end
@@ -1532,7 +1417,7 @@ M.run_map = function(m)
         M.feedkeys(m.rs, m.real_mode)
     end
     if m.action ~= nil then
-        trigger_event('ActionRan', {m.action})
+        EV.trigger_event('ActionRan', {m.action})
         if funcs.find(function(a) return a == m.action end, {'select_terminal', 'select_session', 'create_tab', 'tab_select', 'toggle_floats', 'create_float', 'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'remote_scroll'}) then
             M.enter_mode('t')
         end
@@ -1575,10 +1460,10 @@ M.select_tab = function(n)
         vim.api.nvim_command('tabn ' .. n)
     end)
     if not safe then
-        M.error(result)
+        EV.error(result)
         return
     end
-    floats = vim.tbl_filter(function(t) return M.is_float(t) and t.group == funcs.current_float_group() end, terminals)
+    floats = vim.tbl_filter(function(t) return funcs.is_float(t) and t.group == funcs.current_float_group() end, terminals)
     if not hidden then
         just_open_windows(floats)
     else
@@ -1593,21 +1478,12 @@ end
 M.create_tab = function()
     M.open()
     vim.fn.timer_start(1, function()
-        trigger_event('TabCreated')
+        EV.trigger_event('TabCreated')
     end)
 end
 
 M.create_tab_remote = function()
     M.open_remote()
-end
-
-M.on_action = function(action, callback)
-    M.on('ActionRan', function(args)
-        if args[1] ~= action then
-            return
-        end
-        callback(args[1])
-    end)
 end
 
 local do_open_remote = function(force, callback)
@@ -1645,7 +1521,7 @@ end
 
 M.remote_reconnect = function(t)
     if t.remote_command == nil then
-        M.error("The terminal " .. t.term_id .. " is not a remote terminal", nil)
+        EV.error("The terminal " .. t.term_id .. " is not a remote terminal", nil)
         return
     end
     local old_buf = t.buf
@@ -1666,7 +1542,7 @@ M.remote_reconnect = function(t)
     M.suspend()
     M.open(true, t.buf)
     M.resume()
-    trigger_event('RemoteReconnected', {t})
+    EV.trigger_event('RemoteReconnected', {t})
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
     M.update_titles()
 end
@@ -1712,24 +1588,12 @@ M.remote_state = function(t)
     return (t.term_id == nil and 'disconnected') or 'connected'
 end
 
-M.persistent_on = function(ev, callback)
-    add_event(ev, callback, persistent_events)
-end
-
 M.stop_updating_titles = function()
     updating_titles = true
 end
 
 M.start_updating_titles = function()
     updating_titles = false
-end
-
-M.reset_history = function()
-    history = {}
-end
-
-M.get_history = function()
-    return history
 end
 
 M.set_global_panel_id = function(id)
@@ -1748,25 +1612,21 @@ M.get_global_tab_id = function()
     return tab_id
 end
 
-M.trigger_event = function(ev, args)
-    trigger_event(ev, args)
-end
-
-M.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
+EV.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
     is_started = true
 end)
 
-M.persistent_on('PaneChanged', function(args)
+EV.persistent_on('PaneChanged', function(args)
     local t = args[1]
     local old = args[2]
-    if M.is_float(old) or M.is_float(t) then
+    if funcs.is_float(old) or funcs.is_float(t) then
         return
     end
 
     set_current_panel(t.tab_id)
 end)
 
-M.persistent_on('Error', function()
+EV.persistent_on('Error', function()
     M.resume()
 end)
 

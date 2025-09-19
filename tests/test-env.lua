@@ -6,6 +6,7 @@ local options = require('options')
 local config = require('config')
 local test_running = nil
 local azul = require('azul')
+local EV = require('events')
 
 vim.g.azul_errors_log = base_path .. "/runtime-errors"
 local TIMEOUT_BETWEEN_KEYS = 150

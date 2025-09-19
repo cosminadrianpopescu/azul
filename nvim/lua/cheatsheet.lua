@@ -1,6 +1,7 @@
 local azul = require('azul')
 local funcs = require('functions')
 local options = require('options')
+local EV = require('events')
 
 local win_id = nil
 local win_buffer = nil
@@ -240,7 +241,7 @@ local create_window = function(mappings, full, position)
     return win_id
 end
 
-azul.on_action('show_mode_cheatsheet', function()
+EV.on_action('show_mode_cheatsheet', function()
     if not options.use_cheatsheet then
         return
     end

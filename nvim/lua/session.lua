@@ -1,6 +1,8 @@
 local core = require('core')
 local funcs = require('functions')
 local FILES = require('files')
+local H = require('history')
+local EV = require('events')
 local options = require('options')
 
 local M = {}
@@ -84,13 +86,13 @@ L.restore_remotes = function()
     core.stop_updating_titles()
     core.update_titles()
     can_save_layout = true
-    core.trigger_event("LayoutRestored")
+    EV.trigger_event("LayoutRestored")
     if current_in_saved_layout then
         if current_in_saved_layout.tab_page ~= nil then
             core.select_tab(current_in_saved_layout.tab_page)
         end
         local t = term_by_azul_win_id(current_in_saved_layout.azul_win_id)
-        if not core.is_float(t) then
+        if not funcs.is_float(t) then
             core.hide_floats()
         end
         vim.defer_fn(function()
@@ -129,7 +131,7 @@ end
 L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     if timeout > 100 then
         core.stop_updating_titles()
-        core.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
+        EV.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
     end
 
     if panel_id_wait ~= nil then
@@ -159,7 +161,7 @@ end
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if timeout > 100 then
         core.stop_updating_titles()
-        core.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
+        EV.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
     end
 
     if panel_id_wait ~= nil then
@@ -205,7 +207,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         core.set_global_panel_id(h.to)
         local t = term_by_panel_id(h.from)
         if t == nil then
-            core.error("Error found loading the layout file", h)
+            EV.error("Error found loading the layout file", h)
         end
         core.select_pane(t.buf)
         core.split(h.params[1])
@@ -218,7 +220,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "close" then
         local t = term_by_panel_id(h.from)
         if t == nil then
-            core.error("Error found loading the layout file", h)
+            EV.error("Error found loading the layout file", h)
         end
         vim.fn.chanclose(t.term_id)
         vim.fn.timer_start(10, function()
@@ -230,7 +232,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "resize" then
         local t = term_by_panel_id(h.from)
         if t == nil then
-            core.error("Error found loading the layout file", h)
+            EV.error("Error found loading the layout file", h)
         end
         core.select_pane(t.buf)
         core.resize(h.params[1])
@@ -243,7 +245,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "rotate_panel" then
         local t = term_by_panel_id(h.from)
         if t == nil then
-            core.error("Error found loading the layout file", h)
+            EV.error("Error found loading the layout file", h)
         end
         core.select_pane(t.buf)
         core.rotate_panel()
@@ -261,12 +263,12 @@ end
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
     if #core.get_terminals() > 1 then
-        core.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
+        EV.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
         return
     end
     local f = io.open(where, "r")
     if f == nil then
-        M.error("Could not open " .. where, nil)
+        EV.error("Could not open " .. where, nil)
     end
     local h = funcs.deserialize(f:read("*a"))
     h.callback = callback
@@ -279,7 +281,7 @@ M.restore_layout = function(where, callback)
     vim.fn.jobstop(t.term_id)
     vim.api.nvim_buf_delete(old_buf, {force = true})
     core.do_remove_term_buf(t.buf)
-    core.reset_history()
+    H.reset_history()
     if h.geometry ~= nil then
         vim.o.columns = h.geometry.columns
         vim.o.lines = h.geometry.lines
@@ -289,7 +291,7 @@ M.restore_layout = function(where, callback)
     f:close()
 end
 
-core.persistent_on('ExitAzul', function()
+EV.persistent_on('ExitAzul', function()
     can_save_layout = false
 end)
 
@@ -301,7 +303,7 @@ M.save_layout = function(where, auto)
     local placeholders = {}
     local title_overrides = {}
     for _, id in ipairs(vim.api.nvim_list_tabpages()) do
-        table.insert(history_to_save, histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), core.get_history()))
+        table.insert(history_to_save, histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), H.get_history()))
         table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_placeholders') or {})
         table.insert(title_overrides, funcs.safe_get_tab_var(id, 'azul_tab_title_overriden') or '')
     end
@@ -316,7 +318,7 @@ M.save_layout = function(where, auto)
         }
     end
     FILES.write_file(where, vim.inspect({
-        floats = vim.tbl_filter(function(x) return core.is_float(x) end, core.get_terminals()),
+        floats = vim.tbl_filter(function(x) return funcs.is_float(x) end, core.get_terminals()),
         history = history_to_save,
         customs = get_custom_values(),
         azul_placeholders = placeholders,
@@ -327,7 +329,7 @@ M.save_layout = function(where, auto)
             lines = vim.o.lines
         }
     }))
-    core.trigger_event("LayoutSaved", {auto})
+    EV.trigger_event("LayoutSaved", {auto})
 end
 
 M.auto_save_layout = function()
@@ -368,7 +370,7 @@ M.start = function()
     end
 end
 
-core.persistent_on('ExitAzul', function()
+EV.persistent_on('ExitAzul', function()
     can_save_layout = false
     if session_exists() and #core.get_terminals() == 0 then
         os.remove(session_save_name())
@@ -381,19 +383,19 @@ local do_autosave = function()
     end, 1)
 end
 
-core.persistent_on({
+EV.persistent_on({
     'CommandSet', 'WinIdSet', 'TabTitleChanged', 'HistoryChanged',
     'FloatOpened', 'PaneClosed', 'FloatTitleChanged',
 }, do_autosave)
 
-core.persistent_on({'FloatMoved', 'PaneChanged', 'PaneResized'}, function()
+EV.persistent_on({'FloatMoved', 'PaneChanged', 'PaneResized'}, function()
     if options.autosave ~= 'always' then
         return
     end
     do_autosave()
 end)
 
-core.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
+EV.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
     if not can_save_layout then
         return
     end

@@ -1,9 +1,11 @@
 local core = require('core')
 local session = require('session')
+local funcs = require('functions')
+local EV = require('events')
 
 local M = {}
 
-M.is_float = core.is_float
+M.is_float = funcs.is_float
 M.debug = core.debug
 M.get_current_terminal = core.get_current_terminal
 M.open = core.open
@@ -42,8 +44,8 @@ M.start_logging = core.start_logging
 M.stop_logging = core.stop_logging
 M.toggle_passthrough = core.toggle_passthrough
 M.rotate_panel = core.rotate_panel
-M.on = core.on
-M.clear_event = core.clear_event
+M.on = EV.on
+M.clear_event = EV.clear_event
 M.get_mode_mappings = core.get_mode_mappings
 M.user_input = core.user_input
 M.get_file = core.get_file
@@ -69,6 +71,6 @@ M.open_float_remote = core.open_float_remote
 M.split_remote = core.split_remote
 M.remote_enter_scroll_mode = core.remote_enter_scroll_mode
 M.remote_state = core.remote_state
-M.persistent_on = core.persistent_on
+M.persistent_on = EV.persistent_on
 
 return M

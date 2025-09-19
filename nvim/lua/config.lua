@@ -771,7 +771,7 @@ M.reload_config = function()
     M.run_init_lua()
     vim.fn.timer_start(1, function()
         core.update_titles()
-        core.trigger_event('ConfigReloaded')
+        require('events').trigger_event('ConfigReloaded')
     end)
 end
 
