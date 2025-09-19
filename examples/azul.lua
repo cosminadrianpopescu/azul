@@ -26,8 +26,8 @@ map('M', 'c', '', {
     desc = "Create new tab",
 })
 
-t('Ss', require('sessions').sessions_list, 'session')
-t('St', require('sessions').term_select, 'terminal')
+t('Ss', require('select').sessions_list, 'session')
+t('St', require('select').term_select, 'terminal')
 
 local set_mode_escape = function(shortcut)
     map({'r', 'p', 'm', 's', 'T'}, shortcut, '', {

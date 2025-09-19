@@ -377,7 +377,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     end
 
     if action == 'select_terminal' or action == 'select_session' then
-        local callback = (action == 'select_terminal' and require('sessions').term_select) or require('sessions').sessions_list
+        local callback = (action == 'select_terminal' and require('select').term_select) or require('select').sessions_list
         t(shortcut, callback, action:gsub('select_', ''))
     elseif action == 'create_tab' then
         map(mode, shortcut, '', {

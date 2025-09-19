@@ -53,7 +53,7 @@ local post_restored = function(t, customs, callback)
     if t.azul_cmd ~= nil and t.remote_command == nil then
         local _cmd = t.azul_cmd .. '<cr>'
         vim.fn.timer_start(1000, function()
-            M.send_to_buf(t.buf, _cmd, true)
+            core.send_to_buf(t.buf, _cmd, true)
         end)
     end
 end
@@ -270,7 +270,7 @@ M.restore_layout = function(where, callback)
     end
     local h = funcs.deserialize(f:read("*a"))
     h.callback = callback
-    core.start_updating_titles()
+    core.stop_updating_titles()
     funcs.safe_del_tab_var(0, 'azul_placeholders')
     local t = core.get_current_terminal()
     local old_buf = t.buf
@@ -356,6 +356,7 @@ M.start = function()
 
     if funcs.is_autosave() and session_exists() then
         can_save_layout = false
+        core.stop_updating_titles()
         M.auto_restore_layout()
         return
     end

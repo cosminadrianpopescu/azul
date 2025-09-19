@@ -1,4 +1,5 @@
 local core = require('core')
+local session = require('session')
 
 local M = {}
 
@@ -30,8 +31,8 @@ M.suspend = core.suspend
 M.resume = core.resume
 M.resize = core.resize
 M.disconnect = core.disconnect
-M.save_layout = core.save_layout
-M.restore_layout = core.restore_layout
+M.save_layout = session.save_layout
+M.restore_layout = session.restore_layout
 M.set_win_id = core.set_win_id
 M.set_tab_variable = core.set_tab_variable
 M.set_cmd = core.set_cmd

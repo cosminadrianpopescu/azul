@@ -67,7 +67,7 @@ cp $AZUL_DIR/nvim/lua/cheatsheet.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/disabled-theme.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/config.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/azul.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/sessions.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/select.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/functions.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/mappings.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/options.lua $AZUL_PREFIX/share/azul/nvim/lua
@@ -75,7 +75,7 @@ cp $AZUL_DIR/nvim/lua/remote.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/insert.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/vim_ui.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/core.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/layout-tracking.lua $AZUL_PREFIX/share/azul/nvim/lua
+cp $AZUL_DIR/nvim/lua/session.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/lua/environment.lua $AZUL_PREFIX/share/azul/nvim/lua
 cp $AZUL_DIR/nvim/init.lua $AZUL_PREFIX/share/azul/nvim
 
