@@ -659,9 +659,9 @@ returned. Otherwise, `connected` is returned if the pane is connected or
 Azul triggers some custom events (not `vim` events). Some of the events will
 also have an array of arguments.
 
-#### FloatClosed
+#### FloatHidden
 
-Triggered everytime a float is closed (also when the floats are hidden).
+Triggered everytime a float is hidden.
 
 #### ModeChanged
 

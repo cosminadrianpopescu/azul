@@ -15,6 +15,7 @@ if not funcs.is_marionette() then
     require('cheatsheet')
     require('remote')
     require('insert')
+    require('undo')
     require('commands').setup()
 
     cfg.set_vim_options()

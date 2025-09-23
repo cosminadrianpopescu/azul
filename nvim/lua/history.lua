@@ -6,6 +6,13 @@ local M = {}
 
 M.add_to_history = function(t, operation, params, tab_id)
     if t == nil or funcs.is_float(t) then
+        local el = {
+            operation = operation,
+            params = params,
+            buf = t.buf,
+            term = t,
+        }
+        EV.trigger_event('FloatsHistoryChanged', {el})
         return
     end
     local el = {
@@ -13,6 +20,7 @@ M.add_to_history = function(t, operation, params, tab_id)
         params = params,
         to = (operation == "split" and -1) or nil,
         tab_id = tab_id,
+        buf = t.buf,
     }
     if operation == "create" then
         el.to = t.panel_id
@@ -30,6 +38,10 @@ end
 
 M.get_history = function()
     return history
+end
+
+M.debug = function()
+    funcs.log("HISTORY IS " .. vim.inspect(history))
 end
 
 return M

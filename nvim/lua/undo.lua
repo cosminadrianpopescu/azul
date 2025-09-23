@@ -1,0 +1,151 @@
+local core = require('core')
+local funcs = require('functions')
+local EV = require('events')
+local H = require('history')
+local FILES = require('files')
+local TABS = require('tab_vars')
+local options = require('options')
+
+local record_undo = true
+local undo_list = {}
+local M = {}
+
+local restore_lines = function(buf, rec)
+    local lines = (rec and rec.lines) or {}
+    local i = #lines
+    while i > 1 do
+        if lines[i] == '' then
+            table.remove(lines, i)
+            i = i - 1
+        else
+            i = 0
+        end
+    end
+    if #lines == 0 or options.undo_buffer_cmd == nil or options.undo_buffer_cmd == '' then
+        return
+    end
+    local file = os.tmpname()
+    FILES.write_file(file, funcs.join(lines, '\n'))
+    vim.defer_fn(function()
+        core.send_to_buf(buf, options.undo_buffer_cmd .. ' ' .. file .. '<cr>', true)
+        vim.defer_fn(function()
+            os.remove(file)
+        end, 200)
+    end, 200)
+end
+
+local finish = function()
+    core.start_updating_titles()
+    EV.trigger_event('UndoFinished')
+end
+
+local find_create = function(pane_id, tab_id)
+    for _, h in ipairs(funcs.reverse(H.get_history())) do
+        if h.tab_id == tab_id and h.to == pane_id then
+            return h
+        end
+    end
+
+    return nil
+end
+
+local undo_tab = function(rec)
+    EV.single_shot('PaneChanged', function(args)
+        core.copy_terminal_properties(rec.term, args[1])
+        vim.defer_fn(function()
+            for k, _ in pairs(rec.tab_vars) do
+                TABS.set_var(0, k, rec.tab_vars[k])
+            end
+
+            restore_lines(args[1].buf, rec)
+            finish()
+        end, 1)
+    end)
+    core.stop_updating_titles()
+    if rec.term.tab_page ~= 1 then
+        vim.api.nvim_command('tabn' .. (rec.term.tab_page - 1))
+        vim.api.nvim_command('tabnew')
+    else
+        vim.api.nvim_command('0tabnew')
+    end
+end
+
+local undo_split = function(rec)
+end
+
+local undo_float = function(rec)
+    EV.single_shot('FloatOpened', function(args)
+        core.copy_terminal_properties(rec.term, args[1])
+        restore_lines(args[1].buf, rec)
+        finish()
+    end)
+    core.stop_updating_titles()
+    core.open_float(rec.term.group, rec.term.win_config)
+end
+
+EV.persistent_on('HistoryChanged', function(args)
+    local el = args[1]
+    if el.operation ~= 'close' or not record_undo then
+        return
+    end
+    local t = core.term_by_buf_id(el.buf)
+    local lines = vim.api.nvim_buf_get_lines(el.buf, 0, -1, false)
+    local create = find_create(el.from, el.tab_id)
+    local tab_vars = {}
+    if (create and create.operation) == 'create' then
+        local tab_id = vim.api.nvim_list_tabpages()[t.tab_page]
+        tab_vars = {
+            azul_placeholders = TABS.get_var(tab_id, 'azul_placeholders'),
+            azul_tab_title_overriden = TABS.get_var(tab_id, 'azul_tab_title_overriden'),
+            azul_tab_title = TABS.get_var(tab_id, 'azul_tab_title'),
+            float_group = TABS.get_var(tab_id, 'float_group'),
+        }
+    end
+    table.insert(undo_list, {
+        term = t,
+        is_float = false,
+        history = el,
+        lines = lines,
+        create = create,
+        tab_vars = tab_vars,
+    })
+end)
+
+EV.persistent_on('FloatsHistoryChanged', function(args)
+    local el = args[1]
+    if el.operation ~= 'close' or not record_undo then
+        return
+    end
+    local t = el.term
+    local lines = vim.api.nvim_buf_get_lines(t.buf, 0, -1, false)
+    table.insert(undo_list, {
+        term = t,
+        is_float = true,
+        lines = lines,
+    })
+end)
+
+M.debug = function()
+    print("UNDO LIST IS " .. vim.inspect(undo_list))
+end
+
+M.undo = function()
+    local rec = table.remove(undo_list, #undo_list)
+    if rec.is_float then
+        return undo_float(rec)
+    elseif (rec and rec.create and rec.create.operation) == 'create' then
+        return undo_tab(rec)
+    elseif (rec and rec.create and rec.create.operation) == 'split' then
+        return undo_split(rec)
+    end
+end
+
+EV.persistent_on('LayoutRestoringStarted', function()
+    record_undo = false
+end)
+
+EV.persistent_on('LayoutRestored', function()
+    record_undo = true
+end)
+
+return M

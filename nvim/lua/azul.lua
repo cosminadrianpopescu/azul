@@ -72,5 +72,6 @@ M.split_remote = core.split_remote
 M.remote_enter_scroll_mode = core.remote_enter_scroll_mode
 M.remote_state = core.remote_state
 M.persistent_on = EV.persistent_on
+M.single_shot = EV.single_shot
 
 return M

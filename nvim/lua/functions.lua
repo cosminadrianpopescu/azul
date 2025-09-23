@@ -117,15 +117,6 @@ local log = function(msg, file)
     f:close()
 end
 
-local safe_get_tab_var = function(tab, name)
-    local safe, result = pcall(function() return vim.api.nvim_tabpage_get_var(tab, name) end)
-    if not safe then
-        return nil
-    end
-
-    return result
-end
-
 local safe_get_buf_var = function(buf, name)
     local safe, result = pcall(function() return vim.api.nvim_buf_get_var(buf, name) end)
     if not safe then
@@ -138,12 +129,6 @@ end
 local safe_del_buf_var = function(buf, name)
     if safe_get_buf_var(buf, name) ~= nil then
         vim.api.nvim_buf_del_var(buf, name)
-    end
-end
-
-local safe_del_tab_var = function(tab, name)
-    if safe_get_tab_var(tab, name) ~= nil then
-        vim.api.nvim_tabpage_del_var(tab, name)
     end
 end
 
@@ -264,6 +249,23 @@ local is_float = function(t)
     return t and t.win_config and t.win_config['zindex'] ~= nil
 end
 
+local reverse = function(_list)
+    local result = {}
+    local list = {}
+    local i = 1
+    while i <= #_list do
+        if _list[i] == "" then
+            break
+        end
+        table.insert(list, _list[i])
+        i = i + 1
+    end
+    for j=#list, 1, -1 do
+        result[#result+1] = list[j]
+    end
+    return result
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
@@ -282,8 +284,6 @@ return {
     shortcut_starts_with = shortcut_starts_with,
     safe_get_buf_var = safe_get_buf_var,
     safe_del_buf_var = safe_del_buf_var,
-    safe_get_tab_var = safe_get_tab_var,
-    safe_del_tab_var = safe_del_tab_var,
     find_map = find_map,
     map_by_action = map_by_action,
     current_float_group = current_float_group,
@@ -293,4 +293,5 @@ return {
     deserialize = deserialize,
     is_autosave = is_autosave,
     is_float = is_float,
+    reverse = reverse,
 }

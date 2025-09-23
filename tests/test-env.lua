@@ -76,32 +76,12 @@ local quit = function(msg)
     vim.api.nvim_command('qa!')
 end
 
-local reverse = function(_list)
-    local result = {}
-    local list = {}
-    local i = 1
-    while i <= #_list do
-        if _list[i] == "" then
-            break
-        end
-        table.insert(list, _list[i])
-        i = i + 1
-    end
-    for j=#list, 1, -1 do
-        result[#result+1] = list[j]
-    end
-    return result
-end
-
 local get_lines = function()
     return vim.api.nvim_buf_get_lines(vim.fn.bufnr('%'), 0, -1, false)
 end
 
 local single_shot = function(ev, callback)
-    EV.on(ev, function(args)
-        EV.clear_event(ev, callback)
-        callback(args)
-    end)
+    EV.single_shot(ev, callback)
 end
 
 L = {}
@@ -272,7 +252,6 @@ return {
         test_running = which
     end,
     simulate_maps = simulate_maps,
-    reverse = reverse,
     get_current_term_lines = get_lines,
     save_layout = function(name)
         sess.save_layout(base_path .. "/" .. name)

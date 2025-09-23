@@ -3,6 +3,7 @@ local funcs = require('functions')
 local FILES = require('files')
 local H = require('history')
 local EV = require('events')
+local TABS = require('tab_vars')
 local options = require('options')
 
 local M = {}
@@ -106,6 +107,7 @@ end
 L.restore_ids = function(title_placeholders, title_overrides)
     core.set_global_panel_id(0)
     core.set_global_tab_id(0)
+    core.set_global_azul_win_id(0)
     for _, t in ipairs(core.get_terminals()) do
         if t.panel_id > core.get_global_panel_id() then
             core.set_global_panel_id(t.panel_id)
@@ -113,15 +115,19 @@ L.restore_ids = function(title_placeholders, title_overrides)
         if t.tab_id > core.get_global_tab_id() then
             core.set_global_tab_id(t.tab_id)
         end
+        if t.azul_win_id ~= nil and type(t.azul_win_id) == 'number' and t.azul_win_id > core.get_global_azul_win_id() then
+            core.set_global_azul_win_id(t.azul_win_id)
+        end
     end
+    core.set_global_panel_id(core.get_global_panel_id() + 1)
     core.set_global_tab_id(core.get_global_tab_id() + 1)
-    core.set_global_tab_id(core.get_global_tab_id() + 1)
+    core.set_global_azul_win_id(core.get_global_azul_win_id() + 1)
     for i, p in ipairs(title_placeholders or {}) do
-        vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_placeholders', p)
+        TABS.set_var(vim.api.nvim_list_tabpages()[i], 'azul_placeholders', p)
     end
     for i, o in ipairs(title_overrides or {}) do
         if o ~= '' then
-            vim.api.nvim_tabpage_set_var(vim.api.nvim_list_tabpages()[i], 'azul_tab_title_overriden', o)
+            TABS.set_var(vim.api.nvim_list_tabpages()[i], 'azul_tab_title_overriden', o)
         end
     end
 
@@ -193,8 +199,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         local buf = nil
         if j == 1 and i == 1 then
             buf = vim.fn.bufnr('%')
-            vim.api.nvim_tabpage_get_var(0, 'azul_tab_id')
-            vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', core.get_global_tab_id())
+            TABS.set_var(0, 'azul_tab_id', core.get_global_tab_id())
         end
         core.open(true, buf)
         vim.fn.timer_start(10, function()
@@ -224,7 +229,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         end
         vim.fn.chanclose(t.term_id)
         vim.fn.timer_start(10, function()
-            core.restore_tab_history(histories, i, j + 1, nil, 0)
+            L.restore_tab_history(histories, i, j + 1, nil, 0)
         end)
         return
     end
@@ -273,7 +278,7 @@ M.restore_layout = function(where, callback)
     local h = funcs.deserialize(f:read("*a"))
     h.callback = callback
     core.stop_updating_titles()
-    funcs.safe_del_tab_var(0, 'azul_placeholders')
+    TABS.del_var(0, 'azul_placeholders')
     local t = core.get_current_terminal()
     local old_buf = t.buf
     t.buf = vim.api.nvim_create_buf(true, false)
@@ -286,6 +291,7 @@ M.restore_layout = function(where, callback)
         vim.o.columns = h.geometry.columns
         vim.o.lines = h.geometry.lines
     end
+    EV.trigger_event('LayoutRestoringStarted')
     current_in_saved_layout = h.current
     L.restore_tab_history(h, 1, 1, nil, 0)
     f:close()
@@ -303,9 +309,9 @@ M.save_layout = function(where, auto)
     local placeholders = {}
     local title_overrides = {}
     for _, id in ipairs(vim.api.nvim_list_tabpages()) do
-        table.insert(history_to_save, histories_by_tab_id(vim.api.nvim_tabpage_get_var(id, 'azul_tab_id'), H.get_history()))
-        table.insert(placeholders, funcs.safe_get_tab_var(id, 'azul_placeholders') or {})
-        table.insert(title_overrides, funcs.safe_get_tab_var(id, 'azul_tab_title_overriden') or '')
+        table.insert(history_to_save, histories_by_tab_id(TABS.get_var(id, 'azul_tab_id'), H.get_history()))
+        table.insert(placeholders, TABS.get_var(id, 'azul_placeholders') or {})
+        table.insert(title_overrides, TABS.get_var(id, 'azul_tab_title_overriden') or '')
     end
     local t = core.get_current_terminal()
     local current = nil

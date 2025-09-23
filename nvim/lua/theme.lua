@@ -2,6 +2,7 @@ local mx = require('core')
 local options = require('options')
 local INS = require('insert')
 local EV = require('events')
+local TABS = require('tab_vars')
 local funcs = require('functions')
 
 if options.use_dressing then
@@ -105,7 +106,7 @@ local function tabs(from, to)
     local result = ''
     for i, t in ipairs(vim.api.nvim_list_tabpages()) do
         if i >= from and i <= to then
-            result = result .. vim.api.nvim_tabpage_get_var(t, 'azul_tab_title')
+            result = result .. TABS.get_var(t, 'azul_tab_title')
 
             if i ~= to then
                 result = result .. '  '
@@ -138,7 +139,7 @@ end
 
 local function current_tab()
     local id = vim.api.nvim_list_tabpages()[vim.fn.tabpagenr()]
-    return vim.api.nvim_tabpage_get_var(id, 'azul_tab_title')
+    return TABS.get_var(id, 'azul_tab_title')
 end
 
 local function current_name()

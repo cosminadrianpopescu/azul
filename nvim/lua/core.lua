@@ -2,6 +2,7 @@ local cmd = vim.api.nvim_create_autocmd
 local funcs = require('functions')
 local FILES = require('files')
 local H = require('history')
+local TABS = require('tab_vars')
 local EV = require('events')
 local options = require('options')
 
@@ -410,13 +411,13 @@ cmd({'UIEnter'}, {
 
 cmd({'TabNew', 'VimEnter'}, {
     pattern = "*", callback = function()
-        vim.api.nvim_tabpage_set_var(0, 'azul_tab_id', tab_id)
+        TABS.set_var(0, 'azul_tab_id', tab_id)
         tab_id = tab_id + 1
     end
 })
 
 local get_tab_title = function(t)
-    local overriden_title = funcs.safe_get_tab_var(t, 'azul_tab_title_overriden')
+    local overriden_title = TABS.get_var(t, 'azul_tab_title_overriden')
     return overriden_title or options.tab_title
 end
 
@@ -461,7 +462,7 @@ M.update_titles = function(callback)
     local titles_updated = 0
     local current_tab_page = vim.fn.tabpagenr()
     for i, t in ipairs(vim.api.nvim_list_tabpages()) do
-        local tab_placeholders = funcs.safe_get_tab_var(t, 'azul_placeholders')
+        local tab_placeholders = TABS.get_var(t, 'azul_placeholders')
         local current_pane = funcs.find(function(t) return t.tab_page == i and t.current_selected_pane end, M.get_terminals())
         local default_placeholders = get_default_placeholders(current_pane)
         local placeholders = vim.tbl_extend(
@@ -480,11 +481,11 @@ M.update_titles = function(callback)
                     finished()
                 end
                 local trigger = false
-                if funcs.safe_get_tab_var(t, 'azul_tab_title') ~= title then
+                if TABS.get_var(t, 'azul_tab_title') ~= title then
                     trigger = true
                 end
-                vim.api.nvim_tabpage_set_var(t, 'azul_placeholders', placeholders)
-                vim.api.nvim_tabpage_set_var(t, 'azul_tab_title', title)
+                TABS.set_var(t, 'azul_placeholders', placeholders)
+                TABS.set_var(t, 'azul_tab_title', title)
                 if trigger then
                     EV.trigger_event('TabTitleChanged', {t, title})
                 end
@@ -533,7 +534,7 @@ M.hide_floats = function()
         close_float(float)
     end
     if #floats > 0 then
-        EV.trigger_event('FloatClosed')
+        EV.trigger_event('FloatHidden')
     end
     vim.fn.timer_start(1, function()
         M.update_titles()
@@ -564,7 +565,7 @@ cmd('TermOpen',{
             win_id = vim.fn.win_getid(vim.fn.winnr()),
             term_id = vim.b.terminal_job_id,
             group = L.current_group,
-            tab_id = vim.api.nvim_tabpage_get_var(0, 'azul_tab_id'),
+            tab_id = TABS.get_var(0, 'azul_tab_id'),
             panel_id = panel_id,
             cwd = vim.fn.getcwd(),
             azul_win_id = azul_win_id,
@@ -633,7 +634,7 @@ cmd({'TabLeave'}, {
         if is_suspended then
             return
         end
-        vim.api.nvim_tabpage_set_var(0, 'current_buffer', vim.fn.bufnr())
+        TABS.set_var(0, 'current_buffer', vim.fn.bufnr())
     end
 })
 
@@ -1309,10 +1310,10 @@ M.rename_tab = function(tab)
     local def = get_tab_title(tab)
     M.user_input({prompt = "Tab new name: ", default = def}, function(result)
         if result == '' then
-            funcs.safe_del_tab_var(tab_id, 'azul_tab_title_overriden')
+            TABS.del_var(tab_id, 'azul_tab_title_overriden')
         elseif result ~= nil then
-            funcs.safe_del_tab_var(tab_id, 'azul_placeholders')
-            vim.api.nvim_tabpage_set_var(tab_id, 'azul_tab_title_overriden', result)
+            TABS.del_var(tab_id, 'azul_placeholders')
+            TABS.set_var(tab_id, 'azul_tab_title_overriden', result)
         end
         M.update_titles()
     end, true)
@@ -1329,7 +1330,7 @@ M.rename_floating_pane = function(pane)
     M.user_input({propmt = "Pane new name: ", default = def}, function(result)
         if result == '' then
             pane.overriden_title = nil
-            funcs.safe_del_tab_var(tab_id, 'azul_tab_title_overriden')
+            TABS.del_var(tab_id, 'azul_tab_title_overriden')
         elseif result ~= nil then
             pane.azul_placeholders = nil
             pane.overriden_title = result
@@ -1467,7 +1468,7 @@ M.select_tab = function(n)
     if not hidden then
         just_open_windows(floats)
     else
-        select_current_pane(vim.api.nvim_tabpage_get_var(0, 'azul_tab_id'))
+        select_current_pane(TABS.get_var(0, 'azul_tab_id'))
     end
 end
 
@@ -1610,6 +1611,28 @@ end
 
 M.get_global_tab_id = function()
     return tab_id
+end
+
+M.get_global_azul_win_id = function()
+    return azul_win_id
+end
+
+M.set_global_azul_win_id = function(id)
+    azul_win_id = id
+end
+
+M.copy_terminal_properties = function (src, dest, with_ids)
+    local props = {'tab_page', 'win_config', 'azul_placeholders', 'group', 'overriden_title'}
+    if with_ids == true then
+        local ids = {'azul_win_id', 'panel_id', 'tab_id'}
+        for _, id in ipairs(ids) do
+            table.insert(props, id)
+        end
+    end
+
+    for _, k in ipairs(props) do
+        dest[k] = src[k]
+    end
 end
 
 EV.persistent_on({'AzulStarted', 'LayoutRestored'}, function()

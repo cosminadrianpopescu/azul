@@ -3,7 +3,7 @@ local funcs = require('functions')
 local M = {}
 
 local events = {
-    FloatClosed = {},
+    FloatHidden = {},
     ModeChanged = {},
     FloatsVisible = {},
     FloatOpened = {},
@@ -34,6 +34,9 @@ local events = {
     HistoryChanged = {},
     PaneResized = {},
     FloatMoved = {},
+    FloatsHistoryChanged = {},
+    LayoutRestoringStarted = {},
+    UndoFinished = {},
 }
 
 local persistent_events = {}
@@ -42,30 +45,39 @@ for k in pairs(events) do
     persistent_events[k] = {}
 end
 
+local event_id = 0
+
 local add_event = function(ev, callback, where)
     local to_add = (type(ev) == 'string' and {ev}) or ev
 
+    event_id = event_id + 1
     for _, e in ipairs(to_add) do
         if not vim.tbl_contains(vim.tbl_keys(events), e) then
             M.error(e .. " event does not exists", nil)
         end
 
-        table.insert(where[e], callback)
+        table.insert(where[e], {callback = callback, id = event_id})
     end
+
+    return event_id
 end
 
 M.trigger_event = function(ev, args)
-    for _, callback in ipairs(persistent_events[ev] or {}) do
-        callback(args)
+    for _, l in ipairs(persistent_events[ev] or {}) do
+        if l.callback ~= nil then
+            l.callback(args)
+        end
     end
 
-    for _, callback in ipairs(events[ev] or {}) do
-        callback(args)
+    for _, l in ipairs(events[ev] or {}) do
+        if l.callback ~= nil then
+            l.callback(args)
+        end
     end
 end
 
 M.on = function(ev, callback)
-    add_event(ev, callback, events)
+    return add_event(ev, callback, events)
 end
 
 M.on_action = function(action, callback)
@@ -78,19 +90,28 @@ M.on_action = function(action, callback)
 end
 
 M.persistent_on = function(ev, callback)
-    add_event(ev, callback, persistent_events)
+    return add_event(ev, callback, persistent_events)
 end
 
-M.clear_event = function(ev, callback)
+M.single_shot = function(ev, callback)
+    local L = {}
+    L.id = add_event(ev, function(args)
+        callback(args)
+        M.clear_event(ev, L.id)
+    end, events)
+end
+
+M.clear_event = function(ev, id)
     if not vim.tbl_contains(vim.tbl_keys(events), ev) then
         M.error(ev .. " event does not exists", nil)
     end
-    if callback == nil then
+
+    if id == nil then
         events[ev] = {}
         return
     end
 
-    events[ev] = vim.tbl_filter(function(c) return c == callback end, events[ev])
+    events[ev] = vim.tbl_filter(function(c) return c.id ~= id end, events[ev])
 end
 
 M.error = function(msg, h)

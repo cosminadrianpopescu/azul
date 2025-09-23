@@ -24,6 +24,7 @@ EV.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
     'WinIdSet', 'ConfigReloaded', 'AzulConnected', 'Error', 'LayoutRestored',
+    'UndoFinished',
 }, do_start_insert)
 
 EV.persistent_on('LayoutSaved', function(args)
