@@ -1,9 +1,8 @@
 local funcs = require('functions')
 local core = require('core')
 
-local win_id = nil
-
 local function wininput(opts, on_confirm, win_opts)
+    local win_id = nil
     local buf = vim.api.nvim_create_buf(false, true)
     vim.bo[buf].buftype = "prompt"
     vim.bo[buf].bufhidden = "wipe"

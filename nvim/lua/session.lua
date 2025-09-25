@@ -138,6 +138,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     if timeout > 100 then
         core.stop_updating_titles()
         EV.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
+        return
     end
 
     if panel_id_wait ~= nil then
@@ -168,6 +169,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if timeout > 100 then
         core.stop_updating_titles()
         EV.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
+        return
     end
 
     if panel_id_wait ~= nil then
@@ -213,6 +215,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         local t = term_by_panel_id(h.from)
         if t == nil then
             EV.error("Error found loading the layout file", h)
+            return
         end
         core.select_pane(t.buf)
         core.split(h.params[1])
@@ -226,6 +229,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         local t = term_by_panel_id(h.from)
         if t == nil then
             EV.error("Error found loading the layout file", h)
+            return
         end
         vim.fn.chanclose(t.term_id)
         vim.fn.timer_start(10, function()
@@ -238,6 +242,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         local t = term_by_panel_id(h.from)
         if t == nil then
             EV.error("Error found loading the layout file", h)
+            return
         end
         core.select_pane(t.buf)
         core.resize(h.params[1])
@@ -251,6 +256,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         local t = term_by_panel_id(h.from)
         if t == nil then
             EV.error("Error found loading the layout file", h)
+            return
         end
         core.select_pane(t.buf)
         core.rotate_panel()
@@ -274,6 +280,7 @@ M.restore_layout = function(where, callback)
     local f = io.open(where, "r")
     if f == nil then
         EV.error("Could not open " .. where, nil)
+        return
     end
     local h = funcs.deserialize(f:read("*a"))
     h.callback = callback

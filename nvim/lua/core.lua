@@ -640,7 +640,7 @@ cmd({'TabLeave'}, {
 
 cmd({'WinNew', 'WinEnter'}, {
     pattern = "*", callback = function(ev)
-        if is_suspended then
+        if is_suspended or is_user_editing then
             return
         end
         vim.fn.timer_start(1, function()

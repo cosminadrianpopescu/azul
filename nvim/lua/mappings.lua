@@ -5,6 +5,8 @@ local options = require('options')
 local FILES = require('files')
 local INS = require('insert')
 
+local ns_id = vim.api.nvim_create_namespace('VIM_ON_KEY')
+
 local get_mappings_for_mode = function(mode)
     local result = vim.tbl_filter(function(x) return x.m == mode end, core.get_mode_mappings())
     table.sort(result, function(m1, m2)
@@ -240,7 +242,7 @@ local generic_key_handler = function()
             return nil
         end
         return result
-    end)
+    end, ns_id)
 end
 
 local has_child_sessions_in_passthrough = function()

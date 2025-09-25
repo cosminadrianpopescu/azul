@@ -1,11 +1,11 @@
 local t = require('test-env')
 local azul = require('azul')
-local funcs = require('functions')
 local options = require('options')
+local TABS = require('tab_vars')
 
 local get_title = function(idx)
     local id = vim.api.nvim_list_tabpages()[idx]
-    return funcs.safe_get_tab_var(id, 'azul_tab_title')
+    return TABS.get_var(id, 'azul_tab_title')
 end
 
 local rename_tab_keys = function()
