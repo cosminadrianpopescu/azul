@@ -266,6 +266,10 @@ local reverse = function(_list)
     return result
 end
 
+local term_by_panel_id = function(id, terminals)
+    return find(function(t) return t.panel_id == id end, terminals)
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
@@ -294,4 +298,5 @@ return {
     is_autosave = is_autosave,
     is_float = is_float,
     reverse = reverse,
+    term_by_panel_id = term_by_panel_id,
 }

@@ -21,13 +21,13 @@ local restore_lines = function(buf, rec)
             i = 0
         end
     end
-    if #lines == 0 or options.undo_buffer_cmd == nil or options.undo_buffer_cmd == '' then
+    if #lines == 0 or options.undo_restore_cmd == nil or options.undo_restore_cmd == '' then
         return
     end
     local file = os.tmpname()
     FILES.write_file(file, funcs.join(lines, '\n'))
     vim.defer_fn(function()
-        core.send_to_buf(buf, options.undo_buffer_cmd .. ' ' .. file .. '<cr>', true)
+        core.send_to_buf(buf, options.undo_restore_cmd .. ' ' .. file .. '<cr>', true)
         vim.defer_fn(function()
             os.remove(file)
         end, 200)
@@ -71,6 +71,24 @@ local undo_tab = function(rec)
 end
 
 local undo_split = function(rec)
+    local t = funcs.term_by_panel_id(rec.create.from, core.get_terminals())
+    if t == nil then
+        finish()
+        EV.error("The terminal from which to split could not be found")
+    end
+    EV.single_shot('PaneChanged', function(args)
+        core.copy_terminal_properties(rec.term, args[1], true)
+        vim.defer_fn(function()
+            restore_lines(args[1].buf, rec)
+            local history = H.get_history()
+            if #history > 0 then
+                history[#history].to = rec.create.to
+            end
+            finish()
+        end, 1)
+    end)
+    core.select_pane(t.buf)
+    core.split(rec.create.params[1])
 end
 
 local undo_float = function(rec)
@@ -93,7 +111,7 @@ EV.persistent_on('HistoryChanged', function(args)
     local create = find_create(el.from, el.tab_id)
     local tab_vars = {}
     if (create and create.operation) == 'create' then
-        local tab_id = vim.api.nvim_list_tabpages()[t.tab_page]
+        local tab_id = t.vim_tab_id
         tab_vars = {
             azul_placeholders = TABS.get_var(tab_id, 'azul_placeholders'),
             azul_tab_title_overriden = TABS.get_var(tab_id, 'azul_tab_title_overriden'),
@@ -131,6 +149,10 @@ end
 
 M.undo = function()
     local rec = table.remove(undo_list, #undo_list)
+    if rec == nil then
+        print("Nothing to undo")
+        return
+    end
     if rec.is_float then
         return undo_float(rec)
     elseif (rec and rec.create and rec.create.operation) == 'create' then

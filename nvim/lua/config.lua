@@ -42,7 +42,7 @@ local actions = {
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
     'copy', 'paste', 'rotate_panel',
     'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
-    'show_mode_cheatsheet', 'remote_scroll',
+    'show_mode_cheatsheet', 'remote_scroll', 'undo',
 }
 
 local modes = {
@@ -87,6 +87,7 @@ M.default_config = {
                 disconnect = 'd',
                 remote_scroll = '[',
                 paste = 'pp',
+                undo = 'u',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -172,6 +173,7 @@ M.default_config = {
                 disconnect = 'd',
                 remote_scroll = '[',
                 paste = 'pp',
+                undo = 'u',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -287,6 +289,7 @@ M.default_config = {
                 tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
                 rename_tab = 'r',
                 show_mode_cheatsheet = '<C-o>',
+                undo = 'u',
             },
             visual = {
                 copy = 'y$$$<C-c>',
@@ -352,6 +355,7 @@ M.default_config = {
                 edit_scrollback = '<C-x><C-e>',
                 edit_scrollback_log = '<C-x>ge',
                 remote_scroll = '<C-x>[',
+                undo = '<C-z>',
             },
         }
     }
@@ -613,6 +617,15 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = core.remote_enter_scroll_mode,
             desc = "Scroll a remote pane",
+            action = action,
+            arg = arg,
+        })
+    elseif action == 'undo' then
+        map(mode, shortcut, '', {
+            callback = function()
+                require('undo').undo()
+            end,
+            desc = 'Restores last closed pane',
             action = action,
             arg = arg,
         })

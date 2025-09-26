@@ -15,10 +15,6 @@ local term_by_azul_win_id = function(id)
     return funcs.find(function(t) return t.azul_win_id == id end, core.get_terminals())
 end
 
-local term_by_panel_id = function(id)
-    return funcs.find(function(t) return t.panel_id == id end, core.get_terminals())
-end
-
 local histories_by_tab_id = function(tab_id, history)
     return vim.tbl_filter(function(h) return h.tab_id == tab_id end, history)
 end
@@ -142,7 +138,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     end
 
     if panel_id_wait ~= nil then
-        local t = term_by_panel_id(panel_id_wait)
+        local t = funcs.term_by_panel_id(panel_id_wait, core.get_terminals())
         if t == nil then
             vim.fn.timer_start(10, function()
                 L.restore_floats(histories, idx, panel_id_wait, timeout + 1)
@@ -173,7 +169,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 
     if panel_id_wait ~= nil then
-        local t = term_by_panel_id(panel_id_wait)
+        local t = funcs.term_by_panel_id(panel_id_wait, core.get_terminals())
         if t == nil then
             vim.fn.timer_start(10, function()
                 L.restore_tab_history(histories, i, j, panel_id_wait, timeout + 1)
@@ -212,7 +208,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
 
     if h.operation == "split" then
         core.set_global_panel_id(h.to)
-        local t = term_by_panel_id(h.from)
+        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
             EV.error("Error found loading the layout file", h)
             return
@@ -226,7 +222,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 
     if h.operation == "close" then
-        local t = term_by_panel_id(h.from)
+        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
             EV.error("Error found loading the layout file", h)
             return
@@ -239,7 +235,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 
     if h.operation == "resize" then
-        local t = term_by_panel_id(h.from)
+        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
             EV.error("Error found loading the layout file", h)
             return
@@ -253,7 +249,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 
     if h.operation == "rotate_panel" then
-        local t = term_by_panel_id(h.from)
+        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
             EV.error("Error found loading the layout file", h)
             return
@@ -398,7 +394,7 @@ end
 
 EV.persistent_on({
     'CommandSet', 'WinIdSet', 'TabTitleChanged', 'HistoryChanged',
-    'FloatOpened', 'PaneClosed', 'FloatTitleChanged',
+    'FloatOpened', 'PaneClosed', 'FloatTitleChanged', 'UndoFinished',
 }, do_autosave)
 
 EV.persistent_on({'FloatMoved', 'PaneChanged', 'PaneResized'}, function()

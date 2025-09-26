@@ -127,5 +127,8 @@ return {
         vim.api.nvim_create_user_command('AzulQuit', function()
             vim.api.nvim_command('quitall!')
         end, {desc = 'Exits azul'})
+        vim.api.nvim_create_user_command('AzulUndo', function()
+            require('azul').undo()
+        end, {desc = 'Restores the last closed tab, float or split'})
     end
 }

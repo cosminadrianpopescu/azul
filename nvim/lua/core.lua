@@ -101,6 +101,7 @@ M.refresh_tab_page = function(t)
         return
     end
     t.tab_page = vim.api.nvim_tabpage_get_number(vim.api.nvim_win_get_tabpage(t.win_id))
+    t.vim_tab_id = vim.api.nvim_list_tabpages()[t.tab_page]
 end
 
 local refresh_win_config = function(t)

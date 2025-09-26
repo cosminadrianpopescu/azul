@@ -41,33 +41,28 @@ const do_floats = () => {
     test_factory('floats', {workflow: 'zellij', use_cheatsheet: 'false', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
 }
 
+const expand_test = (which: string, with_emacs = true) => {
+    test_factory(which, {workflow: 'azul'})
+    test_factory(which, {workflow: 'tmux'});
+    test_factory(which, {workflow: 'zellij'});
+    if (with_emacs) {
+        test_factory(which, {workflow: 'emacs'});
+    }
+    test_factory(which, {workflow: 'azul', use_cheatsheet: 'false'});
+    test_factory(which, {workflow: 'tmux', use_cheatsheet: 'false'});
+    test_factory(which, {workflow: 'zellij', use_cheatsheet: 'false'});
+}
+
 const do_splits = () => {
-    test_factory('splits', {workflow: 'azul'})
-    test_factory('splits', {workflow: 'tmux'});
-    test_factory('splits', {workflow: 'zellij'});
-    test_factory('splits', {workflow: 'emacs'});
-    test_factory('splits', {workflow: 'azul', use_cheatsheet: 'false'});
-    test_factory('splits', {workflow: 'tmux', use_cheatsheet: 'false'});
-    test_factory('splits', {workflow: 'zellij', use_cheatsheet: 'false'});
+    expand_test('splits');
 }
 
 const do_modes = () => {
-    test_factory('modes', {workflow: 'azul'});
-    test_factory('modes', {workflow: 'tmux'});
-    test_factory('modes', {workflow: 'zellij'});
-    test_factory('modes', {workflow: 'azul', use_cheatsheet: 'false'});
-    test_factory('modes', {workflow: 'tmux', use_cheatsheet: 'false'});
-    test_factory('modes', {workflow: 'zellij', use_cheatsheet: 'false'});
+    expand_test('modes', false);
 }
 
 const do_tabs = () => {
-    test_factory('tabs', {workflow: 'azul'});
-    test_factory('tabs', {workflow: 'tmux'});
-    test_factory('tabs', {workflow: 'zellij'});
-    test_factory('tabs', {workflow: 'emacs'});
-    test_factory('tabs', {workflow: 'azul', use_cheatsheet: 'false'});
-    test_factory('tabs', {workflow: 'tmux', use_cheatsheet: 'false'});
-    test_factory('tabs', {workflow: 'zellij', use_cheatsheet: 'false'});
+    expand_test('tabs');
 }
 
 const do_tab_titles = () => {
@@ -102,13 +97,11 @@ const do_misc = () => {
 }
 
 const do_layout = () => {
-    test_factory('layout', {workflow: 'azul'});
-    test_factory('layout', {workflow: 'tmux'});
-    test_factory('layout', {workflow: 'zellij'});
-    test_factory('layout', {workflow: 'emacs'});
-    test_factory('layout', {workflow: 'azul', use_cheatsheet: 'false'});
-    test_factory('layout', {workflow: 'tmux', use_cheatsheet: 'false'});
-    test_factory('layout', {workflow: 'zellij', use_cheatsheet: 'false'});
+    expand_test('layout');
+}
+
+const do_undo = () => {
+    expand_test('undo');
 }
 
 do_floats();
@@ -117,4 +110,5 @@ do_modes();
 do_tabs();
 do_tab_titles();
 do_misc();
+do_undo();
 do_layout();

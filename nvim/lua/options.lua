@@ -25,7 +25,7 @@ local M = {
     term = 'st-256color',
     autosave = 'always',
     autosave_location = nil,
-    undo_buffer_cmd = 'cat',
+    undo_restore_cmd = 'cat',
 }
 
 M.set_option = function(key, value)

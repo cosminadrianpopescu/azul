@@ -654,6 +654,23 @@ Returns the remote state of a pane. If the pane is not a remote pane, `nil` is
 returned. Otherwise, `connected` is returned if the pane is connected or
 `disconnected` is returned if the pane is disconnected.
 
+#### single_shot
+
+**Parameters**:
+
+* ev The event to which to subscribe
+* callback The callback to be executed
+
+Assigns a hook for a given event to be executed exactly once (the first time
+after the event occurs).
+
+#### undo
+
+Restores the last closed tab, float or split. If the `undo_restore_cmd` is set
+in the configuration, then that command will be executed for the closed pane
+content, restoring also it's content. The running command at the moment of the
+closing (if any) will not be restored.
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will
@@ -828,7 +845,9 @@ Triggered every time when an azul session is begin reconnected.
 * `args[1]` The element that has been added to the history
 
 Triggered every time a record is added to the history (based on which the
-`layout`) will be restored
+`layout` will be restored) for a tab or a split. This will not be triggered
+for any float. For this, see [FloatsHistoryChanged
+event](#FloatsHistoryChanged)
 
 #### PaneResized
 
@@ -846,6 +865,24 @@ Triggered every time a pane is resized.
 * `args[1]` The float being moved
 
 Triggered every time a float is being moved.
+
+#### FloatsHistoryChanged
+
+**Parameters**:
+
+`args[1]` The element that has been added to the history
+
+Triggered every time a record is added to the history of the floats (keep in
+mind that this will not be saved in the layout together with the history of
+tabs or splits)
+
+#### LayoutRestoringStarted
+
+Triggered every time `azul` starts restoring a layout.
+
+#### UndoFinished
+
+Triggered every time `azul` finished restoring a closed float, tab or split.
 
 ### Configuring via init.lua
 

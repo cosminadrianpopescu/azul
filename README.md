@@ -49,6 +49,7 @@ A nvim based terminal multiplexer.
   - [AzulSetCmd](#azulsetcmd)
   - [AzulSetWinId](#azulsetwinid)
   - [Autosave](#autosave)
+* [Undo](#undo)
 * [Lua Api](#lua-api)
 * [Why](#why)
 * [Azul workflow cheatsheet](#cheatsheet)
@@ -705,6 +706,8 @@ or the action directly, for the `emacs` workflow. For more info see the
   autosave](#autosave) section
 * **autosave_location** The location where to track the sections; see [the
   autosave](#autosave) section
+* **undo_restore_cmd** The command to be executed uppon restoring a closed
+  tab, split or float (default `cat`). See [undo section](#undo)
 
 **Note**:
 
@@ -1583,6 +1586,16 @@ second (so that `vifm` has time to open), the session `my-vifm-session` will
 be open inside `vifm`.
 
 This allows you to script your session restore via `lua`.
+
+## Undo
+
+`Azul` keeps a history of closed tabs, floats or splits. After closing a pane,
+you can call `AzulUndo` command or click `<C-s>u` (for `azul` workflow) and
+the last closed pane will be restored.
+
+The content of the terminal will be restored by executing the
+`undo_restore_cmd` command after restore. If you don't want the content
+restored, just set the `undo_restore_cmd` in the `ini` file to nothing.
 
 ## Lua API
 

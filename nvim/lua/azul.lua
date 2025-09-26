@@ -2,6 +2,7 @@ local core = require('core')
 local session = require('session')
 local funcs = require('functions')
 local EV = require('events')
+local U = require('undo')
 
 local M = {}
 
@@ -73,5 +74,6 @@ M.remote_enter_scroll_mode = core.remote_enter_scroll_mode
 M.remote_state = core.remote_state
 M.persistent_on = EV.persistent_on
 M.single_shot = EV.single_shot
+M.undo = U.undo
 
 return M
