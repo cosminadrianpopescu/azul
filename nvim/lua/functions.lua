@@ -243,7 +243,7 @@ end
 
 local is_autosave = function()
     local env = os.getenv('AZUL_NO_AUTOSAVE')
-    return (env == nil or env == '') and (options.autosave == 'always' or options.autosave == 'often')
+    return env ~= '1' and (options.autosave == 'always' or options.autosave == 'often')
 end
 
 local is_float = function(t)
