@@ -1302,6 +1302,13 @@ session
     + `zellij`: `terminal.remote_scroll = [`
     + `emacs`: `remote_scroll = <C-x>[`
 
+* **undo**: Restores the last closed tab, split or float.
+  - defaults: 
+    + `azul`: `terminal.undo = u`
+    + `tmux`: `terminal.undo = u`
+    + `zellij`: `tabs.undo = u`
+    + `emacs`: `undo = <C-z>`
+
 ## Environment
 
 You can set up the environment variables of every opened pane in `azul` either

@@ -242,7 +242,8 @@ local deserialize = function(var)
 end
 
 local is_autosave = function()
-    return os.getenv('AZUL_NO_AUTOSAVE') == nil and (options.autosave == 'always' or options.autosave == 'often')
+    local env = os.getenv('AZUL_NO_AUTOSAVE')
+    return (env == nil or env == '') and (options.autosave == 'always' or options.autosave == 'often')
 end
 
 local is_float = function(t)
