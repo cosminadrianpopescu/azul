@@ -1,6 +1,7 @@
 local t = require('test-env')
 local funcs = require('functions')
 local azul = require('azul')
+local options = require('options')
 
 local TIMEOUT = 200
 
@@ -19,31 +20,35 @@ t.wait_events({TabTitleChanged = 1}, function()
                     vim.fn.timer_start(TIMEOUT, function()
                         local undo = t.action_shortcut('undo')
                         t.assert(#azul.get_terminals() == 2, 'Now there should be 2 terminals')
-                        funcs.log("START WATCH")
-                        t.simulate_keys(undo .. ' ' .. undo .. ' ' .. undo, {UndoFinished = 3}, function()
-                            funcs.log("END WATCH")
-                            t.assert(#azul.get_terminals() == 5, 'Now there should be again 5 terminals')
-                            s = t.action_shortcut('enter_mode', nil, 'T') .. ' ' .. t.action_shortcut('tab_select_first', 'T') .. ' <cr>'
-                            t.simulate_keys(s, {PaneChanged = 1}, function()
-                                azul.send_to_current('ls<cr>', true)
-                                vim.fn.timer_start(TIMEOUT, function()
-                                    term = azul.get_current_terminal()
-                                    t.wait_events({PaneChanged = 1}, function()
-                                        t.simulate_keys(undo, {UndoFinished = 1}, function()
-                                            vim.fn.timer_start(TIMEOUT * 2, function()
-                                                term = azul.get_current_terminal()
-                                                t.assert(term.tab_page == 1, 'The current terminals tab page should be 1')
-                                                local lines = vim.api.nvim_buf_get_lines(term.buf, 0, -1, false)
-                                                for _, line in ipairs(lines) do
-                                                    if vim.fn.match(line, 'ls$') ~= -1 then
-                                                        t.done()
-                                                    end
-                                                end
-                                                t.assert(false, 'There should be a line in the current buffer with ls at the end')
+                        t.simulate_keys(undo, {UndoFinished = 1}, function()
+                            t.simulate_keys(undo, {UndoFinished = 1}, function()
+                                t.simulate_keys(undo, {UndoFinished = 1}, function()
+                                    t.assert(#azul.get_terminals() == 5, 'Now there should be again 5 terminals')
+                                    s = t.action_shortcut('enter_mode', nil, 'T') .. ' ' .. t.action_shortcut('tab_select_first', 'T') .. ' <cr>'
+                                    t.simulate_keys(s, {PaneChanged = 1}, function()
+                                        azul.send_to_current('ls<cr>', true)
+                                        vim.fn.timer_start(TIMEOUT, function()
+                                            term = azul.get_current_terminal()
+                                            t.wait_events({PaneChanged = 1}, function()
+                                                vim.fn.timer_start(TIMEOUT, function()
+                                                    t.simulate_keys(undo, {UndoFinished = 1}, function()
+                                                        vim.fn.timer_start(TIMEOUT * 2, function()
+                                                            term = azul.get_current_terminal()
+                                                            t.assert(term.tab_page == 1, 'The current terminals tab page should be 1')
+                                                            local lines = vim.api.nvim_buf_get_lines(term.buf, 0, -1, false)
+                                                            for _, line in ipairs(lines) do
+                                                                if vim.fn.match(line, 'ls$') ~= -1 then
+                                                                    t.done()
+                                                                end
+                                                            end
+                                                            t.assert(false, 'There should be a line in the current buffer with ls at the end')
+                                                        end)
+                                                    end)
+                                                end)
                                             end)
+                                            vim.fn.jobstop(term.term_id)
                                         end)
                                     end)
-                                    vim.fn.jobstop(term.term_id)
                                 end)
                             end)
                         end)

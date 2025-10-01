@@ -155,7 +155,7 @@ local default_shortcut_mode = function(action)
         return 'p'
     end
 
-    if vim.tbl_contains({'create_tab', 'tab_select'}, action) then
+    if vim.tbl_contains({'create_tab', 'tab_select', 'undo'}, action) then
         return 'T'
     end
 

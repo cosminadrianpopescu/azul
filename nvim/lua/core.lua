@@ -33,6 +33,7 @@ local dead_terminal = nil
 --- @field win_config table The current neovim window config
 --- @field current_selected_pane boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
 --- @field remote_command string The terminal's remote connection
+--- @field group string The float current group, if the terminal is a float
 local terminals = {}
 local tab_id = 0
 local azul_win_id = 0

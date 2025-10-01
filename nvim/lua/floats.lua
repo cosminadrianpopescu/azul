@@ -227,6 +227,12 @@ EV.on({'PaneClosed', 'PaneChanged'}, rebuild_zindex_floats)
 
 EV.on('TerminalAdded', function(args)
     args[1].group = current_group
+    local added = core.refresh_buf(args[1].buf)
+    local crt = core.get_current_terminal()
+    if crt == nil or added == nil or funcs.is_float(added) or funcs.are_floats_hidden(crt.group, core.get_terminals()) or not funcs.is_float(crt) then
+        return
+    end
+    M.hide_floats()
 end)
 
 return M
