@@ -1,6 +1,7 @@
 local core = require('core')
 local funcs = require('functions')
 local FILES = require('files')
+local F = require('floats')
 local H = require('history')
 local EV = require('events')
 local TABS = require('tab_vars')
@@ -90,7 +91,7 @@ L.restore_remotes = function()
         end
         local t = term_by_azul_win_id(current_in_saved_layout.azul_win_id)
         if not funcs.is_float(t) then
-            core.hide_floats()
+            F.hide_floats()
         end
         vim.defer_fn(function()
             core.select_pane(t.buf)
@@ -156,7 +157,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     local f = histories.floats[idx]
 
     core.set_global_panel_id(f.panel_id)
-    core.open_float(f.group, f.win_config, f)
+    F.open_float(f.group, f.win_config, f)
 
     L.restore_floats(histories, idx + 1, f.panel_id, 0)
 end

@@ -7,6 +7,7 @@ local cmd = vim.api.nvim_create_autocmd
 local tabs = 0
 local options = require('options')
 local env = require('environment')
+local F = require('floats')
 
 M.ini_shortcuts = {}
 
@@ -408,7 +409,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'toggle_floats' then
         map(mode, shortcut, '', {
             callback = function()
-                core.toggle_floats(funcs.current_float_group())
+                F.toggle_floats(funcs.current_float_group())
             end,
             desc = "Toggle floats visibility",
             action = action,
@@ -452,9 +453,9 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 if funcs.is_handling_remote() then
-                    core.open_float_remote()
+                    F.open_float_remote()
                 else
-                    core.open_float()
+                    F.open_float()
                 end
             end,
             desc = "Create float",
@@ -492,7 +493,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('move_', '')
         map(mode, shortcut, '', {
             callback = function()
-                core.move_current_float(dir, arg)
+                F.move_current_float(dir, arg)
             end,
             desc = 'Move a panel to ' .. dir,
             action = action,
@@ -516,7 +517,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         local dir = action:gsub('move_', '')
         map(mode, shortcut, '', {
             callback = function()
-                core.position_current_float(dir)
+                F.position_current_float(dir)
             end,
             desc = 'Move current pane to ' .. dir,
             action = action,
@@ -580,7 +581,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     elseif action == 'rename_float' then
         map(mode, shortcut, '', {
-            callback = core.rename_current_pane,
+            callback = F.rename_current_pane,
             desc = 'Renames the current floating pane',
             action = action,
             arg = arg,

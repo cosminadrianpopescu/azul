@@ -7,6 +7,7 @@ local finders = require "telescope.finders"
 local previewers = require('telescope.previewers')
 local conf = require("telescope.config").values
 local funcs = require('functions')
+local F = require('floats')
 -- local sorters = require "telescope.sorters"
 
 local _sessions = {}
@@ -34,7 +35,7 @@ sets.select = function(bufnr)
         core.disconnect()
     elseif entry.terminal then
         if funcs.is_float(entry.terminal) then
-            core.show_floats(entry.terminal.group or nil)
+            F.show_floats(entry.terminal.group or nil)
         else
             local tab = vim.api.nvim_win_get_tabpage(entry.terminal.win_id)
             vim.api.nvim_command('tabn ' .. tab)

@@ -5,6 +5,7 @@ local H = require('history')
 local FILES = require('files')
 local TABS = require('tab_vars')
 local options = require('options')
+local F = require('floats')
 
 local record_undo = true
 local undo_list = {}
@@ -98,7 +99,7 @@ local undo_float = function(rec)
         finish()
     end)
     core.stop_updating_titles()
-    core.open_float(rec.term.group, rec.term.win_config)
+    F.open_float(rec.term.group, rec.term.win_config)
 end
 
 EV.persistent_on('HistoryChanged', function(args)

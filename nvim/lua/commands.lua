@@ -16,9 +16,10 @@ return {
     setup = function()
         local core = require('core')
         local session = require('session')
+        local F = require('floats')
 
         vim.api.nvim_create_user_command('AzulHideFloats', function()
-            core.hide_floats()
+            F.hide_floats()
         end, {desc = "Hides the floats"});
 
         vim.api.nvim_create_user_command('AzulOpen', function()
@@ -30,21 +31,21 @@ return {
         end, {nargs = 1, desc = 'Enters an azul mode'})
 
         vim.api.nvim_create_user_command('AzulShowFloats', function()
-            core.show_floats(funcs.current_float_group())
+            F.show_floats(funcs.current_float_group())
         end, {desc = 'Show floats'})
 
         vim.api.nvim_create_user_command('AzulOpenFloat', function()
-            core.open_float(funcs.current_float_group())
+            F.open_float(funcs.current_float_group())
         end, {desc = 'Creates a new float'})
 
         vim.api.nvim_create_user_command('AzulToggleFloats', function()
-            core.toggle_floats(funcs.current_float_group())
+            F.toggle_floats(funcs.current_float_group())
         end, {desc = 'Toggles the floats visibility'})
 
         vim.api.nvim_create_user_command('AzulMoveCurrentFloat', function(opts)
             local dir = opts.fargs[1]
             local inc = opts.fargs[2] or 5
-            core.move_current_float(dir, inc)
+            F.move_current_float(dir, inc)
         end, {nargs = "+", desc = 'Moves the currently selected float'})
 
         vim.api.nvim_create_user_command('AzulSelectPane', function(opts)
@@ -66,7 +67,7 @@ return {
         end, {desc = "Toggle the nesting of the current session", nargs = '?'})
 
         vim.api.nvim_create_user_command('AzulPositionCurrentFloat', function(opts)
-            core.position_current_float(opts.fargs[1])
+            F.position_current_float(opts.fargs[1])
         end, {desc = "Positions the currently selected float", nargs = 1})
 
         vim.api.nvim_create_user_command('AzulRedraw', core.redraw, {desc = "Redraws the screen"})
@@ -102,7 +103,7 @@ return {
             core.rename_current_tab()
         end, {desc = "Renames the current tab"})
         vim.api.nvim_create_user_command('AzulRenameCurrentFloat', function()
-            core.rename_current_pane()
+            F.rename_current_pane()
         end, {desc = "Renames the current floating pane"})
         vim.api.nvim_create_user_command('AzulEdit', function(opts)
             get_file_if_missing(opts, function(file)
