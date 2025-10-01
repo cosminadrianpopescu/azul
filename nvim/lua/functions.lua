@@ -206,11 +206,16 @@ local is_handling_remote = function()
 end
 
 local safe_close_window = function(win_id)
-    if not vim.api.nvim_win_is_valid(win_id) then
-        return
-    end
-    vim.api.nvim_win_close(win_id, true)
+    local safe, _ = pcall(function() vim.api.nvim_win_close(win_id, true) end)
+    return safe
 end
+
+-- local safe_close_window = function(win_id)
+--     if not vim.api.nvim_win_is_valid(win_id) then
+--         return false
+--     end
+--     vim.api.nvim_win_close(win_id, true)
+-- end
 
 local safe_buf_delete = function(buf_id)
     local safe, _ = pcall(function() vim.api.nvim_buf_delete(buf_id, {force = true, unload = false}) end)
@@ -329,4 +334,5 @@ return {
     get_visible_floatings = get_visible_floatings,
     are_floats_hidden = are_floats_hidden,
     get_float_title = get_float_title,
+    get_all_floats = get_all_floats,
 }

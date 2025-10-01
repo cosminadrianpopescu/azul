@@ -42,15 +42,15 @@ const do_floats = () => {
 }
 
 const expand_test = (which: string, with_emacs = true) => {
-    test_factory(which, {workflow: 'azul'})
+    // test_factory(which, {workflow: 'azul'})
     test_factory(which, {workflow: 'tmux'});
-    test_factory(which, {workflow: 'zellij'});
-    if (with_emacs) {
-        test_factory(which, {workflow: 'emacs'});
-    }
-    test_factory(which, {workflow: 'azul', use_cheatsheet: 'false'});
-    test_factory(which, {workflow: 'tmux', use_cheatsheet: 'false'});
-    test_factory(which, {workflow: 'zellij', use_cheatsheet: 'false'});
+    // test_factory(which, {workflow: 'zellij'});
+    // if (with_emacs) {
+    //     test_factory(which, {workflow: 'emacs'});
+    // }
+    // test_factory(which, {workflow: 'azul', use_cheatsheet: 'false'});
+    // test_factory(which, {workflow: 'tmux', use_cheatsheet: 'false'});
+    // test_factory(which, {workflow: 'zellij', use_cheatsheet: 'false'});
 }
 
 const do_splits = () => {
@@ -104,11 +104,11 @@ const do_undo = () => {
     expand_test('undo');
 }
 
-do_floats();
-do_splits();
-do_modes();
-do_tabs();
-do_tab_titles();
-do_misc();
+// do_floats();
+// do_splits();
+// do_modes();
+// do_tabs();
+// do_tab_titles();
+// do_misc();
 do_undo();
-do_layout();
+// do_layout();

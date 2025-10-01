@@ -75,7 +75,7 @@ end
 --- @param to_restore terminals The float terminal to restore (optional)
 M.open_float = function(group, opts, to_restore)
     current_group = group or funcs.current_float_group()
-    if #funcs.get_all_floats(group) > 0 and funcs.are_floats_hidden(group, core.get_terminals()) then
+    if #funcs.get_all_floats(group, core.get_terminals()) > 0 and funcs.are_floats_hidden(group, core.get_terminals()) then
         M.show_floats(group)
     end
     local buf = vim.api.nvim_create_buf(true, false)
@@ -168,7 +168,7 @@ end
 
 M.position_current_float = function(where)
     local conf = vim.api.nvim_win_get_config(0)
-    local t = M.get_current_terminal()
+    local t = core.get_current_terminal()
     if not funcs.is_float(t) then
         EV.error("You can only position a floating window", nil)
     end
@@ -183,7 +183,7 @@ M.position_current_float = function(where)
         conf.col = 0
     end
     vim.api.nvim_win_set_config(0, conf)
-    M.refresh_win_config(t)
+    core.refresh_win_config(t)
     EV.trigger_event('FloatMoved', {t})
 end
 
@@ -195,7 +195,7 @@ M.rename_floating_pane = function(pane)
         EV.error('You can only rename floating panes')
     end
     local def = funcs.get_float_title(pane)
-    M.user_input({propmt = "Pane new name: ", default = def}, function(result)
+    core.user_input({propmt = "Pane new name: ", default = def}, function(result)
         if result == '' then
             pane.overriden_title = nil
             TABS.del_var(core.get_global_tab_id(), 'azul_tab_title_overriden')
@@ -203,7 +203,7 @@ M.rename_floating_pane = function(pane)
             pane.azul_placeholders = nil
             pane.overriden_title = result
         end
-        M.update_titles()
+        core.update_titles()
     end, true)
 end
 

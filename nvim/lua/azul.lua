@@ -14,7 +14,9 @@ M.open = core.open
 M.enter_mode = core.enter_mode
 M.hide_floats = F.hide_floats
 M.show_floats = F.show_floats
-M.are_floats_hidden = funcs.are_floats_hidden
+M.are_floats_hidden = function(group)
+    return funcs.are_floats_hidden(group, core.get_terminals())
+end
 M.open_float = F.open_float
 M.toggle_floats = F.toggle_floats
 M.feedkeys = core.feedkeys
