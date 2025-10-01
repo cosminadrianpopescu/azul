@@ -104,7 +104,7 @@ M.refresh_tab_page = function(t)
     t.vim_tab_id = vim.api.nvim_list_tabpages()[t.tab_page]
 end
 
-local refresh_win_config = function(t)
+M.refresh_win_config = function(t)
     local old_config = t.win_config
     t.win_config = vim.api.nvim_win_get_config(t.win_id)
     M.refresh_tab_page(t)
@@ -122,27 +122,19 @@ local refresh_win_config = function(t)
     end
 end
 
-local _buf = function(t)
-    return t.editing_buf or t.buf
-end
-
-local refresh_buf = function(buf, with_win_id)
-    local t = funcs.find(function(t) return _buf(t) == buf end, terminals)
+M.refresh_buf = function(buf, with_win_id)
+    local t = funcs.find(function(t) return funcs.get_real_buffer(t) == buf end, terminals)
     if t == nil then
         return nil
     end
     if with_win_id == nil or with_win_id == true then
         t.win_id = vim.fn.win_getid(vim.fn.winnr())
-        refresh_win_config(t)
+        M.refresh_win_config(t)
     end
     return t
 end
 
-local get_visible_floatings = function()
-    return vim.tbl_filter(function(t) return funcs.is_float(t) and t.win_id ~= nil end, terminals)
-end
-
-local select_current_pane = function(tab_id)
+M.select_current_pane = function(tab_id)
     local t = funcs.find(function(t) return t.current_selected_pane end, L.terms_by_tab_id(tab_id))
     if t == nil then
         return
@@ -162,42 +154,11 @@ local set_current_panel = function(tab_id)
     t.current_selected_pane = true
 end
 
-local close_win = function(win_id)
-    if not vim.api.nvim_win_is_valid(win_id) then
-        return
-    end
-    vim.api.nvim_win_close(win_id, true)
-end
-
-local close_float = function(float)
-    refresh_win_config(float)
-    close_win(float.win_id)
-    float.win_id = nil
-    vim.fn.timer_start(1, function()
-        local t = M.get_current_terminal()
-        if t == nil then
-            return
-        end
-        select_current_pane(t.tab_id)
-    end)
-end
-
 --- Returns the current selected terminal
 ---
 ---@return terminals|nil
 M.get_current_terminal = function()
     return funcs.find(function(t) return t.is_current end, terminals)
-end
-
-local rebuild_zindex_floats = function()
-    local floats = get_visible_floatings()
-    table.sort(floats, function(a, b) return a.last_access < b.last_access end)
-    for i, f in ipairs(floats) do
-        f.win_config.zindex = i
-        if f.win_id ~= nil then
-            vim.api.nvim_win_set_config(f.win_id, f.win_config)
-        end
-    end
 end
 
 local OnEnter = function(ev)
@@ -208,25 +169,24 @@ local OnEnter = function(ev)
         dead_terminal.callback({buf = dead_terminal.term.buf})
         dead_terminal = nil
     end
-    local crt = refresh_buf(ev.buf)
+    local crt = M.refresh_buf(ev.buf)
     if crt == nil then
         return
     end
 
-    if funcs.is_float(crt) == false then
-        M.hide_floats()
-    end
+    -- if funcs.is_float(crt) == false then
+    --     M.hide_floats()
+    -- end
     crt.last_access = last_access
     last_access = last_access + 1
-    rebuild_zindex_floats()
 
     local is_current_terminal = (M.get_current_terminal() and M.get_current_terminal().buf) or nil
     local old = funcs.find(function(t) return t.is_current end, M.get_terminals())
 
     for _, t in ipairs(terminals) do
         vim.api.nvim_buf_set_option(t.buf, 'buflisted', t.win_id == crt.win_id)
-        t.is_current = _buf(t) == ev.buf
-        if t.is_current and _buf(t) ~= is_current_terminal then
+        t.is_current = funcs.get_real_buffer(t) == ev.buf
+        if t.is_current and funcs.get_real_buffer(t) ~= is_current_terminal then
             EV.trigger_event('PaneChanged', {t, old})
         end
         if t.is_current and options.auto_start_logging and not L.is_logging_started(t.buf) then
@@ -335,7 +295,7 @@ local OnTermClose = function(ev)
     if t.remote_command ~= nil then
         EV.trigger_event('RemoteDisconnected', {t})
         vim.fn.timer_start(1, function()
-            refresh_buf(t.buf, false)
+            M.refresh_buf(t.buf, false)
         end)
         return
     end
@@ -346,7 +306,7 @@ local OnTermClose = function(ev)
     end
     if t ~= nil then
         if funcs.find(function(t2) return t2.win_id == t.win_id end, terminals) == nil then
-            close_win(t.win_id)
+            funcs.safe_close_window(t.win_id)
         else
             vim.api.nvim_command('bnext')
         end
@@ -422,10 +382,6 @@ local get_tab_title = function(t)
     return overriden_title or options.tab_title
 end
 
-local get_float_title = function(t)
-    return t.overriden_title or options.float_pane_title
-end
-
 local get_default_placeholders = function(t)
     local azul_win_id = (t and t.azul_win_id) or ''
     local azul_cmd = (t and t.azul_cmd) or ''
@@ -458,7 +414,7 @@ M.update_titles = function(callback)
         end
     end
     updating_titles = true
-    local floats = get_visible_floatings()
+    local floats = funcs.get_visible_floatings(terminals)
     local titles_to_update = #vim.api.nvim_list_tabpages() + #floats
     local titles_updated = 0
     local current_tab_page = vim.fn.tabpagenr()
@@ -501,7 +457,7 @@ M.update_titles = function(callback)
             'keep', default_placeholders, float_placeholders or {}
         )
         M.parse_custom_title(
-            get_float_title(f),
+            funcs.get_float_title(f),
             placeholders,
             'for pane with ' .. placeholders.term_title,
             function(title, placeholders)
@@ -524,22 +480,6 @@ M.update_titles = function(callback)
             end
         )
     end
-end
-
---- Hides all the floats
---- 
---- @return nil
-M.hide_floats = function()
-    local floats = get_visible_floatings()
-    for _, float in ipairs(floats) do
-        close_float(float)
-    end
-    if #floats > 0 then
-        EV.trigger_event('FloatHidden')
-    end
-    vim.fn.timer_start(1, function()
-        M.update_titles()
-    end)
 end
 
 cmd({"VimLeave"},{
@@ -565,7 +505,6 @@ cmd('TermOpen',{
             buf = ev.buf,
             win_id = vim.fn.win_getid(vim.fn.winnr()),
             term_id = vim.b.terminal_job_id,
-            group = L.current_group,
             tab_id = TABS.get_var(0, 'azul_tab_id'),
             panel_id = panel_id,
             cwd = vim.fn.getcwd(),
@@ -575,7 +514,7 @@ cmd('TermOpen',{
             new_terminal.remote_command = to_save_remote_command
         end
         table.insert(terminals, new_terminal)
-        L.current_group = nil
+        EV.trigger_event('TerminalAdded', {new_terminal})
         OnEnter(ev)
         local history = H.get_history()
         if #history > 0 and history[#history].to == -1 then
@@ -697,90 +636,6 @@ cmd({'ModeChanged'}, {
     end
 })
 
-local restore_float = function(t)
-    if t == nil or not vim.api.nvim_buf_is_valid(_buf(t)) then
-        return
-    end
-    vim.api.nvim_open_win(_buf(t), true, t.win_config)
-    if t.editing_buf == nil then
-        refresh_buf(t.buf)
-    else
-        t.win_id = vim.fn.win_getid(vim.fn.winnr())
-    end
-end
-
---- Shows all the floats
-M.show_floats = function(group)
-    local g = group or 'default'
-    local floatings = vim.tbl_filter(function(t) return funcs.is_float(t) and t.group == g end, terminals)
-    table.sort(floatings, function(a, b) return a.last_access < b.last_access end)
-    for _, f in ipairs(floatings) do
-        restore_float(f)
-    end
-    vim.fn.timer_start(1, function()
-        EV.trigger_event('FloatsVisible')
-    end)
-    M.update_titles()
-end
-
-local get_all_floats = function(group)
-    return vim.tbl_filter(function(t) return funcs.is_float(t) and ((group ~= nil and t.group == group) or group == nil) end, terminals)
-end
-
-M.are_floats_hidden = function(group)
-    local floatings = get_all_floats(group)
-    if #floatings == 0 then
-        return true
-    end
-    return #vim.tbl_filter(function(t) return t.win_id == nil and t.group == (group or 'default') end, floatings) > 0
-end
-
---- Opens a new float
---- @param group string The group in which to open a float
---- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
---- @param to_restore terminals The float terminal to restore (optional)
-M.open_float = function(group, opts, to_restore)
-    L.current_group = group or funcs.current_float_group()
-    if #get_all_floats(group) > 0 and M.are_floats_hidden(group) then
-        M.show_floats(group)
-    end
-    local buf = vim.api.nvim_create_buf(true, false)
-    local factor = 4
-    local w = (vim.o.columns - factor) / 2
-    local h = (vim.o.lines - factor) / 2
-    local x = (vim.o.columns - w) / 2
-    local y = (vim.o.lines - h) / 2
-    local _opts = {
-        width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
-        focusable = true, zindex = 1, border = 'rounded', title = '...', relative = 'editor', style = 'minimal'
-    }
-    for k, v in pairs(opts or {}) do
-        _opts[k] = v
-    end
-    vim.api.nvim_open_win(buf, true, _opts)
-    vim.fn.timer_start(1, function()
-        local opened = M.term_by_buf_id(buf)
-        EV.trigger_event('FloatOpened', {opened})
-        if to_restore ~= nil then
-            opened.azul_placeholders = to_restore.azul_placeholders or {}
-            opened.overriden_title = to_restore.overriden_title
-        end
-        M.update_titles()
-    end)
-end
-
---- Toggles the visibility of the floating windows
-M.toggle_floats = function(group)
-    if M.are_floats_hidden(group) then
-        M.show_floats(group)
-    else
-        M.hide_floats()
-    end
-    vim.fn.timer_start(1, function()
-        M.enter_mode('t')
-    end)
-end
-
 M.feedkeys = function(what, mode)
     local codes = vim.api.nvim_replace_termcodes(what, true, false, true)
     vim.api.nvim_feedkeys(codes, mode, false)
@@ -842,53 +697,6 @@ M.get_terminals = function()
     return terminals
 end
 
-local fix_coord = function(c, max, limit)
-    if c < 0 then
-        return 0
-    end
-
-    if c + max >= limit - 1 then
-        return limit - max - 2
-    end
-
-    return c
-end
-
-M.move_current_float = function(dir, inc)
-    local buf = vim.fn.bufnr()
-    local t = funcs.find(function(t) return _buf(t) == buf end, terminals)
-    local conf = vim.api.nvim_win_get_config(0)
-    if conf.relative == "" then return end
-    local row, col = conf["row"], conf["col"]
-    if type(row) ~= "number" then
-        row = row[false]
-    end
-    if type(col) ~= 'number' then
-        col = col[false]
-    end
-    local _inc = inc or 1
-
-	if dir == "down" and (row + conf.height) < vim.o.lines then
-		row = row + _inc
-	elseif dir == "up" and row > 0 then
-		row = row - _inc
-	elseif dir == "left" and col > 0 then
-		col = col - _inc
-	elseif dir == "right" and (col+conf.width) < vim.o.columns then
-		col = col + _inc
-	end
-
-    row = fix_coord(row, conf.height, vim.o.lines - 1)
-    col = fix_coord(col, conf.width, vim.o.columns)
-
-    conf["row"], conf["col"] = row, col
-    vim.api.nvim_win_set_config(0, conf)
-    if t ~= nil then
-        t.win_config = conf
-    end
-    EV.trigger_event('FloatMoved', {t})
-end
-
 M.select_pane = function(buf)
     vim.api.nvim_command(vim.fn.bufwinnr(buf) .. "wincmd w")
 end
@@ -906,7 +714,7 @@ local get_row_or_col = function(t, check)
 end
 
 M.select_next_pane = function(dir, group)
-    if M.are_floats_hidden(group) then
+    if funcs.are_floats_hidden(group, terminals) then
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('wincmd ' .. which)
@@ -947,7 +755,7 @@ M.select_next_pane = function(dir, group)
     end
 
     vim.fn.timer_start(1, function()
-        M.select_pane(_buf(found))
+        M.select_pane(funcs.get_real_buffer(found))
         vim.fn.timer_start(1, function()
             M.update_titles()
         end)
@@ -1011,27 +819,6 @@ M.split = function(dir)
     vim.o.splitbelow = splitbelow
 end
 
-M.position_current_float = function(where)
-    local conf = vim.api.nvim_win_get_config(0)
-    local t = M.get_current_terminal()
-    if not funcs.is_float(t) then
-        EV.error("You can only position a floating window", nil)
-    end
-
-    if where == "top" then
-        conf.row = 0
-    elseif where == "end" then
-        conf.col = fix_coord(vim.o.columns - conf.width, conf.width, vim.o.columns)
-    elseif where == "bottom" then
-        conf.row = fix_coord(vim.o.lines - conf.height, conf.height, vim.o.lines - 1)
-    elseif where == "start" then
-        conf.col = 0
-    end
-    vim.api.nvim_win_set_config(0, conf)
-    refresh_win_config(t)
-    EV.trigger_event('FloatMoved', {t})
-end
-
 M.redraw = function()
     local lines = vim.o.lines
     vim.api.nvim_command('set lines=' .. (lines - 1))
@@ -1063,7 +850,7 @@ M.resize = function(direction)
         down = 'res +5',
     }
     vim.api.nvim_command(args[direction])
-    refresh_win_config(t)
+    M.refresh_win_config(t)
     EV.trigger_event('PaneResized', {t, direction})
 end
 
@@ -1078,7 +865,7 @@ M.disconnect = function()
 end
 
 M.term_by_buf_id = function(id)
-    return funcs.find(function(t) return _buf(t) == 1 * id end, terminals)
+    return funcs.find(function(t) return funcs.get_real_buffer(t) == 1 * id end, terminals)
 end
 
 L.terms_by_tab_id = function(id)
@@ -1320,33 +1107,8 @@ M.rename_tab = function(tab)
     end, true)
 end
 
-M.rename_floating_pane = function(pane)
-    if pane == nil then
-        return
-    end
-    if not funcs.is_float(pane) then
-        EV.error('You can only rename floating panes')
-    end
-    local def = get_float_title(pane)
-    M.user_input({propmt = "Pane new name: ", default = def}, function(result)
-        if result == '' then
-            pane.overriden_title = nil
-            TABS.del_var(tab_id, 'azul_tab_title_overriden')
-        elseif result ~= nil then
-            pane.azul_placeholders = nil
-            pane.overriden_title = result
-        end
-        M.update_titles()
-    end, true)
-end
-
 M.rename_current_tab = function()
     M.rename_tab(vim.fn.tabpagenr())
-end
-
-M.rename_current_pane = function()
-    local buf = vim.fn.bufnr()
-    M.rename_floating_pane(funcs.find(function(t) return _buf(t) == buf end, terminals))
 end
 
 M.edit = function(t, file, on_finish)
@@ -1363,7 +1125,7 @@ M.edit = function(t, file, on_finish)
         vim.api.nvim_win_set_buf(t.win_id, t.buf)
         vim.fn.timer_start(10, function()
             M.resume()
-            refresh_buf(t.buf)
+            M.refresh_buf(t.buf)
             if on_finish ~= nil then
                 on_finish()
             end
@@ -1437,7 +1199,7 @@ end
 local just_close_windows = function(floats)
     M.suspend()
     for _, f in ipairs(floats) do
-        close_win(f.win_id)
+        funcs.safe_close_window(f.win_id)
         f.win_id = nil
     end
     M.resume()
@@ -1453,8 +1215,8 @@ local just_open_windows = function(floats)
 end
 
 M.select_tab = function(n)
-    local hidden = M.are_floats_hidden(funcs.current_float_group())
-    local floats = get_visible_floatings()
+    local hidden = funcs.are_floats_hidden(funcs.current_float_group(), terminals)
+    local floats = funcs.get_visible_floatings(terminals)
     if not hidden then
         just_close_windows(floats)
     end
@@ -1469,7 +1231,7 @@ M.select_tab = function(n)
     if not hidden then
         just_open_windows(floats)
     else
-        select_current_pane(TABS.get_var(0, 'azul_tab_id'))
+        M.select_current_pane(TABS.get_var(0, 'azul_tab_id'))
     end
 end
 
@@ -1488,7 +1250,7 @@ M.create_tab_remote = function()
     M.open_remote()
 end
 
-local do_open_remote = function(force, callback)
+M.do_open_remote = function(force, callback)
     local when_done = function(result)
         remote_command = funcs.remote_command(result)
         if remote_command == nil then
@@ -1516,7 +1278,7 @@ end
 ---@param start_edit boolean If true, then start editing automatically (default true)
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
 M.open_remote = function(force, start_edit, callback)
-    do_open_remote(force, function()
+    M.do_open_remote(force, function()
         M.open(start_edit, nil, callback)
     end)
 end
@@ -1558,19 +1320,8 @@ M.remote_quit = function(t)
     OnTermClose({buf = t.buf})
 end
 
---- Opens a new float
---- @param group string The group in which to open a float
---- @param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
---- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
---- @param to_restore terminals The float terminal to restore (optional)
-M.open_float_remote = function(group, force, opts, to_restore)
-    do_open_remote(force, function()
-        M.open_float(group, opts, to_restore)
-    end)
-end
-
 M.split_remote = function(force, dir)
-    do_open_remote(force, function()
+    M.do_open_remote(force, function()
         M.split(dir)
     end)
 end

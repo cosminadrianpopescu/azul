@@ -118,6 +118,7 @@ to `true`) or of all the tabs.
 **Parameters**:
 
 * group The group for which to check (optional)
+* terminals The list of terminals in which to search
 
 Returns  true if the floats of the given group are shown, or if not if all the
 floats are shown

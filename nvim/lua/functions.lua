@@ -206,8 +206,10 @@ local is_handling_remote = function()
 end
 
 local safe_close_window = function(win_id)
-    local safe, _ = pcall(function() vim.api.nvim_win_close(win_id, true) end)
-    return safe
+    if not vim.api.nvim_win_is_valid(win_id) then
+        return
+    end
+    vim.api.nvim_win_close(win_id, true)
 end
 
 local safe_buf_delete = function(buf_id)
@@ -242,8 +244,7 @@ local deserialize = function(var)
 end
 
 local is_autosave = function()
-    local env = os.getenv('AZUL_NO_AUTOSAVE')
-    return env ~= '1' and (options.autosave == 'always' or options.autosave == 'often')
+    return os.getenv('AZUL_NO_AUTOSAVE') ~= '1' and (options.autosave == 'always' or options.autosave == 'often')
 end
 
 local is_float = function(t)
@@ -269,6 +270,30 @@ end
 
 local term_by_panel_id = function(id, terminals)
     return find(function(t) return t.panel_id == id end, terminals)
+end
+
+local _buf = function(t)
+    return t.editing_buf or t.buf
+end
+
+local get_visible_floatings = function(terminals)
+    return vim.tbl_filter(function(t) return is_float(t) and t.win_id ~= nil end, terminals)
+end
+
+local get_all_floats = function(group, terminals)
+    return vim.tbl_filter(function(t) return is_float(t) and ((group ~= nil and t.group == group) or group == nil) end, terminals)
+end
+
+local are_floats_hidden = function(group, terminals)
+    local floatings = get_all_floats(group, terminals)
+    if #floatings == 0 then
+        return true
+    end
+    return #vim.tbl_filter(function(t) return t.win_id == nil and t.group == (group or 'default') end, floatings) > 0
+end
+
+local get_float_title = function(t)
+    return t.overriden_title or options.float_pane_title
 end
 
 return {
@@ -300,4 +325,8 @@ return {
     is_float = is_float,
     reverse = reverse,
     term_by_panel_id = term_by_panel_id,
+    get_real_buffer = _buf,
+    get_visible_floatings = get_visible_floatings,
+    are_floats_hidden = are_floats_hidden,
+    get_float_title = get_float_title,
 }

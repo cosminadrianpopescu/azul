@@ -30,13 +30,14 @@ local events = {
     CommandSet = {},
     WinIdSet = {},
     AzulConnected = {},
-
     HistoryChanged = {},
     PaneResized = {},
     FloatMoved = {},
     FloatsHistoryChanged = {},
     LayoutRestoringStarted = {},
     UndoFinished = {},
+
+    TerminalAdded = {},
 }
 
 local persistent_events = {}

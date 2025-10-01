@@ -381,7 +381,7 @@ end
 
 EV.persistent_on('ExitAzul', function()
     can_save_layout = false
-    if session_exists() and #core.get_terminals() == 0 then
+    if funcs.is_autosave() and session_exists() and #core.get_terminals() == 0 then
         os.remove(session_save_name())
     end
 end)
