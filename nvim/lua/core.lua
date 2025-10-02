@@ -244,6 +244,7 @@ M.open = function(start_edit, buf, callback)
     local environment = require('environment').get_environment()
     environment['VIM'] = ''
     environment['VIMRUNTIME'] = ''
+    environment['AZUL_PANEL_ID'] = panel_id
     local opts = {
         term = true,
         cdw = vim.fn.getcwd(),

@@ -728,6 +728,11 @@ trigger when the floats panels are hidden.
 
 #### LayoutSaved
 
+**Parameters**:
+
+* `args[1]` The location where the layout has been saved.
+* `args[2]` True if the layout has been saved automatically.
+
 Triggered every time after the current layout has been saved to a file.
 
 #### LayoutRestored

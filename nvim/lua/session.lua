@@ -339,7 +339,7 @@ M.save_layout = function(where, auto)
             lines = vim.o.lines
         }
     }))
-    EV.trigger_event("LayoutSaved", {auto})
+    EV.trigger_event("LayoutSaved", {where, auto})
 end
 
 M.auto_save_layout = function()

@@ -223,6 +223,14 @@ M.open_float_remote = function(group, force, opts, to_restore)
     end)
 end
 
+M.toggle_fullscreen = function(t)
+    if not funcs.is_float(t) then
+        return
+    end
+
+    -- local config = t.
+end
+
 EV.on({'PaneClosed', 'PaneChanged'}, rebuild_zindex_floats)
 
 EV.on('TerminalAdded', function(args)
