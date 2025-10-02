@@ -31,6 +31,7 @@ local dead_terminal = nil
 --- @field tab_id number The tab assigned number (to be used for session restore)
 --- @field azul_win_id string The custom azul windows id
 --- @field win_config table The current neovim window config
+--- @field _win_config table The current neovim window config before a full screen
 --- @field current_selected_pane boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
 --- @field remote_command string The terminal's remote connection
 --- @field group string The float current group, if the terminal is a float

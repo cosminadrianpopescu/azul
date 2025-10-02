@@ -43,7 +43,7 @@ local actions = {
     'tab_select_first', 'tab_select_last', 'tab_select_next', 'tab_select_previous',
     'copy', 'paste', 'rotate_panel',
     'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
-    'show_mode_cheatsheet', 'remote_scroll', 'undo',
+    'show_mode_cheatsheet', 'remote_scroll', 'undo', 'toggle_fullscreen',
 }
 
 local modes = {
@@ -89,6 +89,7 @@ M.default_config = {
                 remote_scroll = '[',
                 paste = 'pp',
                 undo = 'u',
+                toggle_fullscreen = 'F',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -175,6 +176,7 @@ M.default_config = {
                 remote_scroll = '[',
                 paste = 'pp',
                 undo = 'u',
+                toggle_fullscreen = 'F',
             },
             resize = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -258,6 +260,7 @@ M.default_config = {
                 show_mode_cheatsheet = '<C-o>',
                 rename_float = 'r',
                 remote_scroll = '[',
+                toggle_fullscreen = 'F',
             },
             move = {
                 enter_mode = {t =  '<cr>$$$<esc>$$$i'},
@@ -357,6 +360,7 @@ M.default_config = {
                 edit_scrollback_log = '<C-x>ge',
                 remote_scroll = '<C-x>[',
                 undo = '<C-z>',
+                toggle_fullscreen = '<F11>',
             },
         }
     }
@@ -627,6 +631,15 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 require('undo').undo()
             end,
             desc = 'Restores last closed pane',
+            action = action,
+            arg = arg,
+        })
+    elseif action == 'toggle_fullscreen' then
+        map(mode, shortcut, '', {
+            callback = function()
+                require('floats').toggle_fullscreen(require('core').get_current_terminal())
+            end,
+            desc = 'Toggles the fullscreen state',
             action = action,
             arg = arg,
         })

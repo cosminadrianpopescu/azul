@@ -78,6 +78,7 @@ M.remote_state = core.remote_state
 M.persistent_on = EV.persistent_on
 M.single_shot = EV.single_shot
 M.undo = U.undo
+M.toggle_fullscreen = F.toggle_fullscreen
 
 M.select_current_pane = core.select_current_pane
 

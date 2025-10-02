@@ -1,5 +1,6 @@
 local funcs = require('functions')
 local core = require('core')
+local options = require('options')
 local EV = require('events')
 local TABS = require('tab_vars')
 
@@ -224,11 +225,23 @@ M.open_float_remote = function(group, force, opts, to_restore)
 end
 
 M.toggle_fullscreen = function(t)
-    if not funcs.is_float(t) then
+    if not funcs.is_float(t) or t.win_id == nil then
         return
     end
 
-    -- local config = t.
+    if t._win_config ~= nil then
+        t.win_config = t._win_config
+        t._win_config = nil
+    else
+        t._win_config = vim.tbl_deep_extend("force", t.win_config, {})
+        t.win_config.row = 0
+        t.win_config.col = 0
+        t.win_config.width = vim.o.columns
+        t.win_config.height = vim.o.lines - options.cmdheight - 3
+    end
+
+    vim.api.nvim_win_set_config(t.win_id, t.win_config)
+    EV.trigger_event('FullscreenToggled')
 end
 
 EV.on({'PaneClosed', 'PaneChanged'}, rebuild_zindex_floats)

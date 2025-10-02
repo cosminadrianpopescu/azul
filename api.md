@@ -671,6 +671,15 @@ in the configuration, then that command will be executed for the closed pane
 content, restoring also it's content. The running command at the moment of the
 closing (if any) will not be restored.
 
+#### toggle_fullscreen
+
+**Parameters**:
+
+* p The floating pane to toggle full screen
+
+Toggles the indicated pane full screen state. If the selected pane is not a
+float pane, nothing will happen. This function will not throw an error.
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will
@@ -888,6 +897,18 @@ Triggered every time `azul` starts restoring a layout.
 #### UndoFinished
 
 Triggered every time `azul` finished restoring a closed float, tab or split.
+
+#### TerminalAdded
+
+**Parameters**:
+
+`args[1]` The last added terminal
+
+Triggered everytime a new terminal is added to the `azul` list of terminals.
+
+#### FullscreenToggled
+
+Triggered every time after a float has changed it's fullscreen state.
 
 ### Configuring via init.lua
 

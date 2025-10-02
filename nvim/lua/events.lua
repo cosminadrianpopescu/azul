@@ -36,8 +36,9 @@ local events = {
     FloatsHistoryChanged = {},
     LayoutRestoringStarted = {},
     UndoFinished = {},
-
     TerminalAdded = {},
+
+    FullscreenToggled = {},
 }
 
 local persistent_events = {}

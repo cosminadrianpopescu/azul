@@ -131,5 +131,8 @@ return {
         vim.api.nvim_create_user_command('AzulUndo', function()
             require('azul').undo()
         end, {desc = 'Restores the last closed tab, float or split'})
+        vim.api.nvim_create_user_command('AzulToggleFullscreen', function()
+            F.toggle_fullscreen(core.get_current_terminal())
+        end, {desc = 'Toggles the current float full screen'})
     end
 }

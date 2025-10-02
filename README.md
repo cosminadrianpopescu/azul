@@ -614,6 +614,15 @@ Reloads the current configuration
 Edits the current configuration in the currently selected pane (embedded or
 floating)
 
+#### AzulUndo
+
+Reopens the last tab, float or split closed
+
+#### AzulToggleFullscreen
+
+Toggles the currently selected floating pane full screen, or if the pane is
+already full screen, it will toggle it to the original state
+
 ## Configuration
 
 Azul can be configured in several ways. For
@@ -1308,6 +1317,13 @@ session
     + `tmux`: `terminal.undo = u`
     + `zellij`: `tabs.undo = u`
     + `emacs`: `undo = <C-z>`
+
+* **toggle_fullscreen**: Toggles the floating pane full screen state.
+  - defaults:
+    + `azul`: `terminal.toggle_fullscreen = F`
+    + `tmux`: `terminal.toggle_fullscreen = F`
+    + `zellij`: `pane.toggle_fullscreen = F`
+    + `emacs`: `toggle_fullscreen = <F11>`
 
 ## Environment
 
