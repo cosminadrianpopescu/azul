@@ -85,8 +85,6 @@ Hides the floats if they are displayed
 
 **Parameters**:
 
-* start_edit If true, then starts edit automatically after the terminal is
-  created (default true)
 * buf If set, instead of creating a new tab, a new pane will be opened in the
   current tab or floating window, closing the existing one
 * callback If set, then the callback will be called everytime for a new line
@@ -592,10 +590,6 @@ Creates a new tab with a remote pane inside
   `AZUL_REMOTE_CONNECTION` variable is set
 * start_edit If true, then starts edit automatically after the terminal is
   created (default true)
-* callback If set, then the callback will be called everytime for a new line
-  in the terminal. Use it with caution, since it will accumulate memory until
-  the current terminal is closed. If you set this on a currently long running
-  shell, you might experience high memory consumption.
 
 #### remote_reconnect
 

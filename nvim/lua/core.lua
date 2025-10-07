@@ -227,64 +227,59 @@ end
 
 --- Opens a new terminal in the current window
 ---
----@param start_edit boolean If true, then start editing automatically (default true)
 ---@param buf number The buffer in which to open the terminal
+---@param cwd string The current working directoty
+---@param env table Key, pair values of envinronment variables
 ---@param callback function If set, then the callback will be called everytime for a new line in the terminal
-M.open = function(start_edit, buf, callback)
+M.open = function(buf, cwd, env, callback)
     if M.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and buf == nil then
-        L.open_params = {start_edit, buf, callback}
         vim.api.nvim_command('$tabnew')
-        return
+        buf = vim.fn.bufnr('%')
+        -- vim.bo.hidden = true
+        -- vim.api.nvim_set_option_value('hidden', true, {buf = buf, scope = 'local'})
     end
-    if L.open_params ~= nil then
-        start_edit = L.open_params[1]
-        buf = L.open_params[2]
-        callback = L.open_params[3]
-        L.open_params = nil
-    end
-    local environment = require('environment').get_environment()
-    environment['VIM'] = ''
-    environment['VIMRUNTIME'] = ''
-    environment['AZUL_PANEL_ID'] = panel_id
-    local opts = {
-        term = true,
-        cdw = vim.fn.getcwd(),
-        env = environment,
-    }
+    vim.fn.timer_start(1, function()
+        local environment = require('environment').get_environment()
+        environment['VIM'] = ''
+        environment['VIMRUNTIME'] = ''
+        environment['AZUL_PANEL_ID'] = panel_id
+        local opts = {
+            term = true,
+            cdw = vim.fn.getcwd(),
+            env = environment,
+        }
 
-    if callback ~= nil then
-        opts['on_stdout'] = function(chan, data, _)
-            on_chan_input(callback, 'out', chan, data)
-        end
-        opts['on_stderr'] = function(chan, data, _)
-            on_chan_input(callback, 'err', chan, data)
-        end
-    end
-
-    local do_open = function()
-        local cmd = (remote_command == nil and {vim.o.shell}) or remote_command
-        if not is_started and remote_command == nil then
-            local safe, _ = pcall(function()
-                vim.fn.jobstart(cmd, opts)
-            end)
-            if not safe then
-                FILES.write_file(os.getenv('AZUL_RUN_DIR') .. '/' .. os.getenv('AZUL_SESSION') .. '-failed', '')
-                vim.api.nvim_command('quit!')
+        if callback ~= nil then
+            opts['on_stdout'] = function(chan, data, _)
+                on_chan_input(callback, 'out', chan, data)
             end
-        else
-            vim.fn.jobstart(cmd, opts)
+            opts['on_stderr'] = function(chan, data, _)
+                on_chan_input(callback, 'err', chan, data)
+            end
         end
-    end
-    to_save_remote_command = remote_command
-    if buf == nil then
-        do_open()
-    else
-        vim.api.nvim_buf_call(buf, do_open)
-    end
-    remote_command = nil
-    if type(start_edit) == 'boolean' and start_edit == false then
-        return
-    end
+
+        local do_open = function()
+            local cmd = (remote_command == nil and {vim.o.shell}) or remote_command
+            if not is_started and remote_command == nil then
+                local safe, _ = pcall(function()
+                    vim.fn.jobstart(cmd, opts)
+                end)
+                if not safe then
+                    FILES.write_file(os.getenv('AZUL_RUN_DIR') .. '/' .. os.getenv('AZUL_SESSION') .. '-failed', '')
+                    vim.api.nvim_command('quit!')
+                end
+            else
+                vim.fn.jobstart(cmd, opts)
+            end
+        end
+        to_save_remote_command = remote_command
+        if buf == nil then
+            do_open()
+        else
+            vim.api.nvim_buf_call(buf, do_open)
+        end
+        remote_command = nil
+    end)
 end
 
 local OnTermClose = function(ev)
@@ -581,7 +576,7 @@ cmd({'TabLeave'}, {
     end
 })
 
-cmd({'WinNew', 'WinEnter'}, {
+cmd({'WinEnter'}, {
     pattern = "*", callback = function(ev)
         if is_suspended or is_user_editing then
             return
@@ -590,10 +585,10 @@ cmd({'WinNew', 'WinEnter'}, {
             ev.buf = vim.fn.bufnr('%')
             local buftype = vim.api.nvim_get_option_value('buftype', {buf = ev.buf})
             local filetype = vim.api.nvim_get_option_value('filetype', {buf = ev.buf})
-            if current_win_has_no_pane() then
-                M.open(false)
-            end
-            if ev.event == 'WinEnter' and (buftype == 'terminal' or filetype == 'AzulRemoteTerm') then
+            -- if current_win_has_no_pane() then
+            --     M.open()
+            -- end
+            if buftype == 'terminal' or filetype == 'AzulRemoteTerm' then
                 OnEnter(ev)
             end
         end)
@@ -814,7 +809,7 @@ M.split = function(dir)
     end
 
     vim.api.nvim_command(cmd)
-    M.open(false)
+    M.open()
     vim.fn.timer_start(1, function()
         M.update_titles()
     end)
@@ -1278,11 +1273,9 @@ end
 --- Opens a new remote terminal in the current window
 ---
 ---@param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
----@param start_edit boolean If true, then start editing automatically (default true)
----@param callback function If set, then the callback will be called everytime for a new line in the terminal
-M.open_remote = function(force, start_edit, callback)
+M.open_remote = function(force)
     M.do_open_remote(force, function()
-        M.open(start_edit, nil, callback)
+        M.open()
     end)
 end
 
@@ -1307,7 +1300,7 @@ M.remote_reconnect = function(t)
         end)
     end
     M.suspend()
-    M.open(true, t.buf)
+    M.open(t.buf)
     M.resume()
     EV.trigger_event('RemoteReconnected', {t})
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')

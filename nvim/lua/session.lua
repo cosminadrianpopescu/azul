@@ -200,7 +200,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
             buf = vim.fn.bufnr('%')
             TABS.set_var(0, 'azul_tab_id', core.get_global_tab_id())
         end
-        core.open(true, buf)
+        core.open(buf)
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)

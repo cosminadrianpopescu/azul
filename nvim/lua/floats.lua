@@ -93,6 +93,7 @@ M.open_float = function(group, opts, to_restore)
         _opts[k] = v
     end
     vim.api.nvim_open_win(buf, true, _opts)
+    core.open(buf)
     vim.fn.timer_start(1, function()
         local opened = core.term_by_buf_id(buf)
         EV.trigger_event('FloatOpened', {opened})
