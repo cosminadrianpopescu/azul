@@ -362,7 +362,7 @@ end
 
 M.start = function()
     if funcs.is_marionette() then
-        core.open()
+        core.open(vim.fn.bufnr('%'))
         return
     end
 
@@ -374,9 +374,9 @@ M.start = function()
     end
 
     if funcs.is_handling_remote() and os.getenv('AZUL_START_REMOTE') == '1' then
-        core.open_remote()
+        core.open_remote(false, vim.fn.bufnr('%'))
     else
-        core.open()
+        core.open(vim.fn.bufnr('%'))
     end
 end
 
