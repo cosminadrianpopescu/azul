@@ -100,7 +100,7 @@ local undo_float = function(rec)
         finish()
     end)
     core.stop_updating_titles()
-    F.open_float(rec.term.group, rec.term.win_config)
+    F.open_float({group = rec.term.group, win_config = rec.term.win_config})
 end
 
 EV.persistent_on('HistoryChanged', function(args)

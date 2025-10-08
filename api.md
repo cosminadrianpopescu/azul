@@ -87,10 +87,15 @@ Hides the floats if they are displayed
 
 * buf If set, instead of creating a new tab, a new pane will be opened in the
   current tab or floating window, closing the existing one
-* callback If set, then the callback will be called everytime for a new line
-  in the terminal. Use it with caution, since it will accumulate memory until
-  the current terminal is closed. If you set this on a currently long running
-  shell, you might experience high memory consumption.
+* opts The options for the new opening terminal (optional):
+  - cwd The current working directory 
+  - env The key/pair list of values to be set as envinronment variables
+  - callback If set, then the callback will be called everytime for a new line
+    in the terminal. Use it with caution, since it will accumulate memory
+    until the current terminal is closed. If you set this on a currently long
+    running shell, you might experience high memory consumption.
+  - remote_command If set, then open the new terminal remotelly, using the
+    connection indicated in the remote_command (see the remote section)
 
 Opens a new pane with a new shell.
 
@@ -124,14 +129,24 @@ floats are shown
 
 **Parameters**:
 
-* group The group for which to open a new float
-* config The win_config to pass (see `vim.api.nvim_win_get_config`)
-* to_restore If the opened float is a restored float from a layout, it
-  contains the float saved in the layout file
+* opts The options for the new opening float pane (optional):
+  - cwd The current working directory 
+  - env The key/pair list of values to be set as envinronment variables
+  - callback If set, then the callback will be called everytime for a new line
+    in the terminal. Use it with caution, since it will accumulate memory
+    until the current terminal is closed. If you set this on a currently long
+    running shell, you might experience high memory consumption.
+  - remote_command If set, then open the new terminal remotelly, using the
+    connection indicated in the remote_command (see the remote section)
+  - group The group for which to open a new float
+  - win_config The win_config to pass (see `vim.api.nvim_win_get_config`)
+  - to_restore If the opened float is a restored float from a layout, it
+    contains the float saved in the layout file
 
-Opens a new floating pane either in the center of the screen (if not config is
-passed) or at the coordonates indicated by config, for the indicated group. If
-the group is missing, then the new float will be visible on all tabs.
+Opens a new floating pane either in the center of the screen (if not
+win_config is passed) or at the coordonates indicated by config, for the
+indicated group. If the group is missing, then the new float will be visible
+on all tabs.
 
 #### toggle_floats
 
@@ -238,6 +253,8 @@ is sent.
 **Parameters**:
 
 * dir The direction in which to split (left, right up or down)
+* remote_command If set, then instead of opening a local terminal, open a
+  remote terminal (see the remote section in the readme file)
 
 Splits the currently selected tab in the direction indicated.
 
@@ -614,12 +631,13 @@ replace the pane content with a dialog to close or reconnect the pane.
 
 **Parameters**:
 
-* group The group for which to open a new float
 * force If true, then ask for a remote connection even if the
   `AZUL_REMOTE_CONNECTION` variable is set
-* config The win_config to pass (see `vim.api.nvim_win_get_config`)
-* to_restore If the opened float is a restored float from a layout, it
-  contains the float saved in the layout file
+* opts The options for the newly opened remote float pane (optional):
+  - group The group for which to open a new float
+  - win_config The win_config to pass (see `vim.api.nvim_win_get_config`)
+  - to_restore If the opened float is a restored float from a layout, it
+    contains the float saved in the layout file
 
 Like `open_float`, but it opens a new floating pane remotely connected
 

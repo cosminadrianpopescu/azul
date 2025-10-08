@@ -226,7 +226,7 @@ local generic_key_handler = function()
         local vim_mode = vim.fn.mode()
         if result == nil and vim_mode == 'n' and (key == 'q' or key == 'r') then
             local t = core.get_current_terminal()
-            if core.remote_state(t) == 'disconnected' then
+            if funcs.remote_state(t) == 'disconnected' then
                 reset()
                 pcall(function()
                     if key == 'q' then

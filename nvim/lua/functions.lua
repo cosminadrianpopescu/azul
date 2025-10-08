@@ -301,6 +301,17 @@ local get_float_title = function(t)
     return t.overriden_title or options.float_pane_title
 end
 
+--- Returns the reomote state of a pane (nil means the pane is not a remote pane). If the pane is remote, it will
+--- return connected or disconnected
+--- @param t terminals The pane to be analyzed
+local remote_state = function(t)
+    if t == nil or t.remote_command == nil then
+        return nil
+    end
+
+    return (t.term_id == nil and 'disconnected') or 'connected'
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
@@ -335,4 +346,5 @@ return {
     are_floats_hidden = are_floats_hidden,
     get_float_title = get_float_title,
     get_all_floats = get_all_floats,
+    remote_state = remote_state,
 }

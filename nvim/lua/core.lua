@@ -15,8 +15,6 @@ local is_started = false
 local updating_titles = true
 local azul_started = false
 local last_access = 0
-local remote_command = nil
-local to_save_remote_command = nil
 local dead_terminal = nil
 
 --- @class terminals
@@ -58,7 +56,7 @@ local current_win_has_no_pane = function()
     if t == nil then
         return vim.b.terminal_job_id == nil
     end
-    return vim.b.terminal_job_id == nil and M.remote_state(t) ~= 'disconnected'
+    return vim.b.terminal_job_id == nil and funcs.remote_state(t) ~= 'disconnected'
 end
 
 local do_exit = function()
@@ -225,13 +223,20 @@ local on_chan_input = function(callback, which, chan_id, data)
     end
 end
 
+--- @class open_options
+--- @field cwd? string The current working directory of the new terminal
+--- @field env? table A list of key/values to represent the environment variables to be set fo the new terminal
+--- @field callback? function If set, then the callback will be called everytime for a new line in the terminal
+--- @field remote_command? string If set, then open the tab remotely by using the command indicated
+
 --- Opens a new terminal in the current window
 ---
 ---@param buf number The buffer in which to open the terminal
----@param cwd string The current working directoty
----@param env table Key, pair values of envinronment variables
----@param callback function If set, then the callback will be called everytime for a new line in the terminal
-M.open = function(buf, cwd, env, callback)
+---@param opts open_options The options for the terminal to open
+M.open = function(buf, opts)
+    if opts == nil then
+        opts = {}
+    end
     local do_on_enter = buf == nil
     local _buf = buf
     if M.term_by_buf_id(vim.fn.bufnr('%')) ~= nil and _buf == nil then
@@ -244,41 +249,39 @@ M.open = function(buf, cwd, env, callback)
     environment['VIM'] = ''
     environment['VIMRUNTIME'] = ''
     environment['AZUL_PANEL_ID'] = panel_id
-    local opts = {
+    local _opts = {
         term = true,
         cdw = vim.fn.getcwd(),
         env = environment,
     }
 
-    if callback ~= nil then
-        opts['on_stdout'] = function(chan, data, _)
-            on_chan_input(callback, 'out', chan, data)
+    if opts.callback ~= nil then
+        _opts['on_stdout'] = function(chan, data, _)
+            on_chan_input(opts.callback, 'out', chan, data)
         end
-        opts['on_stderr'] = function(chan, data, _)
-            on_chan_input(callback, 'err', chan, data)
+        _opts['on_stderr'] = function(chan, data, _)
+            on_chan_input(opts.callback, 'err', chan, data)
         end
     end
 
     local do_open = function()
-        local cmd = (remote_command == nil and {vim.o.shell}) or remote_command
-        if not is_started and remote_command == nil then
+        local cmd = (opts.remote_command == nil and {vim.o.shell}) or opts.remote_command
+        if not is_started and opts.remote_command == nil then
             local safe, _ = pcall(function()
-                vim.fn.jobstart(cmd, opts)
+                vim.fn.jobstart(cmd, _opts)
             end)
             if not safe then
                 FILES.write_file(os.getenv('AZUL_RUN_DIR') .. '/' .. os.getenv('AZUL_SESSION') .. '-failed', '')
                 vim.api.nvim_command('quit!')
             end
         else
-            vim.fn.jobstart(cmd, opts)
+            vim.fn.jobstart(cmd, _opts)
         end
         if do_on_enter then
             OnEnter({buf = _buf})
         end
     end
-    to_save_remote_command = remote_command
     vim.api.nvim_buf_call(_buf, do_open)
-    remote_command = nil
 end
 
 local OnTermClose = function(ev)
@@ -296,6 +299,7 @@ local OnTermClose = function(ev)
         end)
         return
     end
+    funcs.log("ADD CLOSE TO HISTORY")
     H.add_to_history(M.term_by_buf_id(ev.buf), "close", nil, t.tab_id)
     remove_term_buf(ev.buf)
     if #terminals == 0 then
@@ -507,9 +511,6 @@ cmd('TermOpen',{
             cwd = vim.fn.getcwd(),
             azul_win_id = azul_win_id,
         }
-        if to_save_remote_command ~= nil then
-            new_terminal.remote_command = to_save_remote_command
-        end
         table.insert(terminals, new_terminal)
         EV.trigger_event('TerminalAdded', {new_terminal})
         OnEnter(ev)
@@ -600,7 +601,7 @@ cmd({'BufLeave', 'BufEnter'}, {
         if t == nil then
             return
         end
-        if M.remote_state(t) == 'disconnected' then
+        if funcs.remote_state(t) == 'disconnected' then
             EV.trigger_event((ev.event == 'BufLeave' and 'LeaveDisconnectedPane') or 'EnterDisconnectedPane', {t})
         end
     end
@@ -613,7 +614,7 @@ cmd({'ModeChanged'}, {
         end
         local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
         local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
-        if M.remote_state(M.get_current_terminal()) == 'disconnected' then
+        if funcs.remote_state(M.get_current_terminal()) == 'disconnected' then
             -- Block insert or visual mode for a disconnected buffer
             if to == 'i' or to == 'v' then
                 vim.fn.timer_start(1, function()
@@ -626,7 +627,7 @@ cmd({'ModeChanged'}, {
         end
         if to ~= from and mode ~= 'P' then
             local t = M.get_current_terminal()
-            if not is_user_editing and (t == nil or M.remote_state(t) ~= 'disconnected') then
+            if not is_user_editing and (t == nil or funcs.remote_state(t) ~= 'disconnected') then
                 M.enter_mode(to)
             end
         end
@@ -761,7 +762,7 @@ end
 
 M.current_mode = function()
     local t = M.get_current_terminal()
-    if t ~= nil and (mode == 'i' or mode == 'n' or mode == 'a') and M.remote_state(t) == 'disconnected' then
+    if t ~= nil and (mode == 'i' or mode == 'n' or mode == 'a') and funcs.remote_state(t) == 'disconnected' then
         return 't'
     end
     return mode
@@ -784,7 +785,7 @@ M.send_to_current = function(data, escape)
     M.send_to_buf(vim.fn.bufnr(), data, escape)
 end
 
-M.split = function(dir)
+M.split = function(dir, remote_command)
     local t = M.get_current_terminal()
     if funcs.is_float(t) then
         EV.error("You can only split an embeded pane", nil)
@@ -808,7 +809,7 @@ M.split = function(dir)
     end
 
     vim.api.nvim_command(cmd)
-    M.open(vim.fn.bufnr('%'))
+    M.open(vim.fn.bufnr('%'), {remote_command = remote_command})
     vim.fn.timer_start(1, function()
         M.update_titles()
     end)
@@ -1249,11 +1250,14 @@ end
 
 M.do_open_remote = function(force, callback)
     local when_done = function(result)
-        remote_command = funcs.remote_command(result)
+        local remote_command = funcs.remote_command(result)
         if remote_command == nil then
             return
         end
-        callback()
+        EV.single_shot('TerminalAdded', function(args)
+            args[1].remote_command = remote_command
+        end)
+        callback(remote_command)
     end
     if force == true or not funcs.is_handling_remote() then
         M.user_input({prompt = "Please enter a remote connection:"}, function(result)
@@ -1274,8 +1278,8 @@ end
 ---@param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
 ---@param buf number The current buffer number (optional)
 M.open_remote = function(force, buf)
-    M.do_open_remote(force, function()
-        M.open(buf)
+    M.do_open_remote(force, function(cmd)
+        M.open(buf, {remote_command = cmd})
     end)
 end
 
@@ -1291,7 +1295,6 @@ M.remote_reconnect = function(t)
         vim.api.nvim_win_set_buf(t.win_id, t.buf)
     end
     vim.api.nvim_buf_delete(old_buf, {force = true})
-    remote_command = t.remote_command
     if id ~= nil then
         M.suspend()
         vim.fn.jobstop(id)
@@ -1300,7 +1303,7 @@ M.remote_reconnect = function(t)
         end)
     end
     M.suspend()
-    M.open(t.buf)
+    M.open(t.buf, {remote_command = t.remote_command})
     M.resume()
     EV.trigger_event('RemoteReconnected', {t})
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
@@ -1317,24 +1320,13 @@ M.remote_quit = function(t)
 end
 
 M.split_remote = function(force, dir)
-    M.do_open_remote(force, function()
-        M.split(dir)
+    M.do_open_remote(force, function(cmd)
+        M.split(dir, cmd)
     end)
 end
 
 M.remote_enter_scroll_mode = function()
     M.send_to_current('<C-\\><C-n>', true)
-end
-
---- Returns the reomote state of a pane (nil means the pane is not a remote pane). If the pane is remote, it will
---- return connected or disconnected
---- @param t terminals The pane to be analyzed
-M.remote_state = function(t)
-    if t == nil or t.remote_command == nil then
-        return nil
-    end
-
-    return (t.term_id == nil and 'disconnected') or 'connected'
 end
 
 M.stop_updating_titles = function()
@@ -1370,7 +1362,7 @@ M.set_global_azul_win_id = function(id)
 end
 
 M.copy_terminal_properties = function (src, dest, with_ids)
-    local props = {'tab_page', 'win_config', 'azul_placeholders', 'group', 'overriden_title', 'azul_win_id', 'azul_cmd'}
+    local props = {'tab_page', 'win_config', 'azul_placeholders', 'group', 'overriden_title', 'azul_win_id', 'azul_cmd', 'remote_command'}
     if with_ids == true then
         local ids = {'panel_id', 'tab_id'}
         for _, id in ipairs(ids) do

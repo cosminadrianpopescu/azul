@@ -70,14 +70,24 @@ M.show_floats = function(group)
     core.update_titles()
 end
 
+--- @class float_open_options
+--- @field cwd? string The current working directory of the new terminal
+--- @field env? table A list of key/values to represent the environment variables to be set fo the new terminal
+--- @field callback? function If set, then the callback will be called everytime for a new line in the terminal
+--- @field remote_command? string If set, then open the tab remotely by using the command indicated
+--- @field group? string The group in which to open the float
+--- @field to_restore? terminals The float terminal to restore
+--- @field win_config? table The window options
+
 --- Opens a new float
---- @param group string The group in which to open a float
---- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
---- @param to_restore terminals The float terminal to restore (optional)
-M.open_float = function(group, opts, to_restore)
-    current_group = group or funcs.current_float_group()
-    if #funcs.get_all_floats(group, core.get_terminals()) > 0 and funcs.are_floats_hidden(group, core.get_terminals()) then
-        M.show_floats(group)
+--- @param options float_open_options The list of options
+M.open_float = function(options)
+    if options == nil then
+        options = {}
+    end
+    current_group = options.group or funcs.current_float_group()
+    if #funcs.get_all_floats(options.group, core.get_terminals()) > 0 and funcs.are_floats_hidden(options.group, core.get_terminals()) then
+        M.show_floats(options.group)
     end
     local buf = vim.api.nvim_create_buf(true, false)
     local factor = 4
@@ -89,7 +99,7 @@ M.open_float = function(group, opts, to_restore)
         width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
         focusable = true, zindex = 1, border = 'rounded', title = '...', relative = 'editor', style = 'minimal'
     }
-    for k, v in pairs(opts or {}) do
+    for k, v in pairs(options.win_config or {}) do
         _opts[k] = v
     end
     vim.api.nvim_open_win(buf, true, _opts)
@@ -97,9 +107,9 @@ M.open_float = function(group, opts, to_restore)
     vim.fn.timer_start(1, function()
         local opened = core.term_by_buf_id(buf)
         EV.trigger_event('FloatOpened', {opened})
-        if to_restore ~= nil then
-            opened.azul_placeholders = to_restore.azul_placeholders or {}
-            opened.overriden_title = to_restore.overriden_title
+        if options.to_restore ~= nil then
+            opened.azul_placeholders = options.to_restore.azul_placeholders or {}
+            opened.overriden_title = options.to_restore.overriden_title
         end
         core.update_titles()
     end)
@@ -215,13 +225,14 @@ M.rename_current_pane = function()
 end
 
 --- Opens a new float
---- @param group string The group in which to open a float
 --- @param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
---- @param opts table the options of the new window (@ses vim.api.nvim_open_win)
---- @param to_restore terminals The float terminal to restore (optional)
-M.open_float_remote = function(group, force, opts, to_restore)
-    core.do_open_remote(force, function()
-        M.open_float(group, opts, to_restore)
+--- @param options float_open_options The list of options for opening a float
+M.open_float_remote = function(force, options)
+    if options == nil then
+        options = {}
+    end
+    core.do_open_remote(force, function(cmd)
+        M.open_float({group = options.group, win_config = options.win_config, to_restore = options.to_restore, remote_command = cmd})
     end)
 end
 

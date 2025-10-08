@@ -3,6 +3,8 @@ local funcs = require('functions')
 local core = require('core')
 local EV = require('events')
 
+local M = {}
+
 local get_disconnected_content = function(t)
     local content = {
         "This buffer is connected remotely to ",
@@ -44,7 +46,7 @@ end
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
     pattern = "*", callback = function(ev)
         local t = funcs.find(function(t) return (t.win_id or '') .. '' == ev.file end, core.get_terminals())
-        if t == nil or t.remote_command == nil or core.remote_state(t) ~= 'disconnected' or t.win_id == nil then
+        if t == nil or t.remote_command == nil or funcs.remote_state(t) ~= 'disconnected' or t.win_id == nil then
             return
         end
         t.win_config = vim.api.nvim_win_get_config(t.win_id)
@@ -86,3 +88,14 @@ end
 EV.persistent_on('RemoteDisconnected', function(args)
     remote_disconnected(args[1])
 end)
+
+EV.persistent_on('TerminalAdded', function(args)
+    local t = args[1]
+    local info = vim.api.nvim_get_chan_info(t.term_id)
+    if #info.argv <= 1 then
+        return
+    end
+    t.remote_command = info.argv[#info.argv]
+end)
+
+return M

@@ -157,7 +157,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     local f = histories.floats[idx]
 
     core.set_global_panel_id(f.panel_id)
-    F.open_float(f.group, f.win_config, f)
+    F.open_float({group = f.group, win_config = f.win_config, to_restore = f})
 
     L.restore_floats(histories, idx + 1, f.panel_id, 0)
 end

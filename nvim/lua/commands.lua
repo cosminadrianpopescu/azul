@@ -35,7 +35,7 @@ return {
         end, {desc = 'Show floats'})
 
         vim.api.nvim_create_user_command('AzulOpenFloat', function()
-            F.open_float(funcs.current_float_group())
+            F.open_float({group = funcs.current_float_group()})
         end, {desc = 'Creates a new float'})
 
         vim.api.nvim_create_user_command('AzulToggleFloats', function()
