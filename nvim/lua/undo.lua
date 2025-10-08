@@ -69,6 +69,7 @@ local undo_tab = function(rec)
     else
         vim.api.nvim_command('0tabnew')
     end
+    core.open(vim.fn.bufnr('%'))
 end
 
 local undo_split = function(rec)
@@ -104,7 +105,7 @@ end
 
 EV.persistent_on('HistoryChanged', function(args)
     local el = args[1]
-    if el.operation ~= 'close' or not record_undo then
+    if el.operation ~= 'close' or not record_undo or #core.get_terminals() <= 1 then
         return
     end
     local t = core.term_by_buf_id(el.buf)

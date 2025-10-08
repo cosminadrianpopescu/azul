@@ -808,7 +808,7 @@ M.split = function(dir)
     end
 
     vim.api.nvim_command(cmd)
-    M.open()
+    M.open(vim.fn.bufnr('%'))
     vim.fn.timer_start(1, function()
         M.update_titles()
     end)
@@ -1370,9 +1370,9 @@ M.set_global_azul_win_id = function(id)
 end
 
 M.copy_terminal_properties = function (src, dest, with_ids)
-    local props = {'tab_page', 'win_config', 'azul_placeholders', 'group', 'overriden_title'}
+    local props = {'tab_page', 'win_config', 'azul_placeholders', 'group', 'overriden_title', 'azul_win_id', 'azul_cmd'}
     if with_ids == true then
-        local ids = {'azul_win_id', 'panel_id', 'tab_id'}
+        local ids = {'panel_id', 'tab_id'}
         for _, id in ipairs(ids) do
             table.insert(props, id)
         end

@@ -354,7 +354,7 @@ M.auto_restore_layout = function()
     if FILES.exists(session_save_name() .. '.lua') then
         callback = FILES.load_as_module(os.getenv('AZUL_SESSION') .. session_extension, sessions_folder())
     end
-    core.open()
+    core.open(vim.fn.bufnr('%'))
     vim.defer_fn(function()
         M.restore_layout(session_save_name(), callback)
     end, 1)
