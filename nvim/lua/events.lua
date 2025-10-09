@@ -37,8 +37,9 @@ local events = {
     LayoutRestoringStarted = {},
     UndoFinished = {},
     TerminalAdded = {},
-
     FullscreenToggled = {},
+
+    DirectoryChanged = {},
 }
 
 local persistent_events = {}

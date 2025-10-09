@@ -234,6 +234,7 @@ end
 ---@param buf number The buffer in which to open the terminal
 ---@param opts open_options The options for the terminal to open
 M.open = function(buf, opts)
+    local current = M.get_current_terminal()
     if opts == nil then
         opts = {}
     end
@@ -249,9 +250,11 @@ M.open = function(buf, opts)
     environment['VIM'] = ''
     environment['VIMRUNTIME'] = ''
     environment['AZUL_PANEL_ID'] = panel_id
+    local cwd = opts.cwd or (current ~= nil and current.cwd) or vim.fn.getcwd()
+    vim.fn.chdir(cwd)
     local _opts = {
         term = true,
-        cdw = vim.fn.getcwd(),
+        cdw = cwd,
         env = environment,
     }
 
@@ -299,7 +302,6 @@ local OnTermClose = function(ev)
         end)
         return
     end
-    funcs.log("ADD CLOSE TO HISTORY")
     H.add_to_history(M.term_by_buf_id(ev.buf), "close", nil, t.tab_id)
     remove_term_buf(ev.buf)
     if #terminals == 0 then
@@ -400,6 +402,7 @@ local get_default_placeholders = function(t)
         azul_win_id = azul_win_id,
         azul_cmd = azul_cmd,
         azul_cmd_or_win_id = (azul_cmd ~= '' and azul_cmd ~= nil and azul_cmd) or azul_win_id,
+        cwd = (t and t.cwd),
     }
 end
 
@@ -508,7 +511,6 @@ cmd('TermOpen',{
             term_id = vim.b.terminal_job_id,
             tab_id = TABS.get_var(0, 'azul_tab_id'),
             panel_id = panel_id,
-            cwd = vim.fn.getcwd(),
             azul_win_id = azul_win_id,
         }
         table.insert(terminals, new_terminal)
@@ -1244,10 +1246,6 @@ M.create_tab = function()
     end)
 end
 
-M.create_tab_remote = function()
-    M.open_remote()
-end
-
 M.do_open_remote = function(force, callback)
     local when_done = function(result)
         local remote_command = funcs.remote_command(result)
@@ -1271,16 +1269,6 @@ M.do_open_remote = function(force, callback)
     end
 
     when_done(os.getenv('AZUL_REMOTE_CONNECTION'))
-end
-
---- Opens a new remote terminal in the current window
----
----@param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
----@param buf number The current buffer number (optional)
-M.open_remote = function(force, buf)
-    M.do_open_remote(force, function(cmd)
-        M.open(buf, {remote_command = cmd})
-    end)
 end
 
 M.remote_reconnect = function(t)
@@ -1317,12 +1305,6 @@ M.remote_quit = function(t)
         vim.fn.jobstop(funcs.safe_get_buf_var(t.buf, 'terminal_job_id'))
     end
     OnTermClose({buf = t.buf})
-end
-
-M.split_remote = function(force, dir)
-    M.do_open_remote(force, function(cmd)
-        M.split(dir, cmd)
-    end)
 end
 
 M.remote_enter_scroll_mode = function()
@@ -1375,6 +1357,21 @@ M.copy_terminal_properties = function (src, dest, with_ids)
     end
 end
 
+M.cd = function(new_cwd, t)
+    local _t = t or M.get_current_terminal()
+    local when_done = function(dir)
+        _t.cwd = dir
+        M.update_titles(function()
+            EV.trigger_event('DirectoryChanged', {dir, _t})
+        end)
+    end
+    if new_cwd == nil then
+        M.get_file(when_done)
+    else
+        when_done(new_cwd)
+    end
+end
+
 EV.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
     is_started = true
 end)
@@ -1391,6 +1388,11 @@ end)
 
 EV.persistent_on('Error', function()
     M.resume()
+end)
+
+EV.persistent_on('TerminalAdded', function(args)
+    local t = args[1]
+    t.cwd = vim.fn.getcwd()
 end)
 
 return M

@@ -692,6 +692,17 @@ closing (if any) will not be restored.
 Toggles the indicated pane full screen state. If the selected pane is not a
 float pane, nothing will happen. This function will not throw an error.
 
+#### cd
+
+**Parameters**:
+
+* new_cd The new directory location
+* p The pane for which to change the current directory [optional]
+
+Changes the current working directory of a pane (tab, split or float). If the
+pane is not specified, then the current working directory of the current pane
+is changed.
+
 ### Events
 
 Azul triggers some custom events (not `vim` events). Some of the events will
@@ -921,6 +932,15 @@ Triggered everytime a new terminal is added to the `azul` list of terminals.
 #### FullscreenToggled
 
 Triggered every time after a float has changed it's fullscreen state.
+
+#### DirectoryChanged
+
+**Parameters**:
+
+`args[1]` The newly set directory
+`args[2]` The pane for which the directory has been changed
+
+Triggered every time after the directory is changed for any pane.
 
 ### Configuring via init.lua
 

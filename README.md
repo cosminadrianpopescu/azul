@@ -623,6 +623,14 @@ Reopens the last tab, float or split closed
 Toggles the currently selected floating pane full screen, or if the pane is
 already full screen, it will toggle it to the original state
 
+#### AzulCd
+
+Changed the directory of the current pane to the indicated new directory
+
+**Parameters**:
+
+* the new directory
+
 ## Configuration
 
 Azul can be configured in several ways. For
@@ -766,9 +774,10 @@ without asking for user input:
   `:AzulSetWinId` command of the currently selected embedded pane in the tab
 * **:azul_cmd:** will be replaced by the custom command given using
   `:AzulSetCmd` command of the currently selected embedded pane in the tab
-* **:azul_cmd_or_win_id** will be replaced with the custom command given by
+* **:azul_cmd_or_win_id:** will be replaced with the custom command given by
   `:AzulSetCmd` if it exists, if not with the window id set by `:AzulSetWinId`
   or with the automatic default `azul_win_id` set by azul.
+* **:cwd:** will be replaced with the working directory of the current pane.
 
 ### Shortcuts
 

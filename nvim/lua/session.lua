@@ -5,6 +5,7 @@ local F = require('floats')
 local H = require('history')
 local EV = require('events')
 local TABS = require('tab_vars')
+local R = require('remote')
 local options = require('options')
 
 local M = {}
@@ -26,7 +27,8 @@ local get_custom_values = function()
         result[t.panel_id .. ""] = {
             azul_win_id = t.azul_win_id,
             azul_cmd = t.azul_cmd or nil,
-            remote_command = t.remote_command
+            remote_command = t.remote_command,
+            cwd = t.cwd,
         }
     end
 
@@ -131,6 +133,15 @@ L.restore_ids = function(title_placeholders, title_overrides)
     vim.fn.timer_start(1, L.restore_remotes)
 end
 
+local get_cwd = function(panel_id, histories)
+    local c = histories.customs[panel_id .. ""]
+    if c == nil then
+        return vim.fn.getcwd()
+    end
+
+    return c.cwd
+end
+
 L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     if timeout > 100 then
         core.stop_updating_titles()
@@ -157,7 +168,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     local f = histories.floats[idx]
 
     core.set_global_panel_id(f.panel_id)
-    F.open_float({group = f.group, win_config = f.win_config, to_restore = f})
+    F.open_float({group = f.group, win_config = f.win_config, to_restore = f, cwd = get_cwd(f.panel_id, histories)})
 
     L.restore_floats(histories, idx + 1, f.panel_id, 0)
 end
@@ -200,7 +211,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
             buf = vim.fn.bufnr('%')
             TABS.set_var(0, 'azul_tab_id', core.get_global_tab_id())
         end
-        core.open(buf)
+        core.open(buf, {cwd = get_cwd(h.to, histories)})
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)
@@ -284,12 +295,14 @@ M.restore_layout = function(where, callback)
     core.stop_updating_titles()
     TABS.del_var(0, 'azul_placeholders')
     local t = core.get_current_terminal()
-    local old_buf = t.buf
-    t.buf = vim.api.nvim_create_buf(true, false)
-    vim.api.nvim_win_set_buf(t.win_id, t.buf)
-    vim.fn.jobstop(t.term_id)
-    vim.api.nvim_buf_delete(old_buf, {force = true})
-    core.do_remove_term_buf(t.buf)
+    if t ~= nil then
+        local old_buf = t.buf
+        t.buf = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_win_set_buf(t.win_id, t.buf)
+        vim.fn.jobstop(t.term_id)
+        vim.api.nvim_buf_delete(old_buf, {force = true})
+        core.do_remove_term_buf(t.buf)
+    end
     H.reset_history()
     if h.geometry ~= nil then
         vim.o.columns = h.geometry.columns
@@ -354,7 +367,6 @@ M.auto_restore_layout = function()
     if FILES.exists(session_save_name() .. '.lua') then
         callback = FILES.load_as_module(os.getenv('AZUL_SESSION') .. session_extension, sessions_folder())
     end
-    core.open(vim.fn.bufnr('%'))
     vim.defer_fn(function()
         M.restore_layout(session_save_name(), callback)
     end, 1)
@@ -374,7 +386,7 @@ M.start = function()
     end
 
     if funcs.is_handling_remote() and os.getenv('AZUL_START_REMOTE') == '1' then
-        core.open_remote(false, vim.fn.bufnr('%'))
+        R.open_remote(false, vim.fn.bufnr('%'))
     else
         core.open(vim.fn.bufnr('%'))
     end

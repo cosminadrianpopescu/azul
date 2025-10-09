@@ -2,6 +2,7 @@ local cmd = vim.api.nvim_create_autocmd
 local funcs = require('functions')
 local core = require('core')
 local EV = require('events')
+local F = require('floats')
 
 local M = {}
 
@@ -83,6 +84,63 @@ local remote_disconnected = function(t)
     --         core.remote_quit(t)
     --     end
     -- })
+end
+
+local parse_remote_connection = function(force, callback)
+    local when_done = function(result)
+        local remote_command = funcs.remote_command(result)
+        if remote_command == nil then
+            return
+        end
+        EV.single_shot('TerminalAdded', function(args)
+            args[1].remote_command = remote_command
+        end)
+        callback(remote_command)
+    end
+    if force == true or not funcs.is_handling_remote() then
+        core.user_input({prompt = "Please enter a remote connection:"}, function(result)
+            if result == nil or result == '' then
+                return
+            end
+            when_done(result)
+        end)
+
+        return
+    end
+
+    when_done(os.getenv('AZUL_REMOTE_CONNECTION'))
+end
+
+--- Opens a new float
+--- @param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
+--- @param options float_open_options The list of options for opening a float
+M.open_float_remote = function(force, options)
+    if options == nil then
+        options = {}
+    end
+    parse_remote_connection(force, function(cmd)
+        F.open_float({group = options.group, win_config = options.win_config, to_restore = options.to_restore, remote_command = cmd})
+    end)
+end
+
+M.split_remote = function(force, dir)
+    parse_remote_connection(force, function(cmd)
+        core.split(dir, cmd)
+    end)
+end
+
+--- Opens a new remote terminal in the current window
+---
+---@param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
+---@param buf number The current buffer number (optional)
+M.open_remote = function(force, buf)
+    parse_remote_connection(force, function(cmd)
+        core.open(buf, {remote_command = cmd})
+    end)
+end
+
+M.create_tab_remote = function()
+    M.open_remote()
 end
 
 EV.persistent_on('RemoteDisconnected', function(args)

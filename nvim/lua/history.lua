@@ -41,7 +41,9 @@ M.get_history = function()
 end
 
 M.debug = function()
-    funcs.log("HISTORY IS " .. vim.inspect(history))
+    vim.fn.timer_start(1, function()
+        funcs.log("HISTORY IS " .. vim.inspect(history))
+    end)
 end
 
 return M

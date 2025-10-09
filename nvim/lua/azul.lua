@@ -4,6 +4,7 @@ local funcs = require('functions')
 local EV = require('events')
 local U = require('undo')
 local F = require('floats')
+local R = require('remote')
 
 local M = {}
 
@@ -66,13 +67,13 @@ M.get_current_modifier = core.get_current_modifier
 M.is_modifier_mode = core.is_modifier_mode
 M.select_tab = core.select_tab
 M.create_tab = core.create_tab
-M.create_tab_remote = core.create_tab_remote
+M.create_tab_remote = R.create_tab_remote
 M.on_action = EV.on_action
-M.open_remote = core.open_remote
+M.open_remote = R.open_remote
 M.remote_reconnect = core.remote_reconnect
 M.remote_quit = core.remote_quit
-M.open_float_remote = F.open_float_remote
-M.split_remote = core.split_remote
+M.open_float_remote = R.open_float_remote
+M.split_remote = R.split_remote
 M.remote_enter_scroll_mode = core.remote_enter_scroll_mode
 M.remote_state = funcs.remote_state
 M.persistent_on = EV.persistent_on
@@ -80,6 +81,6 @@ M.single_shot = EV.single_shot
 M.undo = U.undo
 M.toggle_fullscreen = F.toggle_fullscreen
 
-M.select_current_pane = core.select_current_pane
+M.cd = core.cd
 
 return M

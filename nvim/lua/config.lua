@@ -8,6 +8,7 @@ local tabs = 0
 local options = require('options')
 local env = require('environment')
 local F = require('floats')
+local R = require('remote')
 
 M.ini_shortcuts = {}
 
@@ -392,7 +393,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 if funcs.is_handling_remote() then
-                    core.create_tab_remote()
+                    R.create_tab_remote()
                 else
                     core.create_tab()
                 end
@@ -457,7 +458,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 if funcs.is_handling_remote() then
-                    F.open_float_remote()
+                    R.open_float_remote()
                 else
                     F.open_float()
                 end
@@ -508,7 +509,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         map(mode, shortcut, '', {
             callback = function()
                 if funcs.is_handling_remote() then
-                    core.split_remote(false, dir)
+                    R.split_remote(false, dir)
                 else
                     core.split(dir)
                 end

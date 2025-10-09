@@ -103,7 +103,7 @@ M.open_float = function(options)
         _opts[k] = v
     end
     vim.api.nvim_open_win(buf, true, _opts)
-    core.open(buf)
+    core.open(buf, options)
     vim.fn.timer_start(1, function()
         local opened = core.term_by_buf_id(buf)
         EV.trigger_event('FloatOpened', {opened})
@@ -222,18 +222,6 @@ end
 M.rename_current_pane = function()
     local buf = vim.fn.bufnr()
     M.rename_floating_pane(funcs.find(function(t) return funcs.get_real_buffer(t) == buf end, core.get_terminals()))
-end
-
---- Opens a new float
---- @param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
---- @param options float_open_options The list of options for opening a float
-M.open_float_remote = function(force, options)
-    if options == nil then
-        options = {}
-    end
-    core.do_open_remote(force, function(cmd)
-        M.open_float({group = options.group, win_config = options.win_config, to_restore = options.to_restore, remote_command = cmd})
-    end)
 end
 
 M.toggle_fullscreen = function(t)

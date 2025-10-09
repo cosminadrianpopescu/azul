@@ -134,5 +134,8 @@ return {
         vim.api.nvim_create_user_command('AzulToggleFullscreen', function()
             F.toggle_fullscreen(core.get_current_terminal())
         end, {desc = 'Toggles the current float full screen'})
+        vim.api.nvim_create_user_command('AzulCd', function(opts)
+            core.cd(opts.fargs[1])
+        end, {desc = 'Changes the current directory of the current pane', complete = "dir", nargs = '?'})
     end
 }
