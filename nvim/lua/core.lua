@@ -1299,6 +1299,7 @@ M.remote_reconnect = function(t)
 end
 
 M.remote_quit = function(t)
+    t._remote_command = t.remote_command
     t.remote_command = nil
     local term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
     if term_id ~= nil then
