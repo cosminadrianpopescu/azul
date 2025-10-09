@@ -5,6 +5,8 @@ local options = require('options')
 local FILES = require('files')
 local INS = require('insert')
 
+local is_editing = false
+
 local ns_id = vim.api.nvim_create_namespace('VIM_ON_KEY')
 
 local get_mappings_for_mode = function(mode)
@@ -29,7 +31,14 @@ end
 
 local generic_key_handler = function()
     local mode = core.current_mode()
-    local collection = get_mappings_for_mode(mode)
+    local collection = {}
+    local set_collection = function()
+        collection = get_mappings_for_mode(mode)
+        if is_editing then
+            collection = {}
+        end
+    end
+    set_collection()
     local c = ''
     local buffer = ''
     local timer = nil
@@ -48,7 +57,7 @@ local generic_key_handler = function()
     end
 
     local reset = function()
-        collection = get_mappings_for_mode(mode)
+        set_collection()
         buffer = ''
         c = ''
         timer_set = false
@@ -75,6 +84,14 @@ local generic_key_handler = function()
             end
             collection = get_mappings_for_mode(mode)
         end)
+    end)
+
+    EV.persistent_on('UserInputPrompt', function()
+        is_editing = true
+    end)
+
+    EV.persistent_on({'UserInput', 'Error'}, function()
+        is_editing = false
     end)
 
     local run_map = function(map)
