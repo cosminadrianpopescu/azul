@@ -406,6 +406,74 @@ local get_default_placeholders = function(t)
     }
 end
 
+local update_title_for_tabs = function(i, tab_pages, when_finished, me)
+    if i > #tab_pages then
+        when_finished()
+        return
+    end
+    local current_tab_page = vim.fn.tabpagenr()
+    local t = tab_pages[i]
+    local tab_placeholders = TABS.get_var(t, 'azul_placeholders')
+    local current_pane = funcs.find(function(t) return t.tab_page == i and t.current_selected_pane end, M.get_terminals())
+    local default_placeholders = get_default_placeholders(current_pane)
+    local placeholders = vim.tbl_extend(
+        'keep', {
+            tab_n = i, is_current = (i == current_tab_page and '*') or '',
+        },
+        default_placeholders, tab_placeholders or {}
+    )
+    M.parse_custom_title(
+        get_tab_title(t),
+        placeholders,
+        'for tab ' .. i,
+        function(title, placeholders)
+            local trigger = false
+            if TABS.get_var(t, 'azul_tab_title') ~= title then
+                trigger = true
+            end
+            TABS.set_var(t, 'azul_placeholders', placeholders)
+            TABS.set_var(t, 'azul_tab_title', title)
+            if trigger then
+                EV.trigger_event('TabTitleChanged', {t, title})
+            end
+            me(i + 1, tab_pages, when_finished, me)
+        end
+    )
+end
+
+local update_title_for_floats = function(i, floats, when_finished, me)
+    if i > #floats then
+        when_finished()
+        return
+    end
+    local f = floats[i]
+    local float_placeholders = f.azul_placeholders
+    local default_placeholders = get_default_placeholders(f)
+    local placeholders = vim.tbl_extend(
+        'keep', default_placeholders, float_placeholders or {}
+    )
+    M.parse_custom_title(
+        funcs.get_float_title(f),
+        placeholders,
+        'for pane with ' .. placeholders.term_title,
+        function(title, placeholders)
+            local trigger = false
+            if f.win_config.title ~= title then
+                trigger = true
+            end
+            f.azul_placeholders = placeholders
+            f.win_config.title = title
+            if f.win_id ~= nil then
+                vim.api.nvim_win_set_config(f.win_id, f.win_config)
+            end
+            if trigger then
+                EV.trigger_event('FloatTitleChanged', {f})
+            end
+            me(i + 1, floats, when_finished, me)
+        end
+    )
+end
+
 M.update_titles = function(callback)
     if updating_titles or not azul_started then
         return
@@ -419,71 +487,9 @@ M.update_titles = function(callback)
     end
     updating_titles = true
     local floats = funcs.get_visible_floatings(terminals)
-    local titles_to_update = #vim.api.nvim_list_tabpages() + #floats
-    local titles_updated = 0
-    local current_tab_page = vim.fn.tabpagenr()
-    for i, t in ipairs(vim.api.nvim_list_tabpages()) do
-        local tab_placeholders = TABS.get_var(t, 'azul_placeholders')
-        local current_pane = funcs.find(function(t) return t.tab_page == i and t.current_selected_pane end, M.get_terminals())
-        local default_placeholders = get_default_placeholders(current_pane)
-        local placeholders = vim.tbl_extend(
-            'keep', {
-                tab_n = i, is_current = (i == current_tab_page and '*') or '',
-            },
-            default_placeholders, tab_placeholders or {}
-        )
-        M.parse_custom_title(
-            get_tab_title(t),
-            placeholders,
-            'for tab ' .. i,
-            function(title, placeholders)
-                titles_updated = titles_updated + 1
-                if titles_updated >= titles_to_update then
-                    finished()
-                end
-                local trigger = false
-                if TABS.get_var(t, 'azul_tab_title') ~= title then
-                    trigger = true
-                end
-                TABS.set_var(t, 'azul_placeholders', placeholders)
-                TABS.set_var(t, 'azul_tab_title', title)
-                if trigger then
-                    EV.trigger_event('TabTitleChanged', {t, title})
-                end
-            end
-        )
-    end
-
-    for _, f in ipairs(floats) do
-        local float_placeholders = f.azul_placeholders
-        local default_placeholders = get_default_placeholders(f)
-        local placeholders = vim.tbl_extend(
-            'keep', default_placeholders, float_placeholders or {}
-        )
-        M.parse_custom_title(
-            funcs.get_float_title(f),
-            placeholders,
-            'for pane with ' .. placeholders.term_title,
-            function(title, placeholders)
-                titles_updated = titles_updated + 1
-                if titles_updated >= titles_to_update then
-                    finished()
-                end
-                local trigger = false
-                if f.win_config.title ~= title then
-                    trigger = true
-                end
-                f.azul_placeholders = placeholders
-                f.win_config.title = title
-                if f.win_id ~= nil then
-                    vim.api.nvim_win_set_config(f.win_id, f.win_config)
-                end
-                if trigger then
-                    EV.trigger_event('FloatTitleChanged', {f})
-                end
-            end
-        )
-    end
+    update_title_for_tabs(1, vim.api.nvim_list_tabpages(), function()
+        update_title_for_floats(1, floats, finished, update_title_for_floats)
+    end, update_title_for_tabs)
 end
 
 cmd({"VimLeave"},{
