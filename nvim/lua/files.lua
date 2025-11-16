@@ -2,7 +2,7 @@ local M = {}
 local split = require('split')
 
 M.init = function()
-    M.config_dir = vim.env.AZUL_CONFIG_HOME or ((vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/azul')
+    M.config_dir = vim.env.VESPER_CONFIG_HOME or ((vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/vesper')
     vim.o.runtimepath = vim.o.runtimepath .. ',' .. M.config_dir .. '/pack/start/*,' .. M.config_dir .. '/pack/opt/*,' .. M.config_dir
 end
 
@@ -104,7 +104,7 @@ M.load_as_module = function(which, path)
         return nil
     end
 
-    local module_name = '__azul_' .. vim.fn.substitute(which, '\\v\\.', '-', 'g') .. '_lua__'
+    local module_name = '__vesper_' .. vim.fn.substitute(which, '\\v\\.', '-', 'g') .. '_lua__'
     local path = vim.fn.getcwd() .. '/' .. module_name .. '.lua'
     local safe, result = pcall(function()
         M.write_file(path, M.read_file(env_file))

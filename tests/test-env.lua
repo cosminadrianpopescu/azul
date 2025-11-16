@@ -1,5 +1,5 @@
 local uuid = require('uuid').uuid;
-local base_path = '/tmp/azul-' .. uuid
+local base_path = '/tmp/vesper-' .. uuid
 local job = require('plenary.job')
 local funcs = require('functions')
 local options = require('options')
@@ -9,7 +9,7 @@ local core = require('core')
 local sess = require('session')
 local EV = require('events')
 
-vim.g.azul_errors_log = base_path .. "/runtime-errors"
+vim.g.vesper_errors_log = base_path .. "/runtime-errors"
 local TIMEOUT_BETWEEN_KEYS = 150
 
 local file_copy = function(src, dest)
@@ -60,7 +60,7 @@ local extract_chars = function(s)
 end
 local remote_send = function(what)
     job:new({
-        command = base_path .. '/bin/azul',
+        command = base_path .. '/bin/vesper',
         args = {'-a', uuid, '-c', base_path .. '/config', '-s', what},
     }):sync()
 end
@@ -147,7 +147,7 @@ local default_shortcut_mode = function(action)
         return 't'
     end
 
-    if options.workflow == 'tmux' or options.workflow == 'azul' then
+    if options.workflow == 'tmux' or options.workflow == 'vesper' then
         return 'M'
     end
 
@@ -181,7 +181,7 @@ L.action_shortcut = function(action, mode, arg, with_modifier)
         return map.shortcut
     end
 
-    if (options.workflow == 'tmux' or options.workflow == 'azul') and (mode == default_mode or mode == nil) then
+    if (options.workflow == 'tmux' or options.workflow == 'vesper') and (mode == default_mode or mode == nil) then
         return options.modifier .. ' ' .. map.shortcut
     end
 

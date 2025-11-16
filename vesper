@@ -1,0 +1,192 @@
+usage() {
+    echo "Usage: "
+    echo "    vesper [options]"
+    echo ""
+    echo "Options: "
+    echo "    -a <session-name> Attach to an existing session or create it if it does not exists"
+    echo "    -t <session-name> Create a new session if it doesn't exists but don't attach to it"
+    echo "    -l                List the existing sessions"
+    echo "    -m                Start in marionette mode"
+    echo "    -r                If VESPER_REMOTE_CONNECTION var is set, then the first tab will also be remote"
+    echo "    -x                Skip loading the session if a session exists"
+    echo "    -s <cmd>          Send the command to an existing session (only together with -a)"
+    echo "    -c <config-path>  Load the config from the <config-path> location"
+    echo "    -h --help         Displays this help and exists"
+}
+
+export VESPER_RUN_DIR="/tmp/vesper-`id -u`"
+
+is_session_live() {
+    if [ ! -S $VESPER_RUN_DIR/$1 ]
+    then
+        return 0
+    fi
+    if [ "`ss -l | grep \" $VESPER_RUN_DIR/$1 \"`" == "" ]
+    then
+        return 0
+    fi
+    return 1
+}
+
+check_session() {
+    is_session_live $1
+    if [ $? == 0 ]
+    then
+        echo "The session $1 is not active."
+        exit 1
+    fi
+}
+
+list_sessions() {
+    for f in `ls $VESPER_RUN_DIR`
+    do
+        is_session_live $f
+        if [ $? == 1 ]
+        then
+            echo $f
+        fi
+    done
+}
+
+if [ ! -d $VESPER_RUN_DIR ]
+then
+    mkdir $VESPER_RUN_DIR
+fi
+
+export VESPER_CHILD_FILE=""
+
+if [ "$VESPER_SESSION" != "" ]
+then
+    export VESPER_CHILD_FILE=$VESPER_RUN_DIR/$VESPER_SESSION-child
+    echo "" > $VESPER_CHILD_FILE
+    export VESPER_PARENT_SESSION=$VESPER_SESSION
+fi
+
+export VESPER_SESSION=""
+export VESPER_LIST=""
+VESPER_CMD=""
+
+while getopts "a:t:lrxmhs:c:" o
+do
+    case "${o}" in
+        -)
+            case "${OPTARG}" in
+                help)
+                    usage
+                    exit 1
+                    ;;
+            esac;;
+        a)
+            VESPER_SESSION=$OPTARG
+            ;;
+        t)
+            VESPER_SESSION=$OPTARG
+            VESPER_SKIP_CONNECT=1
+            ;;
+        l)
+            list_sessions
+            exit 0
+            ;;
+        s)
+            VESPER_CMD=$OPTARG
+            ;;
+        c)
+            export VESPER_CONFIG_HOME=$OPTARG
+            ;;
+        m)
+            export VESPER_IS_MARIONETTE="1"
+            ;;
+        r)
+            export VESPER_START_REMOTE="1"
+            ;;
+        x)
+            export VESPER_NO_AUTOSAVE="1"
+            ;;
+        h)
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [[ "$VESPER_CMD" != "" && "$VESPER_SESSION" == "" ]]
+then
+    echo ""
+    echo "You have to select a session to send a command"
+    echo ""
+    usage
+    exit 1
+fi
+
+export VESPER_FAILED_FILE="$VESPER_RUN_DIR/$VESPER_SESSION-failed"
+
+if [ -f "$VESPER_FAILED_FILE" ]
+then
+    rm $VESPER_FAILED_FILE
+fi
+
+
+if [[ "$VESPER_CMD" != "" && "$VESPER_SESSION" != "" ]]
+then
+    check_session $VESPER_SESSION
+    $VESPER_NVIM_EXE --remote-send "$VESPER_CMD" --server $VESPER_RUN_DIR/$VESPER_SESSION
+    exit 0
+fi
+
+export NVIM_XDG_CONFIG_HOME=$XDG_CONFIG_HOME
+export XDG_CONFIG_HOME=$VESPER_PREFIX/share/vesper
+export NVIM_XDG_DATA_HOME=$XDG_DATA_HOME
+export XDG_DATA_HOME=$VESPER_PREFIX/share/vesper
+
+CMD="$VESPER_NVIM_EXE -m -n -i $VESPER_PREFIX/share/vesper/shada"
+# if [[ "$VESPER_X" != "" && "$VESPER_Y" != "" ]]
+# then
+#     $VESPER_NVIM_EXE --remote-send "<C-s>n:lua require('vesper').resize($VESPER_X, $VESPER_Y)<cr>i" --server $VESPER_RUN_DIR/$VESPER_SESSION
+#     if [ $VESPER_RESIZE_CONNECT == 1 ]
+#     then
+#         $VESPER_NVIM_EXE --server $VESPER_RUN_DIR/$VESPER_SESSION --remote-ui
+#     fi
+if [ "$VESPER_SESSION" != "" ]
+then
+    is_session_live $VESPER_SESSION
+    if [ $? == 0 ]
+    then
+        if [ -S $VESPER_RUN_DIR/$VESPER_SESSION ]
+        then
+            rm $VESPER_RUN_DIR/$VESPER_SESSION
+        fi
+        setsid $VESPER_NVIM_EXE --listen $VESPER_RUN_DIR/$VESPER_SESSION --headless >/dev/null 2>&1 0< /dev/null &!
+
+    fi
+    if [ "$VESPER_SKIP_CONNECT" == "1" ]
+    then
+        exit 0
+    fi
+
+    sleep 0.2
+    check_file=$VESPER_RUN_DIR/$VESPER_SESSION-session
+    echo $VESPER_SESSION > $check_file
+
+    while [ -e $check_file ]
+    do
+        rm $check_file
+        $VESPER_NVIM_EXE --server $VESPER_RUN_DIR/$VESPER_SESSION --remote-ui
+        check_file=$VESPER_RUN_DIR/$VESPER_SESSION-session
+        if [ -e $check_file ]
+        then
+            export VESPER_SESSION=`cat $check_file`
+        fi
+    done
+    if [ -f "$VESPER_CHILD_FILE" ]
+    then
+        rm $VESPER_CHILD_FILE
+    fi
+
+    if [ -f "$VESPER_FAILED_FILE" ]
+    then
+        echo "There is an issue running vesper. Check your shell setting in the config file. Vesper will exit now"
+    fi
+
+else
+    list_sessions
+fi

@@ -6,7 +6,7 @@ local function wininput(opts, on_confirm, win_opts)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.bo[buf].buftype = "prompt"
     vim.bo[buf].bufhidden = "wipe"
-    vim.bo[buf].filetype = "azul_prompt"
+    vim.bo[buf].filetype = "vesper_prompt"
 
     local prompt = opts.prompt or ""
     local default_text = opts.default or ""

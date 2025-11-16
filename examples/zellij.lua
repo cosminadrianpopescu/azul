@@ -1,8 +1,8 @@
-local azul = require('azul')
-local map = azul.set_key_map
+local vesper = require('vesper')
+local map = vesper.set_key_map
 local cmd = vim.api.nvim_create_autocmd
 
-azul.set_workflow('zellij')
+vesper.set_workflow('zellij')
 
 cmd('TermClose', {
     pattern = "*", callback = function()
@@ -14,7 +14,7 @@ cmd('TermClose', {
 
 map('p', 'c', '', {
     callback = function()
-        azul.open()
+        vesper.open()
     end,
 })
 
@@ -32,7 +32,7 @@ map('p', 'L', '', {
 
 map('p', 'w', '', {
     callback = function()
-        azul.toggle_floats()
+        vesper.toggle_floats()
         vim.api.nvim_command('startinsert')
     end,
 })
@@ -40,16 +40,16 @@ map('p', 'w', '', {
 local enter_mode_mapping = function(key, mode)
     map('t', key, '', {
         callback = function()
-            azul.enter_mode(mode)
+            vesper.enter_mode(mode)
         end
     })
 end
 
 map('p', 'f', '', {
     callback = function()
-        azul.open_float()
+        vesper.open_float()
         vim.fn.timer_start(1, function()
-            azul.enter_mode('t')
+            vesper.enter_mode('t')
             vim.api.nvim_command('startinsert')
         end)
     end,
@@ -63,7 +63,7 @@ enter_mode_mapping('<c-t>', 'T')
 
 map({'r', 'p', 'm', 's', 'T'}, '<esc>', '', {
     callback = function()
-        azul.enter_mode('t')
+        vesper.enter_mode('t')
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('startinsert')
         end)
@@ -78,13 +78,13 @@ local options = {noremap = true}
 map('c', '<C-n>', '<Down>', options)
 map('c', '<C-p>', '<Up>', options)
 map('t', '<c-d>', '', {
-    callback = azul.disconnect,
+    callback = vesper.disconnect,
 })
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {
         callback = function()
-            azul.move_current_float(dir, inc or 5)
+            vesper.move_current_float(dir, inc or 5)
         end,
     })
 end
@@ -101,8 +101,8 @@ local set_tabs_shortcuts = function(key, where)
     map('T', key, '', {
         callback = function()
             if where:match('open') then
-                azul.enter_mode('t')
-                azul.open()
+                vesper.enter_mode('t')
+                vesper.open()
             else
                 vim.api.nvim_command(where)
             end
@@ -111,11 +111,11 @@ local set_tabs_shortcuts = function(key, where)
 end
 
 local set_panel_shortcuts = function(key, dir)
-    set_hjkl_shortcuts(key, dir, 'p', azul.select_next_pane)
+    set_hjkl_shortcuts(key, dir, 'p', vesper.select_next_pane)
 end
 
 local set_split_shortcuts = function(key, dir)
-    set_hjkl_shortcuts(key, dir, 's', azul.split)
+    set_hjkl_shortcuts(key, dir, 's', vesper.split)
 end
 
 local set_resize_shortcuts = function(key, which)
@@ -153,7 +153,7 @@ set_resize_shortcuts('k', 'res -5')
 set_resize_shortcuts('l', 'vert res +5')
 
 map({'a', 't'}, '<a-n>', '', {
-    callback = azul.toggle_nested_mode
+    callback = vesper.toggle_nested_mode
 })
 
 vim.o.mouse = ""
@@ -165,6 +165,6 @@ vim.o.wildmode = "longest,list"
 
 map('p', 'x', '', {
     callback = function()
-        azul.rotate_panel()
+        vesper.rotate_panel()
     end
 })

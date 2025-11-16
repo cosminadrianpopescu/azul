@@ -5,53 +5,53 @@ param(
 
 if ($prefix -eq "" -or $nvimexe -eq "") {
     Write-Host "You have to set the prefix and the nvimexe via -nvimexe and -prefix parameters. "
-    Write-Host "Example: install.ps1 -prefix c:/Users/johndoe/azul -nvimexe c:/Users/johndoe/nvim-qt/nvim-qt.exe"
+    Write-Host "Example: install.ps1 -prefix c:/Users/johndoe/vesper -nvimexe c:/Users/johndoe/nvim-qt/nvim-qt.exe"
 }
 else {
-    if (Test-Path "$prefix\azul.cmd") {
-        Remove-Item "$prefix\azul.cmd"
+    if (Test-Path "$prefix\vesper.cmd") {
+        Remove-Item "$prefix\vesper.cmd"
     }
-    echo "set AZUL_PREFIX=$prefix" | Out-File -FilePath "$prefix\azul.cmd" -Encoding ASCII
-    echo "set AZUL_NVIM_EXE=$nvimexe" | Out-File -FilePath "$prefix\azul.cmd" -Append -Encoding ASCII
-    echo "set HOME=%AZUL_PREFIX%" | Out-File -FilePath "$prefix\azul.cmd" -Append -Encoding ASCII
-    echo "set XDG_CONFIG_HOME=%AZUL_PREFIX%\share\azul" | Out-File -FilePath "$prefix\azul.cmd" -Append -Encoding ASCII
-    echo "set XDG_DATA_HOME=%AZUL_PREFIX%\share\azul" | Out-File -FilePath "$prefix\azul.cmd" -Append -Encoding ASCII
-    echo "" | Out-File -FilePath "$prefix\azul.cmd" -Append -Encoding ASCII
-    echo "%AZUL_NVIM_EXE%" | Out-File -FilePath "$prefix\azul.cmd" -Append -Encoding ASCII
+    echo "set VESPER_PREFIX=$prefix" | Out-File -FilePath "$prefix\vesper.cmd" -Encoding ASCII
+    echo "set VESPER_NVIM_EXE=$nvimexe" | Out-File -FilePath "$prefix\vesper.cmd" -Append -Encoding ASCII
+    echo "set HOME=%VESPER_PREFIX%" | Out-File -FilePath "$prefix\vesper.cmd" -Append -Encoding ASCII
+    echo "set XDG_CONFIG_HOME=%VESPER_PREFIX%\share\vesper" | Out-File -FilePath "$prefix\vesper.cmd" -Append -Encoding ASCII
+    echo "set XDG_DATA_HOME=%VESPER_PREFIX%\share\vesper" | Out-File -FilePath "$prefix\vesper.cmd" -Append -Encoding ASCII
+    echo "" | Out-File -FilePath "$prefix\vesper.cmd" -Append -Encoding ASCII
+    echo "%VESPER_NVIM_EXE%" | Out-File -FilePath "$prefix\vesper.cmd" -Append -Encoding ASCII
 
     if (-not (Test-Path "$prefix\share")) {
         mkdir $prefix\share
-            mkdir $prefix\share\azul
-            mkdir $prefix\share\azul\nvim
+            mkdir $prefix\share\vesper
+            mkdir $prefix\share\vesper\nvim
     }
     if (-not (Test-Path "$prefix\.config")) {
         mkdir $prefix\.config
-        mkdir $prefix\.config\azul
-        mkdir $prefix\.config\azul\lua
-        mkdir $prefix\.config\azul\pack
-        mkdir $prefix\.config\azul\pack\start
-        mkdir $prefix\.config\azul\pack\opt
+        mkdir $prefix\.config\vesper
+        mkdir $prefix\.config\vesper\lua
+        mkdir $prefix\.config\vesper\pack
+        mkdir $prefix\.config\vesper\pack\start
+        mkdir $prefix\.config\vesper\pack\opt
     }
-    xcopy .\nvim $prefix\share\azul\nvim /e /s /h
+    xcopy .\nvim $prefix\share\vesper\nvim /e /s /h
 
-    if (-not (Test-Path "$prefix\.config\azul")) {
-        copy .\examples\lua\*.* $prefix\.config\azul\lua\
-        copy .\examples\azul.init $prefix\.config\azul\config.ini
+    if (-not (Test-Path "$prefix\.config\vesper")) {
+        copy .\examples\lua\*.* $prefix\.config\vesper\lua\
+        copy .\examples\vesper.init $prefix\.config\vesper\config.ini
     }
 
-    if (-not (Test-Path "$prefix\.config\azul\pack\start\lualine.nvim")) {
-        git clone https://github.com/nvim-lualine/lualine.nvim $prefix\.config\azul\pack\start\lualine.nvim
-        cd $prefix\.config\azul\pack\start\lualine.nvim
+    if (-not (Test-Path "$prefix\.config\vesper\pack\start\lualine.nvim")) {
+        git clone https://github.com/nvim-lualine/lualine.nvim $prefix\.config\vesper\pack\start\lualine.nvim
+        cd $prefix\.config\vesper\pack\start\lualine.nvim
         git checkout b431d228b7bbcdaea818bdc3e25b8cdbe861f056
     }
-    if (-not (Test-Path "$prefix\.config\azul\pack\start\plenary.nvim")) {
-        git clone https://github.com/nvim-lua/plenary.nvim $prefix\.config\azul\pack\start\plenary.nvim
-        cd $prefix\.config\azul\pack\start\plenary.nvim
+    if (-not (Test-Path "$prefix\.config\vesper\pack\start\plenary.nvim")) {
+        git clone https://github.com/nvim-lua/plenary.nvim $prefix\.config\vesper\pack\start\plenary.nvim
+        cd $prefix\.config\vesper\pack\start\plenary.nvim
         git checkout 2d9b06177a975543726ce5c73fca176cedbffe9d
     }
-    if (-not (Test-Path "$prefix\.config\azul\pack\start\telescope.nvim")) {
-        git clone https://github.com/nvim-telescope/telescope.nvim $prefix\.config\azul\pack\start\telescope.nvim
-        cd $prefix\.config\azul\pack\start\telescope.nvim
+    if (-not (Test-Path "$prefix\.config\vesper\pack\start\telescope.nvim")) {
+        git clone https://github.com/nvim-telescope/telescope.nvim $prefix\.config\vesper\pack\start\telescope.nvim
+        cd $prefix\.config\vesper\pack\start\telescope.nvim
         git checkout eae0d8fbde590b0eaa2f9481948cd6fd7dd21656 
     }
 }

@@ -1,9 +1,9 @@
 local t = require('test-env')
-local azul = require('azul')
+local vesper = require('vesper')
 local files = require('files')
 
 local assert = function(n)
-    local terms = azul.get_terminals()
+    local terms = vesper.get_terminals()
     t.assert(#terms == n, "There should be " .. n .. " opened tabs")
 end
 

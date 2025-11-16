@@ -1,7 +1,7 @@
 {
-    "name": "azul-test-runner",
+    "name": "vesper-test-runner",
     "version": "0.0.1",
-    "description": "Wrapper to help running the azul tests",
+    "description": "Wrapper to help running the vesper tests",
     "main": "index.js",
     "scripts": {
         "build": "tsc",

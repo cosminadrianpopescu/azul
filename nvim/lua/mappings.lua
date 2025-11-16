@@ -156,11 +156,11 @@ local generic_key_handler = function()
         end
         if funcs.compare_shortcuts(trans, options.modifier)
             and core.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
-            and (options.workflow == 'tmux' or options.workflow == 'azul')
+            and (options.workflow == 'tmux' or options.workflow == 'vesper')
         then
             return process_modifier()
         end
-        -- Do I really want to ignore ':' in case of non azul or modifier mode?!
+        -- Do I really want to ignore ':' in case of non vesper or modifier mode?!
         -- if trans == ':' and core.current_mode() ~= 'a' and core.current_mode() ~= 'M' and not INS.is_editing() then
         --     return ''
         -- end
@@ -283,6 +283,6 @@ core.set_key_map('P', options.passthrough_escape, '', {
     end
 })
 
-EV.persistent_on('AzulStarted', function()
+EV.persistent_on('VesperStarted', function()
     generic_key_handler()
 end)

@@ -108,7 +108,7 @@ M.open_float = function(options)
         local opened = core.term_by_buf_id(buf)
         EV.trigger_event('FloatOpened', {opened})
         if options.to_restore ~= nil then
-            opened.azul_placeholders = options.to_restore.azul_placeholders or {}
+            opened.vesper_placeholders = options.to_restore.vesper_placeholders or {}
             opened.overriden_title = options.to_restore.overriden_title
         end
         core.update_titles()
@@ -210,9 +210,9 @@ M.rename_floating_pane = function(pane)
     core.user_input({propmt = "Pane new name: ", default = def}, function(result)
         if result == '' then
             pane.overriden_title = nil
-            TABS.del_var(core.get_global_tab_id(), 'azul_tab_title_overriden')
+            TABS.del_var(core.get_global_tab_id(), 'vesper_tab_title_overriden')
         elseif result ~= nil then
-            pane.azul_placeholders = nil
+            pane.vesper_placeholders = nil
             pane.overriden_title = result
         end
         core.update_titles()

@@ -22,7 +22,7 @@ sets.select = function(bufnr)
     local entry = require('telescope.actions.state').get_selected_entry()
     actions.close(bufnr)
     if entry.session ~= nil then
-        local f = io.open("/tmp/azul/" .. os.getenv("AZUL_SESSION") .. "-session", "w")
+        local f = io.open("/tmp/vesper/" .. os.getenv("VESPER_SESSION") .. "-session", "w")
         f:write(entry.value)
         f:close()
         for _, s in ipairs(vim.tbl_filter(function(x) return x.buf ~= nil and vim.api.nvim_buf_is_valid(x.buf) end, _sessions)) do
@@ -67,18 +67,18 @@ require('telescope').setup{
     },
 }
 local sessions_list = function(opts)
-    if os.getenv("AZUL_SESSION") == nil then
+    if os.getenv("VESPER_SESSION") == nil then
         return
     end
     core.suspend()
-    local sessions = funcs.run_process_list(os.getenv("AZUL_PREFIX") .. "/bin/azul -l")
+    local sessions = funcs.run_process_list(os.getenv("VESPER_PREFIX") .. "/bin/vesper -l")
     pickers.new(opts, {
         prompt_title = "Sessions",
         cache_picker = false,
         finder = finders.new_table {
             results = sessions,
             entry_maker = function(entry)
-                local valid = entry ~= os.getenv("AZUL_SESSION")
+                local valid = entry ~= os.getenv("VESPER_SESSION")
                 if valid and opts.select_filter ~= nil then
                     valid = opts.select_filter(entry)
                 end
@@ -98,7 +98,7 @@ local sessions_list = function(opts)
             get_command = function(entry, status)
                 entry.buf = vim.api.nvim_win_get_buf(status.preview_win)
                 return {
-                    os.getenv('AZUL_PREFIX') .. '/bin/azul', '-a', entry.value,
+                    os.getenv('VESPER_PREFIX') .. '/bin/vesper', '-a', entry.value,
                 }
             end,
         }),

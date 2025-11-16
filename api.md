@@ -1,4 +1,4 @@
-# Azul API
+# Vesper API
 
 ## Table of contents
 
@@ -10,19 +10,19 @@
 
 ### How it works
 
-`Azul` is developed in `lua`, using as a renderer engine a `neovim` instance.
+`Vesper` is developed in `lua`, using as a renderer engine a `neovim` instance.
 On top of the [neovim terminal
-capabilities](https://neovim.io/doc/user/nvim_terminal_emulator.html), `azul`
+capabilities](https://neovim.io/doc/user/nvim_terminal_emulator.html), `vesper`
 will add a window management system. 
 
-Please note that `azul` is not a `neovim` plugin. `Azul` will launch a neovim
+Please note that `vesper` is not a `neovim` plugin. `Vesper` will launch a neovim
 instance, but that instance is sandboxed. It will not interfere with any
 settings of another `neovim` instance that you might have on your system.
-You can run `~/.local/bin/azul -a my-sesssion`, and then in the current pane
-(or in any `azul` panes for that matter) you can run `nvim`. The neovim
+You can run `~/.local/bin/vesper -a my-sesssion`, and then in the current pane
+(or in any `vesper` panes for that matter) you can run `nvim`. The neovim
 started there will be your local `neovim`, with it's own settings.
 
-Internally, azul uses a structure to identify each terminal running in a
+Internally, vesper uses a structure to identify each terminal running in a
 pane: 
 
 * `is_current` boolean If true, it means that this is the current terminal
@@ -38,30 +38,30 @@ way vim works. In vim, each tab has a window id, like each float window or
 each split. While the buffers can be displayed in a window. But the buffers
 don't have a window id. 
 
-Internally, in `azul`, every time you create a new window, a terminal is
+Internally, in `vesper`, every time you create a new window, a terminal is
 automatically spawned in that window by calling `vim.fn.termopen`.
 
-Because of that, is basically very easy in `azul` to just do `tabnew`, which
+Because of that, is basically very easy in `vesper` to just do `tabnew`, which
 will create a new tab, with a new window id, so a new terminal will be
 launched automatically. 
 
-This is the prefered way in `azul`. 
+This is the prefered way in `vesper`. 
 
 Of course, being vim, nobody stops you to do `:terminal` instead of `:tabnew`.
 But be carefull that this will open another terminal in the same window id.
-(the current one). Internally, in azul, if you call `:lua
-=require('azul').get_terminals()` you'll see that each terminal contains a
+(the current one). Internally, in vesper, if you call `:lua
+=require('vesper').get_terminals()` you'll see that each terminal contains a
 win_id field, which is not an array. This means that a buffer can only be
 displayed in a window. This is why the buffers are not listed if they are not
 displayed in another win_id (either in another tab or in another floating
 window)
 
-Also, you can always call `require('azul').suspend()`, to prevent the azul
+Also, you can always call `require('vesper').suspend()`, to prevent the vesper
 events of being triggered, create your new buffer or what you need to be
-created, then call `require('azul').resume()` and `require('azul').open(true,
+created, then call `require('vesper').resume()` and `require('vesper').open(true,
 true)`. The second parameter of `open` will force the new terminal to be
 opened in the current window instead of creating a new window. If you just
-call `require('azul').open()`, automatically a new tab will be generated.
+call `require('vesper').open()`, automatically a new tab will be generated.
 
 ### API
 
@@ -103,9 +103,9 @@ Opens a new pane with a new shell.
 
 **Parameters**: 
 
-* mode The `azul` mode in which to enter ('p'|'r'|'s'|'m'|'T'|'n'|'t'|'v')
+* mode The `vesper` mode in which to enter ('p'|'r'|'s'|'m'|'T'|'n'|'t'|'v')
 
-Enters a new `azul` mode
+Enters a new `vesper` mode
 
 #### show_floats
 
@@ -223,7 +223,7 @@ Selects the next pane in the indicated direction and for the specified group
 
 #### current_mode
 
-Returns the current `azul` mode.
+Returns the current `vesper` mode.
 
 #### send_to_buf
 
@@ -267,7 +267,7 @@ Splits the currently selected tab in the direction indicated.
 
 Toggle the current session in nested mode. This means that until this function
 is called again, all the keys are passed down to the terminal, to the next
-`azul` session that can catch them.
+`vesper` session that can catch them.
 
 #### position_current_float
 
@@ -287,23 +287,23 @@ Redraws the screen
 
 **Parameters**:
 
-* workflow The worklow to set (azul, tmux, zellij or emacs)
-* modifier The modifier to use (for azul or tmux workflows, default `<C-s>`)
+* workflow The worklow to set (vesper, tmux, zellij or emacs)
+* modifier The modifier to use (for vesper or tmux workflows, default `<C-s>`)
 
 Changes the current workflow.
 
 #### suspend
 
-Suspends all `azul` events. `Azul` is overriding many neovim events. For
+Suspends all `vesper` events. `Vesper` is overriding many neovim events. For
 example, every time a new window is created (`WinNew`), a terminal is being
 opened in that window. If you want to open a windows without having a terminal
-opened in it, then you can call `require('azul').suspend()`. After you finish
-your job, don't forget to call back `resume`. Otherwise `azul` will not work
+opened in it, then you can call `require('vesper').suspend()`. After you finish
+your job, don't forget to call back `resume`. Otherwise `vesper` will not work
 properly.
 
 #### resume
 
-Resumes all `azul` events.
+Resumes all `vesper` events.
 
 #### resize
 
@@ -311,7 +311,7 @@ Resumes all `azul` events.
 
 * direction The direction in which to resize
 
-Resizes an azul pane in the indicated direction. The resize is done
+Resizes a vesper pane in the indicated direction. The resize is done
 automatically by 5 rows or cols.
 
 #### disconnect
@@ -341,21 +341,21 @@ saved.
 You can create a lua script like this:
 
 ```lua
-local azul = require('azul')
-azul.restore_layout('~/azul-layouts/my-layout', function(terminal, azul_id)
-    if azul_id == 'angular' then
-        azul.send_to_buf(terminal.buf, 'cd ~/workspace/angular-project<cr>', true)
-        azul.send_to_buf(terminal.buf, 'npm start serve<cr>', true)
-    elseif azul_id == 'files' then
-        azul.send_to_buf(terminal.buf, 'vifm<cr>', true)
-    elseif azul_id == 'editor' then
-        azul.send_to_buf(terminal.buf, 'cd ~/workspace/angular-project<cr>', true)
-        azul.send_to_buf(terminal.buf, 'nvim', true)
+local vesper = require('vesper')
+vesper.restore_layout('~/vesper-layouts/my-layout', function(terminal, vesper_id)
+    if vesper_id == 'angular' then
+        vesper.send_to_buf(terminal.buf, 'cd ~/workspace/angular-project<cr>', true)
+        vesper.send_to_buf(terminal.buf, 'npm start serve<cr>', true)
+    elseif vesper_id == 'files' then
+        vesper.send_to_buf(terminal.buf, 'vifm<cr>', true)
+    elseif vesper_id == 'editor' then
+        vesper.send_to_buf(terminal.buf, 'cd ~/workspace/angular-project<cr>', true)
+        vesper.send_to_buf(terminal.buf, 'nvim', true)
     end
 end)
 ```
 
-Then, instead of calling `:AzulRestoreLayout`, you can switch to `AZUL` mode
+Then, instead of calling `:VesperRestoreLayout`, you can switch to `VESPER` mode
 and then load the file via a `luafile`, like this (assuming you saved the
 previous script in `~/workspace/angular-session.lua`): 
 
@@ -370,7 +370,7 @@ in your panes.
 
 * id The id to set for the currently selected pane
 
-This will set the `azul` win_id. This win_id is the one that will be passed to
+This will set the `vesper` win_id. This win_id is the one that will be passed to
 the previous script uppon a layout restore.
 
 #### set_tab_variable
@@ -381,7 +381,7 @@ the previous script uppon a layout restore.
 * value The variable value
 
 It sets a `vim` variable for the current tab. See [how it
-works](#how-it-works) to see how the tabs are used by `azul`
+works](#how-it-works) to see how the tabs are used by `vesper`
 
 #### set_cmd
 
@@ -439,12 +439,12 @@ Pastes the content of the `+` register.
 * ev The event name
 * callback The callback to be executed 
 
-It adds an event listener. Azul triggers some events. You can listen to these
+It adds an event listener. Vesper triggers some events. You can listen to these
 events by registering a callback to be called every time one of the events is
 triggered. Some events can have an array of arguments. For example, the
 `ModeChanged` event taks an array with 2 arguments. First one is the old mode
 and the second one is the new mode. See the [events](#events) section for a
-list of all the possible `azul` events.
+list of all the possible `vesper` events.
 
 #### clear_event
 
@@ -458,7 +458,7 @@ associated with the event will be cleared.
 
 #### get_mode_mappings
 
-Returns all the azul mappings
+Returns all the vesper mappings
 
 #### user_input
 
@@ -472,9 +472,9 @@ Gets some user input using `vim.ui.input`. Call this function rather than
 invoking directly `vim.ui.input`. If you are using a library which will
 produce float windows (like
 [snacks.nvim](https://github.com/folke/snacks.nvim)) and you call
-directly `vim.ui.input`, you will break `azul`. This function will call first
-`azul.suspend` to allow the floating window to be created without `azul`
-intervening and then will call `azul.resume()` in the next event loop.
+directly `vim.ui.input`, you will break `vesper`. This function will call first
+`vesper.suspend` to allow the floating window to be created without `vesper`
+intervening and then will call `vesper.resume()` in the next event loop.
 
 #### get_file
 
@@ -501,11 +501,11 @@ Renames the currently selected tab.
 
 **Parameters**:
 
-* t The azul terminal in which to edit
+* t The vesper terminal in which to edit
 * file The file to edit
 * on_finish Callback to be called when the editing is finished (optional)
 
-Edit a file inside the azul `t` terminal window using the editor set in the
+Edit a file inside the vesper `t` terminal window using the editor set in the
 `$EDITOR` variable. When the editing is finished (the editor is closed), the
 terminal output is restored and the callback `on_finish` is called (if passed
 in the initial call)
@@ -514,18 +514,18 @@ in the initial call)
 
 **Parameters**:
 
-* t The azul terminal for which to edit the current scrollback
+* t The vesper terminal for which to edit the current scrollback
 
-Edits the current terminal buffer of the azul terminal `t`.
+Edits the current terminal buffer of the vesper terminal `t`.
 
 #### edit_scrollback_log
 
 **Parameters**:
 
-* t The azul terminal for which to edit the scrollback log
+* t The vesper terminal for which to edit the scrollback log
 
-Edits the scrollback buffer log for the azul terminal `t`. If the logging is
-not started for the given terminal (by calling `AzulStartLogging`), an error
+Edits the scrollback buffer log for the vesper terminal `t`. If the logging is
+not started for the given terminal (by calling `VesperStartLogging`), an error
 message is thrown.
 
 #### edit_current_scrollback
@@ -535,12 +535,12 @@ Edits the scrollback buffer of the current terminal.
 #### edit_current_scrollback_log
 
 Edits the scrollback buffer log of the current terminal. If the logging is not
-started for the current terminal (by calling `AzulStartLogging`), an error
+started for the current terminal (by calling `VesperStartLogging`), an error
 message is thrown.
 
 #### get_current_modifier
 
-Returns the current modifier (for `tmux` or `azul` workflows)
+Returns the current modifier (for `tmux` or `vesper` workflows)
 
 #### is_modifier_mode
 
@@ -549,7 +549,7 @@ Returns the current modifier (for `tmux` or `azul` workflows)
 * m The mode to check
 
 Returns true if the indicated mode is a mode that requires a modifier (`n` for
-`tmux` workflow or `t` for `azul`). It will return false for all the other
+`tmux` workflow or `t` for `vesper`). It will return false for all the other
 modes and workflows.
 
 #### on_action
@@ -565,7 +565,7 @@ See all the possible actions in the main page.
 #### persistent_on
 
 Just as `on`, but the callback will not be removed by clear functions. The
-callback will be called for all the duration of the azul session.
+callback will be called for all the duration of the vesper session.
 
 #### rename_floating_pane
 
@@ -604,7 +604,7 @@ Creates a new tab with a remote pane inside
 **Parameters**:
 
 * force If true, then ask for a remote connection even if the
-  `AZUL_REMOTE_CONNECTION` variable is set
+  `VESPER_REMOTE_CONNECTION` variable is set
 * start_edit If true, then starts edit automatically after the terminal is
   created (default true)
 
@@ -632,7 +632,7 @@ replace the pane content with a dialog to close or reconnect the pane.
 **Parameters**:
 
 * force If true, then ask for a remote connection even if the
-  `AZUL_REMOTE_CONNECTION` variable is set
+  `VESPER_REMOTE_CONNECTION` variable is set
 * opts The options for the newly opened remote float pane (optional):
   - group The group for which to open a new float
   - win_config The win_config to pass (see `vim.api.nvim_win_get_config`)
@@ -646,7 +646,7 @@ Like `open_float`, but it opens a new floating pane remotely connected
 **Parameters**:
 
 * force If true, then ask for a remote connection even if the
-  `AZUL_REMOTE_CONNECTION` variable is set
+  `VESPER_REMOTE_CONNECTION` variable is set
 * dir The direction in which to split (left, right up or down)
 
 Like `split`, but splits in the given direction with a pane connected
@@ -705,7 +705,7 @@ is changed.
 
 ### Events
 
-Azul triggers some custom events (not `vim` events). Some of the events will
+Vesper triggers some custom events (not `vim` events). Some of the events will
 also have an array of arguments.
 
 #### FloatHidden
@@ -719,7 +719,7 @@ Triggered everytime a float is hidden.
 * `args[1]` The old mode
 * `args[2]` The new mode
 
-Triggered every time the `azul` mode changes.
+Triggered every time the `vesper` mode changes.
 
 #### FloatsVisible
 
@@ -747,7 +747,7 @@ Triggered every time the current selected pane is changed (float or embedded)
 
 * `args[1]` The thrown error
 
-Triggered every time `azul` throws a handled error
+Triggered every time `vesper` throws a handled error
 
 #### PaneClosed
 
@@ -783,9 +783,9 @@ Triggered every time the window configuration changes for a given terminal.
 
 Triggered every time the tab titles are updated.
 
-#### AzulStarted
+#### VesperStarted
 
-Triggered only once, after azul loaded and it's ready to process input.
+Triggered only once, after vesper loaded and it's ready to process input.
 
 #### ActionRan
 
@@ -795,9 +795,9 @@ Triggered only once, after azul loaded and it's ready to process input.
 
 Triggered everytime a shortcut action has been ran.
 
-#### ExitAzul
+#### ExitVesper
 
-Triggered once before azul quits.
+Triggered once before vesper quits.
 
 #### FloatTitleChanged 
 
@@ -845,7 +845,7 @@ Triggered after an user input prompt has been displayed
 * `args[2]` The file being edited
 
 Triggered every time when an editor is overriding a pane (like for example
-when calling the command `AzulEditConfig`)
+when calling the command `VesperEditConfig`)
 
 #### LeaveDisconnectedPane
 
@@ -863,17 +863,17 @@ Triggered every time when a new tab is being created.
 
 #### CommandSet
 
-Triggered every time an azul custom command is being set on a panel by using
-`AzulSetCmd` command.
+Triggered every time a vesper custom command is being set on a panel by using
+`VesperSetCmd` command.
 
 #### WinIdSet
 
-Triggered every time an azul custom id is being set on a panel, by using
-`AzulSetWinId` command.
+Triggered every time a vesper custom id is being set on a panel, by using
+`VesperSetWinId` command.
 
-#### AzulConnected
+#### VesperConnected
 
-Triggered every time when an azul session is begin reconnected.
+Triggered every time when a vesper session is begin reconnected.
 
 #### HistoryChanged
 
@@ -915,11 +915,11 @@ tabs or splits)
 
 #### LayoutRestoringStarted
 
-Triggered every time `azul` starts restoring a layout.
+Triggered every time `vesper` starts restoring a layout.
 
 #### UndoFinished
 
-Triggered every time `azul` finished restoring a closed float, tab or split.
+Triggered every time `vesper` finished restoring a closed float, tab or split.
 
 #### TerminalAdded
 
@@ -927,7 +927,7 @@ Triggered every time `azul` finished restoring a closed float, tab or split.
 
 `args[1]` The last added terminal
 
-Triggered everytime a new terminal is added to the `azul` list of terminals.
+Triggered everytime a new terminal is added to the `vesper` list of terminals.
 
 #### FullscreenToggled
 
@@ -946,13 +946,13 @@ Triggered every time after the directory is changed for any pane.
 
 You'll find inside the `examples` folder 4 lua files, corresponding to each of
 the workflows described above. You can use this files as a starting point for
-your own `azul` configuration. You can rename the file as `init.lua` and copy
-it to the config dir (by default, on `linux`, this is `~/.config/azul`).
+your own `vesper` configuration. You can rename the file as `init.lua` and copy
+it to the config dir (by default, on `linux`, this is `~/.config/vesper`).
 
 If you want to install some plugins, you need to put them in your config
-folder for plugins (`~/.config/azul/pack/start/` for linux or
-`%AZUL_PREFIX%/.config/azul/pack/start` for windows). Of course, you can even
-install there a plugin manager. By default, `azul` uses the following `neovim`
+folder for plugins (`~/.config/vesper/pack/start/` for linux or
+`%VESPER_PREFIX%/.config/vesper/pack/start` for windows). Of course, you can even
+install there a plugin manager. By default, `vesper` uses the following `neovim`
 plugins:
 
 * [lualine](https://github.com/nvim-lualine/lualine.nvim) 
@@ -962,8 +962,8 @@ plugins:
 ### Further configuration
 
 If you think that the documentation is too small for a serious software, this
-is because the neovim documentation is azul's documentation. I just enumerated
-here what you can do with azul which is somehow different than normal nvim.
+is because the neovim documentation is vesper's documentation. I just enumerated
+here what you can do with vesper which is somehow different than normal nvim.
 The rest is the same as nvim. For example, you want to see what the terminal
 can do, you can read
 [here](https://neovim.io/doc/user/nvim_terminal_emulator.html). If you want to

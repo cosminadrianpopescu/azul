@@ -1,5 +1,5 @@
 local M = {
-    workflow = 'azul',
+    workflow = 'vesper',
     modifier = '<C-s>',
     link_floats_with_tabs = false,
     shell = nil,

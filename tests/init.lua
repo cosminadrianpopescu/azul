@@ -6,6 +6,6 @@ end
 
 local t = require('test-env')
 
-t.single_shot('AzulStarted', function()
+t.single_shot('VesperStarted', function()
     require('spec')
 end)

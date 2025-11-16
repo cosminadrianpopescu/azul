@@ -1,4 +1,4 @@
-local azul = require('azul')
+local vesper = require('vesper')
 local files = require('files')
 local funcs = require('functions')
 require('mappings')
@@ -25,7 +25,7 @@ if not funcs.is_marionette() then
     cfg.run_init_lua()
 else
     require('insert')
-    azul.set_workflow('emacs')
+    vesper.set_workflow('emacs')
     vim.o.laststatus = 0
     vim.o.cmdheight = 0
     vim.o.termguicolors = true
@@ -43,7 +43,7 @@ else
     vim.o.timeout = true
     vim.o.timeoutlen = 300
 
-    azul.persistent_on('ModeChanged', function(args)
+    vesper.persistent_on('ModeChanged', function(args)
         vim.o.laststatus = ((args[2] == 'n' or args[2] == 'a') and 3) or 0
     end)
 

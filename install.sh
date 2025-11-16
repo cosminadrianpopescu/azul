@@ -1,109 +1,109 @@
 #!/bin/bash
 
 install_from_github() {
-    if [ ! -d $AZUL_CONFIG/pack/start/$2 ]
+    if [ ! -d $VESPER_CONFIG/pack/start/$2 ]
     then
-        git clone https://github.com/$1/$2 $AZUL_CONFIG/pack/start/$2
+        git clone https://github.com/$1/$2 $VESPER_CONFIG/pack/start/$2
         # Fix the plugins versions
-        cd $AZUL_CONFIG/pack/start/$2
+        cd $VESPER_CONFIG/pack/start/$2
         git checkout $3 &> /dev/null
     fi
 }
 
-if [ "$AZUL_DIR" == "" ]
+if [ "$VESPER_DIR" == "" ]
 then
-    export AZUL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    export VESPER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 fi
 
-if [ "$AZUL_PREFIX" == "" ]
+if [ "$VESPER_PREFIX" == "" ]
 then
-    export AZUL_PREFIX=$HOME/.local
+    export VESPER_PREFIX=$HOME/.local
 fi
 
-if [ "$AZUL_ABDUCO_EXE" == "" ]
+if [ "$VESPER_ABDUCO_EXE" == "" ]
 then
-    export AZUL_ABDUCO_EXE="abduco"
+    export VESPER_ABDUCO_EXE="abduco"
 fi
 
-if [ "$AZUL_NVIM_EXE" == "" ]
+if [ "$VESPER_NVIM_EXE" == "" ]
 then
-    export AZUL_NVIM_EXE=nvim
+    export VESPER_NVIM_EXE=nvim
 fi
 
-if [ ! -d $AZUL_PREFIX ]
+if [ ! -d $VESPER_PREFIX ]
 then
-    mkdir $AZUL_PREFIX
+    mkdir $VESPER_PREFIX
 fi
 
-if [ ! -d $AZUL_PREFIX/bin ]
+if [ ! -d $VESPER_PREFIX/bin ]
 then
-    mkdir -p $AZUL_PREFIX/bin
+    mkdir -p $VESPER_PREFIX/bin
 fi
 
-if [ ! -d $AZUL_PREFIX/share/azul ]
+if [ ! -d $VESPER_PREFIX/share/vesper ]
 then
-    mkdir -p $AZUL_PREFIX/share/azul
+    mkdir -p $VESPER_PREFIX/share/vesper
 fi
 
-if [ ! -d $AZUL_PREFIX/share/azul/nvim/lua ]
+if [ ! -d $VESPER_PREFIX/share/vesper/nvim/lua ]
 then
-    mkdir -p $AZUL_PREFIX/share/azul/nvim/lua
+    mkdir -p $VESPER_PREFIX/share/vesper/nvim/lua
 fi
 
-if [ "$AZUL_CONFIG" == "" ]
+if [ "$VESPER_CONFIG" == "" ]
 then
-    export AZUL_CONFIG="${XDG_CONFIG_HOME:-$HOME}/.config/azul"
+    export VESPER_CONFIG="${XDG_CONFIG_HOME:-$HOME}/.config/vesper"
 fi
 
-printf "#!/bin/bash\n\nexport AZUL_PREFIX=$AZUL_PREFIX\nexport AZUL_ABDUCO_EXE=$AZUL_ABDUCO_EXE\nexport AZUL_NVIM_EXE=$AZUL_NVIM_EXE\n\n" > $AZUL_PREFIX/bin/azul
-cat $AZUL_DIR/azul >> $AZUL_PREFIX/bin/azul
+printf "#!/bin/bash\n\nexport VESPER_PREFIX=$VESPER_PREFIX\nexport VESPER_ABDUCO_EXE=$VESPER_ABDUCO_EXE\nexport VESPER_NVIM_EXE=$VESPER_NVIM_EXE\n\n" > $VESPER_PREFIX/bin/vesper
+cat $VESPER_DIR/vesper >> $VESPER_PREFIX/bin/vesper
 
-chmod 0755 $AZUL_PREFIX/bin/azul
-cp $AZUL_DIR/nvim/lua/theme.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/split.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/commands.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/files.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/cheatsheet.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/disabled-theme.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/config.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/azul.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/select.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/functions.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/mappings.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/options.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/remote.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/insert.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/vim_ui.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/core.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/session.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/environment.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/history.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/events.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/undo.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/tab_vars.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/lua/floats.lua $AZUL_PREFIX/share/azul/nvim/lua
-cp $AZUL_DIR/nvim/init.lua $AZUL_PREFIX/share/azul/nvim
+chmod 0755 $VESPER_PREFIX/bin/vesper
+cp $VESPER_DIR/nvim/lua/theme.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/split.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/commands.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/files.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/cheatsheet.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/disabled-theme.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/config.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/vesper.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/select.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/functions.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/mappings.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/options.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/remote.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/insert.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/vim_ui.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/core.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/session.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/environment.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/history.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/events.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/undo.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/tab_vars.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/floats.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/init.lua $VESPER_PREFIX/share/vesper/nvim
 
-if [ ! -d $AZUL_CONFIG ]
+if [ ! -d $VESPER_CONFIG ]
 then
-    mkdir -p $AZUL_CONFIG
+    mkdir -p $VESPER_CONFIG
 
-    if [ ! -d $AZUL_CONFIG/lua ]
+    if [ ! -d $VESPER_CONFIG/lua ]
     then
-        mkdir -p $AZUL_CONFIG/lua
+        mkdir -p $VESPER_CONFIG/lua
     fi
 
-    if [ ! -d $AZUL_CONFIG/pack/start ]
+    if [ ! -d $VESPER_CONFIG/pack/start ]
     then
-        mkdir -p $AZUL_CONFIG/pack/start
+        mkdir -p $VESPER_CONFIG/pack/start
     fi
 
-    cp $AZUL_DIR/examples/lua/* $AZUL_CONFIG/lua/
-    cp $AZUL_DIR/examples/azul.ini $AZUL_CONFIG/config.ini
+    cp $VESPER_DIR/examples/lua/* $VESPER_CONFIG/lua/
+    cp $VESPER_DIR/examples/vesper.ini $VESPER_CONFIG/config.ini
 fi
 
 install_from_github "nvim-lualine" "lualine.nvim" "b431d228b7bbcdaea818bdc3e25b8cdbe861f056"
 install_from_github "nvim-lua" "plenary.nvim" "2d9b06177a975543726ce5c73fca176cedbffe9d"
 install_from_github "nvim-telescope" "telescope.nvim" "eae0d8fbde590b0eaa2f9481948cd6fd7dd21656"
 
-echo "Installation done in $AZUL_PREFIX. Run azul"
+echo "Installation done in $VESPER_PREFIX. Run vesper"

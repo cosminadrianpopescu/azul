@@ -106,7 +106,7 @@ end
 
 local log = function(msg, file)
     if file == nil then
-        file = "/tmp/azul-log-" .. os.getenv('AZUL_SESSION')
+        file = "/tmp/vesper-log-" .. os.getenv('VESPER_SESSION')
     end
     local f = io.open(file, "a+")
     if f == nil then
@@ -184,7 +184,7 @@ local remote_command = function(connection)
     end
     local proto, bin, host = string.gmatch(connection, p)()
     local cmd = ''
-    if proto == 'azul' then
+    if proto == 'vesper' then
         cmd = bin .. ' -a ' .. uuid() .. ' -m'
     elseif proto == 'dtach' then
         cmd = bin .. ' -A ' .. uuid() .. ' ' .. vim.o.shell
@@ -198,11 +198,11 @@ local remote_command = function(connection)
 end
 
 local is_marionette = function()
-    return os.getenv('AZUL_IS_MARIONETTE') == '1'
+    return os.getenv('VESPER_IS_MARIONETTE') == '1'
 end
 
 local is_handling_remote = function()
-    return os.getenv('AZUL_REMOTE_CONNECTION') ~= nil
+    return os.getenv('VESPER_REMOTE_CONNECTION') ~= nil
 end
 
 local safe_close_window = function(win_id)
@@ -223,11 +223,11 @@ local safe_buf_delete = function(buf_id)
 end
 
 local session_child_file = function(for_parent)
-    local name = os.getenv((for_parent and 'AZUL_PARENT_SESSION') or 'AZUL_SESSION')
+    local name = os.getenv((for_parent and 'VESPER_PARENT_SESSION') or 'VESPER_SESSION')
     if name == nil then
         name = ''
     end
-    return os.getenv('AZUL_RUN_DIR') .. '/' .. name .. '-child'
+    return os.getenv('VESPER_RUN_DIR') .. '/' .. name .. '-child'
 end
 
 local safe_put_text_to_buffer = function(buf, row, col, txt, after, me)
@@ -249,7 +249,7 @@ local deserialize = function(var)
 end
 
 local is_autosave = function()
-    return os.getenv('AZUL_NO_AUTOSAVE') ~= '1' and (options.autosave == 'always' or options.autosave == 'often')
+    return os.getenv('VESPER_NO_AUTOSAVE') ~= '1' and (options.autosave == 'always' or options.autosave == 'often')
 end
 
 local is_float = function(t)

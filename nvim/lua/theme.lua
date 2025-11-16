@@ -27,8 +27,8 @@ if colors.command == nil then
     colors.command = colors.inactive
 end
 
-vim.api.nvim_command('highlight link AzulCurrentFloat WinFloat')
-vim.api.nvim_command('highlight link AzulInactiveWin Folded')
+vim.api.nvim_command('highlight link VesperCurrentFloat WinFloat')
+vim.api.nvim_command('highlight link VesperInactiveWin Folded')
 vim.api.nvim_set_hl(0, 'NormalFloat', {})
 
 local MOD_MAP = {
@@ -41,11 +41,11 @@ local MOD_MAP = {
         color = colors.command.a.fg,
     },
     n = {
-        text = '    AZUL   ',
+        text = '   VESPER  ',
         color = colors.normal.a.fg,
     },
     a = {
-        text = '    AZUL   ',
+        text = '   VESPER  ',
         color = colors.normal.a.fg,
     },
     v = {
@@ -106,7 +106,7 @@ local function tabs(from, to)
     local result = ''
     for i, t in ipairs(vim.api.nvim_list_tabpages()) do
         if i >= from and i <= to then
-            result = result .. TABS.get_var(t, 'azul_tab_title')
+            result = result .. TABS.get_var(t, 'vesper_tab_title')
 
             if i ~= to then
                 result = result .. '  '
@@ -139,7 +139,7 @@ end
 
 local function current_tab()
     local id = vim.api.nvim_list_tabpages()[vim.fn.tabpagenr()]
-    return TABS.get_var(id, 'azul_tab_title')
+    return TABS.get_var(id, 'vesper_tab_title')
 end
 
 local function current_name()
@@ -247,11 +247,11 @@ end)
 EV.persistent_on({'PaneChanged'}, function(args)
     local crt = args[1]
     local what = (funcs.is_float(crt) and 'FloatBorder') or 'WinSeparator'
-    local repl = (funcs.is_float(crt) and 'AzulCurrentFloat') or 'AzulInactiveWin'
+    local repl = (funcs.is_float(crt) and 'VesperCurrentFloat') or 'VesperInactiveWin'
     vim.api.nvim_set_option_value('winhl', what .. ':' .. repl, {win = crt.win_id, scope = 'local'})
     for _, t in ipairs(mx.get_terminals()) do
         if t.win_id ~= crt.win_id and t.win_id ~= nil and vim.api.nvim_win_is_valid(t.win_id) then
-            vim.api.nvim_set_option_value('winhl', 'Normal:AzulInactiveWin,FloatBorder:AzulInactiveWin,CursorLine:AzulInactiveWin,CursorColumn:AzulInactiveWin,FloatTitle:AzulInactiveWin', {win = t.win_id, scope = 'local'})
+            vim.api.nvim_set_option_value('winhl', 'Normal:VesperInactiveWin,FloatBorder:VesperInactiveWin,CursorLine:VesperInactiveWin,CursorColumn:VesperInactiveWin,FloatTitle:VesperInactiveWin', {win = t.win_id, scope = 'local'})
         end
     end
 end)

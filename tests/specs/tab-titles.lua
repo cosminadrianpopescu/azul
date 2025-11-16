@@ -1,5 +1,5 @@
 local t = require('test-env')
-local azul = require('azul')
+local vesper = require('vesper')
 local options = require('options')
 
 t.wait_events({TabTitleChanged = 1}, function()

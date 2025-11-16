@@ -1,11 +1,11 @@
 local t = require('test-env')
-local azul = require('azul')
+local vesper = require('vesper')
 local options = require('options')
 local TABS = require('tab_vars')
 
 local get_title = function(idx)
     local id = vim.api.nvim_list_tabpages()[idx]
-    return TABS.get_var(id, 'azul_tab_title')
+    return TABS.get_var(id, 'vesper_tab_title')
 end
 
 local rename_tab_keys = function()
@@ -65,7 +65,7 @@ t.wait_events({TabTitleChanged = 1}, function()
                                     end)
                                 end)
                                 vim.fn.timer_start((options.workflow == 'emacs' and 150) or 1, function()
-                                    azul.feedkeys('<C-c>', 'i')
+                                    vesper.feedkeys('<C-c>', 'i')
                                 end)
                             end)
                         end)

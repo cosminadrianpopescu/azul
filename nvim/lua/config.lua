@@ -48,13 +48,13 @@ local actions = {
 }
 
 local modes = {
-    terminal = 't', azul = 'a', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v', passthrough = 'P',
+    terminal = 't', vesper = 'a', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v', passthrough = 'P',
     modifier = 'M',
 }
 
 M.default_config = {
     shortcuts = {
-        azul = {
+        vesper = {
             terminal = {
                 paste = '<C-v>',
             },
@@ -428,7 +428,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             s = 'split',
             T = 'tabs',
             t = 'terminal',
-            a = 'azul',
+            a = 'vesper',
             v = 'visual',
             P = 'passthrough',
         }
@@ -552,7 +552,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
             desc = 'Copy selected text',
         })
     elseif action == 'paste' then
-        local callback = (wf == 'azul' and mode == 't' and shortcut:match('^<.*>$') and map2) or map
+        local callback = (wf == 'vesper' and mode == 't' and shortcut:match('^<.*>$') and map2) or map
         callback(mode, shortcut, '', {
             callback = core.paste_from_clipboard,
             desc = 'Paste from clipboard',
@@ -739,7 +739,7 @@ M.overwrite_default_action = function(action, wf, mode, shortcut)
     if not vim.tbl_contains(actions, action) then
         error("There is no action " .. action)
     end
-    if not vim.tbl_contains({'azul', 'tmux', 'zellij', 'emacs'}, wf) then
+    if not vim.tbl_contains({'vesper', 'tmux', 'zellij', 'emacs'}, wf) then
         error("There is no workflow " .. wf)
     end
     if not vim.tbl_contains(vim.tbl_keys(modes), mode) then
@@ -787,7 +787,7 @@ M.run_init_lua = function()
 end
 
 M.reload_config = function()
-    if options.workflow == 'tmux' or options.workflow == 'azul' then
+    if options.workflow == 'tmux' or options.workflow == 'vesper' then
         local cmd = 'tunmap ' .. options.modifier
         pcall(function() vim.api.nvim_command(cmd) end)
     end

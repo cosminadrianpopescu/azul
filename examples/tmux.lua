@@ -1,9 +1,9 @@
-local azul = require('azul')
+local vesper = require('vesper')
 local u = require('utils')
-local map = azul.set_key_map
+local map = vesper.set_key_map
 local cmd = vim.api.nvim_create_autocmd
 
-azul.set_workflow('tmux')
+vesper.set_workflow('tmux')
 
 local float_group = function()
     return vim.t.float_group or 'default' -- we can set on a tab the t:float_group variable and
@@ -21,7 +21,7 @@ cmd('TermClose', {
 
 map('M', 'c', '', {
     callback = function()
-        azul.open()
+        vesper.open()
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('startinsert')
         end)
@@ -31,7 +31,7 @@ map('M', 'c', '', {
 local set_mode_escape = function(shortcut)
     map({'r', 'p', 'm', 's', 'T'}, shortcut, '', {
         callback = function()
-            azul.enter_mode('a')
+            vesper.enter_mode('a')
             vim.fn.timer_start(1, function()
                 vim.api.nvim_command('startinsert')
             end)
@@ -42,14 +42,14 @@ end
 local tab_shortcut = function(n)
     map('M', n .. '', '', {
         callback = function()
-            local hidden = azul.are_floats_hidden(float_group())
+            local hidden = vesper.are_floats_hidden(float_group())
             if not hidden then
-                azul.hide_floats()
+                vesper.hide_floats()
             end
             vim.api.nvim_command('tabn ' .. n)
             vim.api.nvim_command('startinsert')
             if not hidden then
-                azul.show_floats(float_group())
+                vesper.show_floats(float_group())
             end
         end
     })
@@ -61,7 +61,7 @@ end
 
 map('M', 'w', '', {
     callback = function()
-        azul.toggle_floats(float_group())
+        vesper.toggle_floats(float_group())
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('startinsert')
         end)
@@ -71,14 +71,14 @@ map('M', 'w', '', {
 local enter_mode_mapping = function(mode)
     map('M', mode, '', {
         callback = function()
-            azul.enter_mode(mode)
+            vesper.enter_mode(mode)
         end
     })
 end
 
 map('M', 'f', '', {
     callback = function()
-        azul.open_float(float_group())
+        vesper.open_float(float_group())
         vim.fn.timer_start(1, function()
             vim.api.nvim_command('startinsert')
         end)
@@ -98,13 +98,13 @@ local options = {noremap = true}
 map('c', '<C-n>', '<Down>', options)
 map('c', '<C-p>', '<Up>', options)
 map('M', 'd', '', {
-    callback = azul.disconnect,
+    callback = vesper.disconnect,
 })
 
 local set_move_shortcuts = function(key, dir, inc)
     map('m', key, '', {
         callback = function()
-            azul.move_current_float(dir, inc or 5)
+            vesper.move_current_float(dir, inc or 5)
         end
     })
 end
@@ -121,8 +121,8 @@ local set_tabs_shortcuts = function(key, where)
     map('T', key, '', {
         callback = function()
             if where:match('open') then
-                azul.enter_mode('t')
-                azul.open()
+                vesper.enter_mode('t')
+                vesper.open()
             else
                 vim.api.nvim_command(where)
             end
@@ -131,15 +131,15 @@ local set_tabs_shortcuts = function(key, where)
 end
 
 local set_panel_shortcuts = function(key, dir)
-    set_hjkl_shortcuts(key, dir, 'p', azul.select_next_pane)
+    set_hjkl_shortcuts(key, dir, 'p', vesper.select_next_pane)
 end
 
 local set_panel_split_shortcuts = function(key, dir)
-    set_hjkl_shortcuts(key, dir, 'p', azul.split)
+    set_hjkl_shortcuts(key, dir, 'p', vesper.split)
 end
 
 local set_split_shortcuts = function(key, dir)
-    set_hjkl_shortcuts(key, dir, 's', azul.split)
+    set_hjkl_shortcuts(key, dir, 's', vesper.split)
 end
 
 local set_resize_shortcuts = function(key, which)
@@ -153,7 +153,7 @@ end
 local set_position_shortcut = function(key, where)
     map('m', key, '', {
         callback = function()
-            azul.position_current_float(where)
+            vesper.position_current_float(where)
         end
     })
 end
@@ -217,9 +217,9 @@ map('M', '<space>p', '', {
     end,
 })
 
-map('a', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require("azul").redraw()<cr>i', {})
+map('a', '<c-l>', '<c-\\><c-n>:redraw!<cr><c-l>:lua require('vesper').redraw()<cr>i', {})
 map('M', 'N', '', {
-    callback = azul.toggle_nested_mode
+    callback = vesper.toggle_nested_mode
 })
 
 vim.o.mouse = ""
@@ -231,6 +231,6 @@ vim.o.wildmode = "longest,list"
 
 map('p', 'x', '', {
     callback = function()
-        azul.rotate_panel()
+        vesper.rotate_panel()
     end
 })

@@ -1,16 +1,16 @@
 local t = require('test-env')
-local azul = require('core')
+local vesper = require('core')
 local funcs = require('functions')
 
 
 local title = 'Tab :tab_n: (:term_title:)'
 t.wait_events({TabTitleChanged = 1}, function()
-    azul.parse_custom_title(title, {tab_n = 2, term_title = 'localhost'}, '', function(result, placeholders)
+    vesper.parse_custom_title(title, {tab_n = 2, term_title = 'localhost'}, '', function(result, placeholders)
         t.assert(result == 'Tab 2 (localhost)', 'The placeholders in the first test have not been replaced properly')
         t.wait_events({UserInputPrompt = 1}, function()
             t.simulate_keys('abc <cr>')
         end)
-        azul.parse_custom_title(title, {tab_n = 3}, '', function(result, placeholders)
+        vesper.parse_custom_title(title, {tab_n = 3}, '', function(result, placeholders)
             t.assert(result == 'Tab 3 (abc)', 'The placeholders in the second test have not been replaced properly')
             t.assert(placeholders.term_title == 'abc', 'The returned placeholders in the second test are not ok')
             t.assert(funcs.compare_shortcuts('<M-C-Right>', '<c-a-right>'), 'The sensitive ls is not working')

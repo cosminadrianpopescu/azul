@@ -9,7 +9,7 @@ local ns_id = nil
 local mode_win_id = nil
 local position_timer = nil
 
-vim.api.nvim_command('highlight AzulCheatsheetArrow guifg=#565f89')
+vim.api.nvim_command('highlight VesperCheatsheetArrow guifg=#565f89')
 
 local COL_LEN = 35
 local COL_PAD = 2
@@ -215,12 +215,12 @@ local create_window = function(mappings, full, position)
     })
     vim.filetype.add({
         filename = {
-            azul_cheatsheet_window = 'azul_cheatsheet',
+            vesper_cheatsheet_window = 'vesper_cheatsheet',
         }
     })
     vim.api.nvim_set_option_value('winhighlight', 'Normal:Identifier', {scope = 'local', win = win_id})
-    vim.api.nvim_set_option_value('filetype', 'azul_cheatsheet', {buf = win_buffer})
-    vim.api.nvim_command("syn match AzulCheatsheetArrow '" .. ARROW .. "'")
+    vim.api.nvim_set_option_value('filetype', 'vesper_cheatsheet', {buf = win_buffer})
+    vim.api.nvim_command("syn match VesperCheatsheetArrow '" .. ARROW .. "'")
     vim.api.nvim_set_current_win(current_win)
     vim.api.nvim_buf_set_lines(win_buffer, 0, height + 3, false, cheatsheet_content(mappings, height, _full))
     core.resume()

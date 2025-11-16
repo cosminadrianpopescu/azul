@@ -13,7 +13,7 @@ local is_user_editing = false
 local is_started = false
 
 local updating_titles = true
-local azul_started = false
+local vesper_started = false
 local last_access = 0
 local dead_terminal = nil
 
@@ -27,7 +27,7 @@ local dead_terminal = nil
 --- @field term_id number The current neovim channel id
 --- @field panel_id number The panel assigned number (to be used for session restore)
 --- @field tab_id number The tab assigned number (to be used for session restore)
---- @field azul_win_id string The custom azul windows id
+--- @field vesper_win_id string The custom vesper windows id
 --- @field win_config table The current neovim window config
 --- @field _win_config table The current neovim window config before a full screen
 --- @field current_selected_pane boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
@@ -35,7 +35,7 @@ local dead_terminal = nil
 --- @field group string The float current group, if the terminal is a float
 local terminals = {}
 local tab_id = 0
-local azul_win_id = 0
+local vesper_win_id = 0
 local chan_buffers = {}
 local panel_id = 0
 
@@ -44,7 +44,7 @@ local loggers = {}
 local mode = nil
 local mode_mappings = {
 }
-local workflow = 'azul'
+local workflow = 'vesper'
 local mod = nil
 local global_last_status = nil
 local quit_on_last = true
@@ -65,7 +65,7 @@ local do_exit = function()
     for _, c in ipairs(channels) do
         vim.fn.jobstop(c.id)
     end
-    EV.trigger_event('ExitAzul')
+    EV.trigger_event('ExitVesper')
 end
 
 M.do_remove_term_buf = function(buf)
@@ -193,9 +193,9 @@ local OnEnter = function(ev)
             M.start_logging(os.tmpname())
         end
     end
-    if not azul_started then
-        azul_started = true
-        EV.trigger_event('AzulStarted')
+    if not vesper_started then
+        vesper_started = true
+        EV.trigger_event('VesperStarted')
     end
 end
 
@@ -249,7 +249,7 @@ M.open = function(buf, opts)
     local environment = require('environment').get_environment()
     environment['VIM'] = ''
     environment['VIMRUNTIME'] = ''
-    environment['AZUL_PANEL_ID'] = panel_id
+    environment['VESPER_PANEL_ID'] = panel_id
     local cwd = opts.cwd or (current ~= nil and current.cwd) or vim.fn.getcwd()
     vim.fn.chdir(cwd)
     local _opts = {
@@ -274,7 +274,7 @@ M.open = function(buf, opts)
                 vim.fn.jobstart(cmd, _opts)
             end)
             if not safe then
-                FILES.write_file(os.getenv('AZUL_RUN_DIR') .. '/' .. os.getenv('AZUL_SESSION') .. '-failed', '')
+                FILES.write_file(os.getenv('VESPER_RUN_DIR') .. '/' .. os.getenv('VESPER_SESSION') .. '-failed', '')
                 vim.api.nvim_command('quit!')
             end
         else
@@ -366,28 +366,28 @@ end
 
 cmd({'UIEnter'}, {
     pattern = "*", callback = function()
-        if not azul_started then
+        if not vesper_started then
             return
         end
-        EV.trigger_event('AzulConnected')
+        EV.trigger_event('VesperConnected')
     end
 })
 
 cmd({'TabNew', 'VimEnter'}, {
     pattern = "*", callback = function()
-        TABS.set_var(0, 'azul_tab_id', tab_id)
+        TABS.set_var(0, 'vesper_tab_id', tab_id)
         tab_id = tab_id + 1
     end
 })
 
 local get_tab_title = function(t)
-    local overriden_title = TABS.get_var(t, 'azul_tab_title_overriden')
+    local overriden_title = TABS.get_var(t, 'vesper_tab_title_overriden')
     return overriden_title or options.tab_title
 end
 
 local get_default_placeholders = function(t)
-    local azul_win_id = (t and t.azul_win_id) or ''
-    local azul_cmd = (t and t.azul_cmd) or ''
+    local vesper_win_id = (t and t.vesper_win_id) or ''
+    local vesper_cmd = (t and t.vesper_cmd) or ''
     local term_title = ''
     if t ~= nil then
         term_title = funcs.safe_get_buf_var(t.buf, 'term_title') or ''
@@ -399,9 +399,9 @@ local get_default_placeholders = function(t)
 
     return {
         term_title = term_title,
-        azul_win_id = azul_win_id,
-        azul_cmd = azul_cmd,
-        azul_cmd_or_win_id = (azul_cmd ~= '' and azul_cmd ~= nil and azul_cmd) or azul_win_id,
+        vesper_win_id = vesper_win_id,
+        vesper_cmd = vesper_cmd,
+        vesper_cmd_or_win_id = (vesper_cmd ~= '' and vesper_cmd ~= nil and vesper_cmd) or vesper_win_id,
         cwd = (t and t.cwd),
     }
 end
@@ -413,7 +413,7 @@ local update_title_for_tabs = function(i, tab_pages, when_finished, me)
     end
     local current_tab_page = vim.fn.tabpagenr()
     local t = tab_pages[i]
-    local tab_placeholders = TABS.get_var(t, 'azul_placeholders')
+    local tab_placeholders = TABS.get_var(t, 'vesper_placeholders')
     local current_pane = funcs.find(function(t) return t.tab_page == i and t.current_selected_pane end, M.get_terminals())
     local default_placeholders = get_default_placeholders(current_pane)
     local placeholders = vim.tbl_extend(
@@ -428,11 +428,11 @@ local update_title_for_tabs = function(i, tab_pages, when_finished, me)
         'for tab ' .. i,
         function(title, placeholders)
             local trigger = false
-            if TABS.get_var(t, 'azul_tab_title') ~= title then
+            if TABS.get_var(t, 'vesper_tab_title') ~= title then
                 trigger = true
             end
-            TABS.set_var(t, 'azul_placeholders', placeholders)
-            TABS.set_var(t, 'azul_tab_title', title)
+            TABS.set_var(t, 'vesper_placeholders', placeholders)
+            TABS.set_var(t, 'vesper_tab_title', title)
             if trigger then
                 EV.trigger_event('TabTitleChanged', {t, title})
             end
@@ -447,7 +447,7 @@ local update_title_for_floats = function(i, floats, when_finished, me)
         return
     end
     local f = floats[i]
-    local float_placeholders = f.azul_placeholders
+    local float_placeholders = f.vesper_placeholders
     local default_placeholders = get_default_placeholders(f)
     local placeholders = vim.tbl_extend(
         'keep', default_placeholders, float_placeholders or {}
@@ -461,7 +461,7 @@ local update_title_for_floats = function(i, floats, when_finished, me)
             if f.win_config.title ~= title then
                 trigger = true
             end
-            f.azul_placeholders = placeholders
+            f.vesper_placeholders = placeholders
             f.win_config.title = title
             if f.win_id ~= nil then
                 vim.api.nvim_win_set_config(f.win_id, f.win_config)
@@ -475,7 +475,7 @@ local update_title_for_floats = function(i, floats, when_finished, me)
 end
 
 M.update_titles = function(callback)
-    if updating_titles or not azul_started then
+    if updating_titles or not vesper_started then
         return
     end
 
@@ -493,7 +493,7 @@ M.update_titles = function(callback)
 end
 
 cmd({"VimLeave"},{
-    desc = "launch ExitAzul event",
+    desc = "launch ExitVesper event",
     callback = do_exit,
 })
 
@@ -515,9 +515,9 @@ cmd('TermOpen',{
             buf = ev.buf,
             win_id = vim.fn.win_getid(vim.fn.winnr()),
             term_id = vim.b.terminal_job_id,
-            tab_id = TABS.get_var(0, 'azul_tab_id'),
+            tab_id = TABS.get_var(0, 'vesper_tab_id'),
             panel_id = panel_id,
-            azul_win_id = azul_win_id,
+            vesper_win_id = vesper_win_id,
         }
         table.insert(terminals, new_terminal)
         EV.trigger_event('TerminalAdded', {new_terminal})
@@ -532,7 +532,7 @@ cmd('TermOpen',{
             end
         end
         panel_id = panel_id + 1
-        azul_win_id = azul_win_id + 1
+        vesper_win_id = vesper_win_id + 1
     end
 })
 
@@ -560,7 +560,7 @@ cmd('TermEnter', {
 cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function()
         local was_user_editing = is_user_editing
-        is_user_editing = vim.o.filetype == 'azul_prompt'
+        is_user_editing = vim.o.filetype == 'vesper_prompt'
         if is_user_editing and not was_user_editing then
             EV.trigger_event('UserInputPrompt')
         end
@@ -596,7 +596,7 @@ cmd({'WinEnter'}, {
             -- if current_win_has_no_pane() then
             --     M.open()
             -- end
-            if buftype == 'terminal' or filetype == 'AzulRemoteTerm' then
+            if buftype == 'terminal' or filetype == 'VesperRemoteTerm' then
                 OnEnter(ev)
             end
         end)
@@ -880,7 +880,7 @@ end
 
 M.set_win_id = function(id)
     local t = M.term_by_buf_id(vim.fn.bufnr('%'))
-    t.azul_win_id = id
+    t.vesper_win_id = id
     M.update_titles()
     EV.trigger_event('WinIdSet', {id})
 end
@@ -891,7 +891,7 @@ end
 
 M.set_cmd = function(cmd)
     local t = M.term_by_buf_id(vim.fn.bufnr('%'))
-    t.azul_cmd = cmd
+    t.vesper_cmd = cmd
     M.update_titles()
     EV.trigger_event('CommandSet', {cmd})
 end
@@ -1104,10 +1104,10 @@ M.rename_tab = function(tab)
     local def = get_tab_title(tab)
     M.user_input({prompt = "Tab new name: ", default = def}, function(result)
         if result == '' then
-            TABS.del_var(tab_id, 'azul_tab_title_overriden')
+            TABS.del_var(tab_id, 'vesper_tab_title_overriden')
         elseif result ~= nil then
-            TABS.del_var(tab_id, 'azul_placeholders')
-            TABS.set_var(tab_id, 'azul_tab_title_overriden', result)
+            TABS.del_var(tab_id, 'vesper_placeholders')
+            TABS.set_var(tab_id, 'vesper_tab_title_overriden', result)
         end
         M.update_titles()
     end, true)
@@ -1195,11 +1195,11 @@ M.run_map = function(m)
 end
 
 M.is_modifier_mode = function(m)
-    if workflow ~= 'tmux' and workflow ~= 'azul' then
+    if workflow ~= 'tmux' and workflow ~= 'vesper' then
         return false
     end
 
-    return (workflow == 'tmux' and (m == 'n' or m == 'a')) or (workflow == 'azul' and m == 't')
+    return (workflow == 'tmux' and (m == 'n' or m == 'a')) or (workflow == 'vesper' and m == 't')
 end
 
 local just_close_windows = function(floats)
@@ -1237,7 +1237,7 @@ M.select_tab = function(n)
     if not hidden then
         just_open_windows(floats)
     else
-        M.select_current_pane(TABS.get_var(0, 'azul_tab_id'))
+        M.select_current_pane(TABS.get_var(0, 'vesper_tab_id'))
     end
 end
 
@@ -1274,7 +1274,7 @@ M.do_open_remote = function(force, callback)
         return
     end
 
-    when_done(os.getenv('AZUL_REMOTE_CONNECTION'))
+    when_done(os.getenv('VESPER_REMOTE_CONNECTION'))
 end
 
 M.remote_reconnect = function(t)
@@ -1342,16 +1342,16 @@ M.get_global_tab_id = function()
     return tab_id
 end
 
-M.get_global_azul_win_id = function()
-    return azul_win_id
+M.get_global_vesper_win_id = function()
+    return vesper_win_id
 end
 
-M.set_global_azul_win_id = function(id)
-    azul_win_id = id
+M.set_global_vesper_win_id = function(id)
+    vesper_win_id = id
 end
 
 M.copy_terminal_properties = function (src, dest, with_ids)
-    local props = {'tab_page', 'win_config', 'azul_placeholders', 'group', 'overriden_title', 'azul_win_id', 'azul_cmd', 'remote_command'}
+    local props = {'tab_page', 'win_config', 'vesper_placeholders', 'group', 'overriden_title', 'vesper_win_id', 'vesper_cmd', 'remote_command'}
     if with_ids == true then
         local ids = {'panel_id', 'tab_id'}
         for _, id in ipairs(ids) do
@@ -1379,7 +1379,7 @@ M.cd = function(new_cwd, t)
     end
 end
 
-EV.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
+EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()
     is_started = true
 end)
 

@@ -121,9 +121,9 @@ EV.persistent_on('HistoryChanged', function(args)
     if (create and create.operation) == 'create' then
         local tab_id = t.vim_tab_id
         tab_vars = {
-            azul_placeholders = TABS.get_var(tab_id, 'azul_placeholders'),
-            azul_tab_title_overriden = TABS.get_var(tab_id, 'azul_tab_title_overriden'),
-            azul_tab_title = TABS.get_var(tab_id, 'azul_tab_title'),
+            vesper_placeholders = TABS.get_var(tab_id, 'vesper_placeholders'),
+            vesper_tab_title_overriden = TABS.get_var(tab_id, 'vesper_tab_title_overriden'),
+            vesper_tab_title = TABS.get_var(tab_id, 'vesper_tab_title'),
             float_group = TABS.get_var(tab_id, 'float_group'),
         }
     end

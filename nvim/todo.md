@@ -23,7 +23,7 @@ f('p', 'h', '', {
 * the disable of the modifier (for ssh) aka nested mode - *DONE*
 * shortcuts to move a float up, right, bottom, left - *DONE*
 * layouts - *DONE*
-* colors from environment (so that the ssh azul has different colors) - *DONE*
+* colors from environment (so that the ssh vesper has different colors) - *DONE*
 
 ## README
 
@@ -52,7 +52,7 @@ f('p', 'h', '', {
 * there should be a config.lua that should enumerate the config options - *DONE*
 * document the public lua API, so that advanced users can really customize it - *DONE*
 * create separate doc pages for api.md, config.md and the README.md - *DONE*
-* expose the azul api and the shortcuts as vim commands - *DONE*
+* expose the vesper api and the shortcuts as vim commands - *DONE*
 * copy / paste shotrtcuts - *DONE*
 * visual mode shortcuts
 * save session and resurect session shortcuts and commands

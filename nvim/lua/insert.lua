@@ -22,8 +22,8 @@ end
 
 EV.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
-    'AzulStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
-    'WinIdSet', 'ConfigReloaded', 'AzulConnected', 'Error', 'LayoutRestored',
+    'VesperStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
+    'WinIdSet', 'ConfigReloaded', 'VesperConnected', 'Error', 'LayoutRestored',
     'UndoFinished', 'FullscreenToggled', 'DirectoryChanged',
 }, do_start_insert)
 

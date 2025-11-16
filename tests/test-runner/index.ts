@@ -1,4 +1,4 @@
-import { ChildProcessWithoutNullStreams, spawn } from "child_process";
+import { spawn } from "child_process";
 import { randomUUID } from "crypto";
 import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from "fs";
 import './list';
@@ -6,13 +6,13 @@ import { TestCaseDesc, TESTS } from "./test";
 
 let TO_RUN: Array<TestCaseDesc> = [];
 
-const UUID = process.env['AZUL_UUID'] || randomUUID();
-const base_path = `/tmp/azul-${UUID}`;
-process.env['AZUL_PREFIX'] = base_path;
-process.env['AZUL_CONFIG'] = `${base_path}/config`;
+const UUID = process.env['VESPER_UUID'] || randomUUID();
+const base_path = `/tmp/vesper-${UUID}`;
+process.env['VESPER_PREFIX'] = base_path;
+process.env['VESPER_CONFIG'] = `${base_path}/config`;
 
 process.on('exit', () => {
-    if (process.env['AZUL_SKIP_CLEANUP']) {
+    if (process.env['VESPER_SKIP_CLEANUP']) {
         return ;
     }
     console.log('Performing clean up', base_path);
@@ -23,18 +23,14 @@ const last_result = `${base_path}/last-result`;
 
 const running_last_result = (t: TestCaseDesc) => `${last_result}-${t.luaFile}`;
 
-function run(cmd: string): ChildProcessWithoutNullStreams {
-    return spawn(cmd);
-}
-
 async function wait_proc(cmd: string, args: Array<string> = [], options: Object = {}): Promise<[number, string, string]> {
     const proc = spawn(cmd, args, options);
     if (proc == null) {
         throw 'COULD_NOT_START_INSTALL';
     }
 
-    if (!!process.env['AZUL_WATCH_TESTS']) {
-        spawn(cmd, ['-a', process.env['AZUL_WATCH_TESTS'], '-c', `${base_path}/config`, '-s', ` ${cmd} ${args.join(' ')}<cr>`], {detached: true})
+    if (!!process.env['VESPER_WATCH_TESTS']) {
+        spawn(cmd, ['-a', process.env['VESPER_WATCH_TESTS'], '-c', `${base_path}/config`, '-s', ` ${cmd} ${args.join(' ')}<cr>`], {detached: true})
     }
 
     let [result, err] = ['', ''];
@@ -45,21 +41,21 @@ async function wait_proc(cmd: string, args: Array<string> = [], options: Object 
     })
 }
 
-async function run_azul(azul_env = {}) {
-    const final_env = Object.assign({}, process.env, azul_env);
-    const sess_file = `${base_path}/config/sessions/${UUID}.azul`;
+async function run_vesper(vesper_env = {}) {
+    const final_env = Object.assign({}, process.env, vesper_env);
+    const sess_file = `${base_path}/config/sessions/${UUID}.vesper`;
     if (existsSync(sess_file)) {
         rmSync(sess_file);
     }
-    const [code, result, err] = await wait_proc(`${base_path}/bin/azul`, ['-a', UUID, '-c', `${base_path}/config`], {env: final_env});
-    // console.log(`AZUL RAN ${code}, ${result}, ${err}`)
+    const [code, result, err] = await wait_proc(`${base_path}/bin/vesper`, ['-a', UUID, '-c', `${base_path}/config`], {env: final_env});
+    console.log(`VESPER RAN ${code}, ${result}, ${err}`)
 }
 
 function init_test_env() {
     console.log('Initializing the test environment');
     copyFileSync('../test-env.lua', `${base_path}/config/lua/test-env.lua`)
     copyFileSync('../init.lua', `${base_path}/config/init.lua`)
-    copyFileSync('../../examples/azul.ini', `${base_path}/config/config.ini`)
+    copyFileSync('../../examples/vesper.ini', `${base_path}/config/config.ini`)
     writeFileSync(`${base_path}/config/lua/uuid.lua`, `
 return {
     uuid = '${UUID}'
@@ -77,12 +73,12 @@ async function run_test(t: TestCaseDesc) {
     console.log(`${t.desc || t.luaFile} test case`);
     init_test_env();
     console.log('Running...')
-    let azul_env = {};
+    let vesper_env = {};
     if (!!t.init) {
         const init_result = t.init(base_path);
-        azul_env = init_result;
+        vesper_env = init_result;
         if ((init_result as Promise<Object>)?.then) {
-            azul_env = await init_result;
+            vesper_env = await init_result;
         }
     }
     if (existsSync(running_last_result(t))) {
@@ -97,7 +93,7 @@ require('test-env').set_test_running('${t.luaFile}')
 ${content}
 `;
     writeFileSync(`${base_path}/config/lua/spec.lua`, content);
-    await run_azul(azul_env);
+    await run_vesper(vesper_env);
 }
 
 function assert_test_passed(t: TestCaseDesc) {

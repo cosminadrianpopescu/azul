@@ -32,23 +32,23 @@ function test_factory(test_case: string, options: {[key: string]: any} = {}, whi
 
 test('test-started');
 const do_floats = () => {
-    test_factory('floats', {workflow: 'azul'})
+    test_factory('floats', {workflow: 'vesper'})
     test_factory('floats', {workflow: 'tmux'});
     test_factory('floats', {workflow: 'zellij', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
     test_factory('floats', {workflow: 'emacs'});
-    test_factory('floats', {workflow: 'azul', use_cheatsheet: 'false'});
+    test_factory('floats', {workflow: 'vesper', use_cheatsheet: 'false'});
     test_factory('floats', {workflow: 'tmux', use_cheatsheet: 'false'});
     test_factory('floats', {workflow: 'zellij', use_cheatsheet: 'false', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
 }
 
 const expand_test = (which: string, with_emacs = true) => {
-    test_factory(which, {workflow: 'azul'})
+    test_factory(which, {workflow: 'vesper'})
     test_factory(which, {workflow: 'tmux'});
     test_factory(which, {workflow: 'zellij'});
     if (with_emacs) {
         test_factory(which, {workflow: 'emacs'});
     }
-    test_factory(which, {workflow: 'azul', use_cheatsheet: 'false'});
+    test_factory(which, {workflow: 'vesper', use_cheatsheet: 'false'});
     test_factory(which, {workflow: 'tmux', use_cheatsheet: 'false'});
     test_factory(which, {workflow: 'zellij', use_cheatsheet: 'false'});
 }
@@ -67,18 +67,18 @@ const do_tabs = () => {
 
 const do_tab_titles = () => {
     const tab_title = ':tab_n: :tab_name::is_current:';
-    test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title})
+    test_factory('custom-tab-titles', {workflow: 'vesper', tab_title: tab_title})
     test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title});
     test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title});
     test_factory('custom-tab-titles', {workflow: 'emacs', tab_title: tab_title});
-    test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_cheatsheet: 'false'});
+    test_factory('custom-tab-titles', {workflow: 'vesper', tab_title: tab_title, use_cheatsheet: 'false'});
     test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_cheatsheet: 'false'});
     test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_cheatsheet: 'false'});
-    test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_dressing: 'false'})
+    test_factory('custom-tab-titles', {workflow: 'vesper', tab_title: tab_title, use_dressing: 'false'})
     test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_dressing: 'false'})
     test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_dressing: 'false'})
     test_factory('custom-tab-titles', {workflow: 'emacs', tab_title: tab_title, use_dressing: 'false'})
-    test_factory('custom-tab-titles', {workflow: 'azul', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
+    test_factory('custom-tab-titles', {workflow: 'vesper', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
     test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
     test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
 }
@@ -90,7 +90,7 @@ const do_misc = () => {
     test('remotes', (base_path: string) => {
         build_config(base_path, {shell: 'bash'});
         return {
-            AZUL_REMOTE_CONNECTION: `azul://${base_path}/bin/azul`,
+            VESPER_REMOTE_CONNECTION: `vesper://${base_path}/bin/vesper`,
             SHELL: 'bash'
         }
     });

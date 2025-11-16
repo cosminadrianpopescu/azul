@@ -70,7 +70,7 @@ local remote_disconnected = function(t)
     --     vim.fn.termopen({os.getenv('EDITOR'), file}, opts)
     -- end)
     vim.api.nvim_set_option_value('modifiable', false, {buf = t.buf})
-    vim.api.nvim_set_option_value('filetype', 'AzulRemoteTerm', {buf = t.buf})
+    vim.api.nvim_set_option_value('filetype', 'VesperRemoteTerm', {buf = t.buf})
     t.term_id = nil
     vim.api.nvim_buf_delete(old_buf, {force = true})
     -- vim.api.nvim_buf_set_keymap(t.buf, 't', 'r', '', {
@@ -108,11 +108,11 @@ local parse_remote_connection = function(force, callback)
         return
     end
 
-    when_done(os.getenv('AZUL_REMOTE_CONNECTION'))
+    when_done(os.getenv('VESPER_REMOTE_CONNECTION'))
 end
 
 --- Opens a new float
---- @param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
+--- @param force boolean If true, then always ask for the remote connection, even if the VESPER_REMOTE_CONNECTION var is set
 --- @param options float_open_options The list of options for opening a float
 M.open_float_remote = function(force, options)
     if options == nil then
@@ -131,7 +131,7 @@ end
 
 --- Opens a new remote terminal in the current window
 ---
----@param force boolean If true, then always ask for the remote connection, even if the AZUL_REMOTE_CONNECTION var is set
+---@param force boolean If true, then always ask for the remote connection, even if the VESPER_REMOTE_CONNECTION var is set
 ---@param buf number The current buffer number (optional)
 M.open_remote = function(force, buf)
     parse_remote_connection(force, function(cmd)

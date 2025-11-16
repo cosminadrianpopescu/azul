@@ -13,8 +13,8 @@ local L = {}
 local current_in_saved_layout = nil
 local can_save_layout = true
 
-local term_by_azul_win_id = function(id)
-    return funcs.find(function(t) return t.azul_win_id == id end, core.get_terminals())
+local term_by_vesper_win_id = function(id)
+    return funcs.find(function(t) return t.vesper_win_id == id end, core.get_terminals())
 end
 
 local histories_by_tab_id = function(tab_id, history)
@@ -25,8 +25,8 @@ local get_custom_values = function()
     local result = {}
     for _, t in ipairs(core.get_terminals()) do
         result[t.panel_id .. ""] = {
-            azul_win_id = t.azul_win_id,
-            azul_cmd = t.azul_cmd or nil,
+            vesper_win_id = t.vesper_win_id,
+            vesper_cmd = t.vesper_cmd or nil,
             remote_command = t.remote_command,
             cwd = t.cwd,
         }
@@ -40,27 +40,27 @@ local post_restored = function(t, customs, callback)
     if c == nil then
         return
     end
-    t.azul_win_id = c.azul_win_id
-    if c.azul_cmd ~= nil then
-        t.azul_cmd = c.azul_cmd
+    t.vesper_win_id = c.vesper_win_id
+    if c.vesper_cmd ~= nil then
+        t.vesper_cmd = c.vesper_cmd
     end
     if c.remote_command ~= nil then
         t.remote_command = c.remote_command
     end
 
     if callback ~= nil then
-        callback(t, t.azul_win_id)
+        callback(t, t.vesper_win_id)
     end
 
-    if t.azul_cmd ~= nil and t.remote_command == nil then
-        local _cmd = t.azul_cmd .. '<cr>'
+    if t.vesper_cmd ~= nil and t.remote_command == nil then
+        local _cmd = t.vesper_cmd .. '<cr>'
         vim.fn.timer_start(1000, function()
             core.send_to_buf(t.buf, _cmd, true)
         end)
     end
 end
 
-local session_extension = '.azul'
+local session_extension = '.vesper'
 
 local sessions_folder = function()
     local result = options.autosave_location or (FILES.config_dir .. '/sessions')
@@ -71,7 +71,7 @@ local sessions_folder = function()
 end
 
 local session_save_name = function()
-    return sessions_folder() .. '/' .. os.getenv('AZUL_SESSION') .. session_extension
+    return sessions_folder() .. '/' .. os.getenv('VESPER_SESSION') .. session_extension
 end
 
 local session_exists = function()
@@ -91,7 +91,7 @@ L.restore_remotes = function()
         if current_in_saved_layout.tab_page ~= nil then
             core.select_tab(current_in_saved_layout.tab_page)
         end
-        local t = term_by_azul_win_id(current_in_saved_layout.azul_win_id)
+        local t = term_by_vesper_win_id(current_in_saved_layout.vesper_win_id)
         if not funcs.is_float(t) then
             F.hide_floats()
         end
@@ -106,7 +106,7 @@ end
 L.restore_ids = function(title_placeholders, title_overrides)
     core.set_global_panel_id(0)
     core.set_global_tab_id(0)
-    core.set_global_azul_win_id(0)
+    core.set_global_vesper_win_id(0)
     for _, t in ipairs(core.get_terminals()) do
         if t.panel_id > core.get_global_panel_id() then
             core.set_global_panel_id(t.panel_id)
@@ -114,19 +114,19 @@ L.restore_ids = function(title_placeholders, title_overrides)
         if t.tab_id > core.get_global_tab_id() then
             core.set_global_tab_id(t.tab_id)
         end
-        if t.azul_win_id ~= nil and type(t.azul_win_id) == 'number' and t.azul_win_id > core.get_global_azul_win_id() then
-            core.set_global_azul_win_id(t.azul_win_id)
+        if t.vesper_win_id ~= nil and type(t.vesper_win_id) == 'number' and t.vesper_win_id > core.get_global_vesper_win_id() then
+            core.set_global_vesper_win_id(t.vesper_win_id)
         end
     end
     core.set_global_panel_id(core.get_global_panel_id() + 1)
     core.set_global_tab_id(core.get_global_tab_id() + 1)
-    core.set_global_azul_win_id(core.get_global_azul_win_id() + 1)
+    core.set_global_vesper_win_id(core.get_global_vesper_win_id() + 1)
     for i, p in ipairs(title_placeholders or {}) do
-        TABS.set_var(vim.api.nvim_list_tabpages()[i], 'azul_placeholders', p)
+        TABS.set_var(vim.api.nvim_list_tabpages()[i], 'vesper_placeholders', p)
     end
     for i, o in ipairs(title_overrides or {}) do
         if o ~= '' then
-            TABS.set_var(vim.api.nvim_list_tabpages()[i], 'azul_tab_title_overriden', o)
+            TABS.set_var(vim.api.nvim_list_tabpages()[i], 'vesper_tab_title_overriden', o)
         end
     end
 
@@ -161,7 +161,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     end
 
     if idx > #histories.floats then
-        L.restore_ids(histories.azul_placeholders or histories.azul_title_placeholders, histories.title_overrides)
+        L.restore_ids(histories.vesper_placeholders or histories.vesper_title_placeholders, histories.title_overrides)
         return
     end
 
@@ -209,7 +209,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         local buf = nil
         if j == 1 and i == 1 then
             buf = vim.fn.bufnr('%')
-            TABS.set_var(0, 'azul_tab_id', core.get_global_tab_id())
+            TABS.set_var(0, 'vesper_tab_id', core.get_global_tab_id())
         end
         core.open(buf, {cwd = get_cwd(h.to, histories)})
         vim.fn.timer_start(10, function()
@@ -293,7 +293,7 @@ M.restore_layout = function(where, callback)
     local h = funcs.deserialize(f:read("*a"))
     h.callback = callback
     core.stop_updating_titles()
-    TABS.del_var(0, 'azul_placeholders')
+    TABS.del_var(0, 'vesper_placeholders')
     local t = core.get_current_terminal()
     if t ~= nil then
         local old_buf = t.buf
@@ -314,7 +314,7 @@ M.restore_layout = function(where, callback)
     f:close()
 end
 
-EV.persistent_on('ExitAzul', function()
+EV.persistent_on('ExitVesper', function()
     can_save_layout = false
 end)
 
@@ -326,16 +326,16 @@ M.save_layout = function(where, auto)
     local placeholders = {}
     local title_overrides = {}
     for _, id in ipairs(vim.api.nvim_list_tabpages()) do
-        table.insert(history_to_save, histories_by_tab_id(TABS.get_var(id, 'azul_tab_id'), H.get_history()))
-        table.insert(placeholders, TABS.get_var(id, 'azul_placeholders') or {})
-        table.insert(title_overrides, TABS.get_var(id, 'azul_tab_title_overriden') or '')
+        table.insert(history_to_save, histories_by_tab_id(TABS.get_var(id, 'vesper_tab_id'), H.get_history()))
+        table.insert(placeholders, TABS.get_var(id, 'vesper_placeholders') or {})
+        table.insert(title_overrides, TABS.get_var(id, 'vesper_tab_title_overriden') or '')
     end
     local t = core.get_current_terminal()
     local current = nil
     if t ~= nil then
         current = {
             tab_id = t.tab_id,
-            azul_win_id = t.azul_win_id,
+            vesper_win_id = t.vesper_win_id,
             tab_page = t.tab_page,
             pane_id = t.panel_id,
         }
@@ -344,7 +344,7 @@ M.save_layout = function(where, auto)
         floats = vim.tbl_filter(function(x) return funcs.is_float(x) end, core.get_terminals()),
         history = history_to_save,
         customs = get_custom_values(),
-        azul_placeholders = placeholders,
+        vesper_placeholders = placeholders,
         title_overrides = title_overrides,
         current = current,
         geometry = {
@@ -365,7 +365,7 @@ end
 M.auto_restore_layout = function()
     local callback = nil
     if FILES.exists(session_save_name() .. '.lua') then
-        callback = FILES.load_as_module(os.getenv('AZUL_SESSION') .. session_extension, sessions_folder())
+        callback = FILES.load_as_module(os.getenv('VESPER_SESSION') .. session_extension, sessions_folder())
     end
     vim.defer_fn(function()
         M.restore_layout(session_save_name(), callback)
@@ -385,14 +385,14 @@ M.start = function()
         return
     end
 
-    if funcs.is_handling_remote() and os.getenv('AZUL_START_REMOTE') == '1' then
+    if funcs.is_handling_remote() and os.getenv('VESPER_START_REMOTE') == '1' then
         R.open_remote(false, vim.fn.bufnr('%'))
     else
         core.open(vim.fn.bufnr('%'))
     end
 end
 
-EV.persistent_on('ExitAzul', function()
+EV.persistent_on('ExitVesper', function()
     can_save_layout = false
     if funcs.is_autosave() and session_exists() and #core.get_terminals() == 0 then
         os.remove(session_save_name())
@@ -417,7 +417,7 @@ EV.persistent_on({'FloatMoved', 'PaneChanged', 'PaneResized'}, function()
     do_autosave()
 end)
 
-EV.persistent_on({'AzulStarted', 'LayoutRestored'}, function()
+EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()
     if not can_save_layout then
         return
     end

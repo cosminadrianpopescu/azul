@@ -14,9 +14,9 @@ local events = {
     LayoutRestored = {},
     WinConfigChanged = {},
     TabTitleChanged = {},
-    AzulStarted = {},
+    VesperStarted = {},
     ActionRan = {},
-    ExitAzul = {},
+    ExitVesper = {},
     FloatTitleChanged = {},
     ConfigReloaded = {},
     RemoteDisconnected = {},
@@ -29,7 +29,7 @@ local events = {
     TabCreated = {},
     CommandSet = {},
     WinIdSet = {},
-    AzulConnected = {},
+    VesperConnected = {},
     HistoryChanged = {},
     PaneResized = {},
     FloatMoved = {},
@@ -124,8 +124,8 @@ M.error = function(msg, h)
     end
     M.trigger_event("Error", {_m})
     -- The test environment will disable the throwing of errors
-    if vim.g.azul_errors_log ~= nil then
-        funcs.log(vim.inspect(_m), vim.g.azul_errors_log)
+    if vim.g.vesper_errors_log ~= nil then
+        funcs.log(vim.inspect(_m), vim.g.vesper_errors_log)
     else
         error(_m)
     end
