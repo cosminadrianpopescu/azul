@@ -3,7 +3,7 @@ A nvim based terminal multiplexer.
 
 ### Demo (tldr)
 
-* [Azul workflow](https://cloud.taid.be/s/rkLsbJpG8kNHPXq)
+* [Vesper workflow](https://cloud.taid.be/s/rkLsbJpG8kNHPXq)
 * [Tmux workflow](https://cloud.taid.be/s/6nsSz6bzmcaxnoz)
 * [Zellij workflow](https://cloud.taid.be/s/rCTyPcFWnn3aNCS)
 * [Passthorough mode](https://cloud.taid.be/s/76i6pKnQzperH9r)
