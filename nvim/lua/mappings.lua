@@ -117,7 +117,6 @@ local generic_key_handler = function()
         end
         if options.workflow == 'tmux' and core.current_mode() ~= 'n' and core.current_mode() ~= 'a' then
             vim.api.nvim_command('stopinsert')
-            core.enter_mode('a')
             vim.fn.timer_start(1, function()
                 core.enter_mode('M')
             end)
