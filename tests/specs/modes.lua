@@ -10,7 +10,8 @@ local options = require('options')
 local TIMEOUT = 250
 
 local assert_first_line = function(what)
-    local line = funcs.reverse(t.get_current_term_lines())[1]
+    local reversed = t.reversed_non_empty_lines(t.get_current_term_lines())
+    local line = reversed[1]
     t.assert(line:match(what .. "$"), "The first line should end in " .. what)
 end
 

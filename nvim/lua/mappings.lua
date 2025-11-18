@@ -44,9 +44,6 @@ local generic_key_handler = function()
     local timer = nil
     local timer_set = false
     local mode_before_modifier = nil
-    local ignore_keys = 0
-    local run_after_ignore = nil
-    local ignored_keys_count = 0
 
     local reset_timer = function()
         timer_set = false
@@ -67,12 +64,6 @@ local generic_key_handler = function()
             core.enter_mode(mode_before_modifier)
         end
         mode_before_modifier = nil
-    end
-
-    local run_after = function(count, callback)
-        ignored_keys_count = 0
-        ignore_keys = count
-        run_after_ignore = callback
     end
 
     EV.persistent_on('ModeChanged', function(args)
@@ -125,12 +116,10 @@ local generic_key_handler = function()
             return ''
         end
         if options.workflow == 'tmux' and core.current_mode() ~= 'n' and core.current_mode() ~= 'a' then
+            vim.api.nvim_command('stopinsert')
             core.enter_mode('a')
-            core.feedkeys('<C-\\><C-n>', 't')
-            run_after(2, function()
-                vim.fn.timer_start(1, function()
-                    core.enter_mode('M')
-                end)
+            vim.fn.timer_start(1, function()
+                core.enter_mode('M')
             end)
         else
             core.enter_mode('M')
@@ -144,15 +133,6 @@ local generic_key_handler = function()
         if trans == '' then
             reset()
             return nil
-        end
-        if ignore_keys > 0 and ignored_keys_count < ignore_keys then
-            ignored_keys_count = ignored_keys_count + 1
-            if ignored_keys_count == ignore_keys then
-                ignore_keys = 0
-                ignored_keys_count = 0
-                run_after_ignore()
-            end
-            return 'skip'
         end
         if funcs.compare_shortcuts(trans, options.modifier)
             and core.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
