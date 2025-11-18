@@ -226,7 +226,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
             return
         end
         core.select_pane(t.buf)
-        core.split(h.params[1])
+        core.split(h.params[1], nil, get_cwd(h.to, histories))
         vim.fn.timer_start(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)

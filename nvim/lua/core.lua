@@ -251,10 +251,10 @@ M.open = function(buf, opts)
     environment['VIMRUNTIME'] = ''
     environment['VESPER_PANEL_ID'] = panel_id
     local cwd = opts.cwd or (current ~= nil and current.cwd) or vim.fn.getcwd()
-    vim.fn.chdir(cwd)
+    vim.api.nvim_command("lcd " .. cwd)
     local _opts = {
         term = true,
-        cdw = cwd,
+        cwd = cwd,
         env = environment,
     }
 
@@ -793,7 +793,7 @@ M.send_to_current = function(data, escape)
     M.send_to_buf(vim.fn.bufnr(), data, escape)
 end
 
-M.split = function(dir, remote_command)
+M.split = function(dir, remote_command, cwd)
     local t = M.get_current_terminal()
     if funcs.is_float(t) then
         EV.error("You can only split an embeded pane", nil)
@@ -817,7 +817,7 @@ M.split = function(dir, remote_command)
     end
 
     vim.api.nvim_command(cmd)
-    M.open(vim.fn.bufnr('%'), {remote_command = remote_command})
+    M.open(vim.fn.bufnr('%'), {remote_command = remote_command, cwd = cwd or vim.fn.getcwd()})
     vim.fn.timer_start(1, function()
         M.update_titles()
     end)
