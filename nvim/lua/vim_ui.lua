@@ -40,6 +40,7 @@ local function wininput(opts, on_confirm, win_opts)
         border = "rounded",
         title = prompt,
         title_pos = "center",
+        zindex = 1001
     }
 
     win_opts = vim.tbl_deep_extend("force", default_win_opts, win_opts)

@@ -82,6 +82,7 @@ cp $VESPER_DIR/nvim/lua/events.lua $VESPER_PREFIX/share/vesper/nvim/lua
 cp $VESPER_DIR/nvim/lua/undo.lua $VESPER_PREFIX/share/vesper/nvim/lua
 cp $VESPER_DIR/nvim/lua/tab_vars.lua $VESPER_PREFIX/share/vesper/nvim/lua
 cp $VESPER_DIR/nvim/lua/floats.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/nvim/lua/welcome.lua $VESPER_PREFIX/share/vesper/nvim/lua
 cp $VESPER_DIR/nvim/init.lua $VESPER_PREFIX/share/vesper/nvim
 
 if [ ! -d $VESPER_CONFIG ]

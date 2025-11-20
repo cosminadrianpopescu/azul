@@ -20,6 +20,7 @@ local M = {
     use_dressing = true,
     opacity = 0,
     use_lualine = true,
+    show_welcome_message = true,
     auto_start_logging = false,
     modes_cheatsheet_position = 'bottom',
     term = 'st-256color',
