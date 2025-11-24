@@ -27,6 +27,10 @@ EV.persistent_on({
     'UndoFinished', 'FullscreenToggled', 'DirectoryChanged',
 }, do_start_insert)
 
+EV.persistent_on({'MouseClick'}, function()
+    start_insert(true)
+end)
+
 EV.persistent_on('LayoutSaved', function(args)
     if args[2] == true then
         return

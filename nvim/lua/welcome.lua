@@ -17,8 +17,6 @@ local get_win_config = function()
     local h = vim.o.lines - f2 * 2
     local x = f1
     local y = f2 - 1
-    core.suspend()
-    win_buffer = vim.api.nvim_create_buf(false, true)
     return {
         width = w, height = h, col = x, row = y, focusable = false, zindex = 500,
         border = 'rounded', relative = 'editor', style = 'minimal',
@@ -29,7 +27,8 @@ local create_window = function()
     local current_win = vim.api.nvim_get_current_win()
     core.suspend()
     win_buffer = vim.api.nvim_create_buf(false, true)
-    win_id = vim.api.nvim_open_win(win_buffer, true, get_win_config())
+    vim.api.nvim_buf_set_lines(win_buffer, 0, -1, false, welcome_content())
+    win_id = vim.api.nvim_open_win(win_buffer, false, get_win_config())
     vim.filetype.add({
         filename = {
             vesper_cheatsheet_window = 'vesper_welcome',
@@ -38,15 +37,15 @@ local create_window = function()
     vim.api.nvim_set_option_value('winhighlight', 'Normal:Identifier', {scope = 'local', win = win_id})
     vim.api.nvim_set_option_value('filetype', 'vesper_welcome', {buf = win_buffer})
     vim.api.nvim_set_current_win(current_win)
-    vim.api.nvim_buf_set_lines(win_buffer, 0, -1, false, welcome_content())
     core.resume()
 end
 
 local update_config_ini = function()
+    options.show_welcome_message = false
     local files = require('files')
     local path = files.config_dir .. '/config.ini'
     if not files.exists(path) then
-        files.write_file(path, '[Options]\n\nshow_welcome_message = false')
+        files.write_file(path, '[Options]\n\nshow_welcome_message = false', true)
         return
     end
 
@@ -57,7 +56,7 @@ local update_config_ini = function()
         else
             content = content:gsub('(%[Options%][^\n]*\n)', '%1\nshow_welcome_message = false\n')
         end
-        files.write_file(path, content)
+        files.write_file(path, content, true)
     end
 end
 
@@ -67,11 +66,18 @@ EV.persistent_on('VesperStarted', function()
     end
 
     create_window()
-    -- update_config_ini()
+end)
+
+EV.persistent_on('WelcomeCloseShortcut', function()
+    funcs.safe_close_window(win_id)
+    vim.fn.timer_start(1, function()
+        update_config_ini()
+    end)
+    win_id = nil
 end)
 
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
-    pattern = "*", callback = function(ev)
+    pattern = "*", callback = function()
         if win_id == nil then
             return
         end

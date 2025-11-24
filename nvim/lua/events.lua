@@ -38,8 +38,10 @@ local events = {
     UndoFinished = {},
     TerminalAdded = {},
     FullscreenToggled = {},
-
     DirectoryChanged = {},
+
+    MouseClick = {},
+    WelcomeCloseShortcut = {},
 }
 
 local persistent_events = {}
@@ -130,5 +132,9 @@ M.error = function(msg, h)
         error(_m)
     end
 end
+
+vim.keymap.set({'n', 'i', 't'}, '<LeftRelease>', function()
+    M.trigger_event('MouseClick', {vim.fn.getmousepos()})
+end)
 
 return M

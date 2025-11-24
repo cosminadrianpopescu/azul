@@ -1,6 +1,7 @@
 local cmd = vim.api.nvim_create_autocmd
 local funcs = require('functions')
 local core = require('core')
+local options = require('options')
 local EV = require('events')
 local F = require('floats')
 
@@ -147,6 +148,16 @@ EV.persistent_on('RemoteDisconnected', function(args)
     remote_disconnected(args[1])
 end)
 
+EV.persistent_on('ModeChanged', function(args)
+    local t = core.get_current_terminal()
+    local m = args[2]
+    if (m ~= 'n' and m ~= 'a') or t.remote_command == nil then
+        return
+    end
+
+    M.remote_enter_scroll_mode()
+end)
+
 EV.persistent_on('TerminalAdded', function(args)
     local t = args[1]
     local info = vim.api.nvim_get_chan_info(t.term_id)
@@ -155,5 +166,9 @@ EV.persistent_on('TerminalAdded', function(args)
     end
     t.remote_command = info.argv[#info.argv]
 end)
+
+M.remote_enter_scroll_mode = function()
+    core.send_to_current('<C-\\><C-n>', true)
+end
 
 return M

@@ -440,7 +440,10 @@ local set_shortcut = function(action, shortcut, mode, arg)
             map(mode, shortcut, '', {
                 callback = function()
                     core.enter_mode('a')
-                    core.feedkeys('<C-\\><C-n>' .. suf, 't')
+                    vim.api.nvim_command('stopinsert')
+                    if suf ~= '' then
+                        core.feedkeys(suf, 't')
+                    end
                 end,
                 desc = 'Enter ' .. mapping[arg] .. ' mode',
             })
@@ -621,7 +624,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
         })
     elseif action == 'remote_scroll' then
         map(mode, shortcut, '', {
-            callback = core.remote_enter_scroll_mode,
+            callback = R.remote_enter_scroll_mode,
             desc = "Scroll a remote pane",
             action = action,
             arg = arg,

@@ -119,7 +119,7 @@ local term_select = function(opts)
                 local name = (info.variables and info.variables.term_title) or info.name
                 local s = {
                     value = name, valid = true,
-                    ordinal = name, display = ((core.is_float(t) and "Floating: ") or ("Tab " .. vim.api.nvim_win_get_tabpage(t.win_id) .. ": ")) .. name, terminal = t,
+                    ordinal = name, display = ((funcs.is_float(t) and "Floating: ") or ("Tab " .. vim.api.nvim_win_get_tabpage(t.win_id) .. ": ")) .. name, terminal = t,
                 }
                 return s
             end

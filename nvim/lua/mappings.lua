@@ -129,10 +129,27 @@ local generic_key_handler = function()
 
     local process_input = function(key, me)
         local trans = string.gsub(vim.fn.keytrans(key), "Bslash", "\\")
+        funcs.log("KEY IS " .. vim.inspect(trans))
         if trans == '' then
             reset()
             return nil
         end
+        if options.show_welcome_message and trans == '<C-Q>' then
+            EV.trigger_event('WelcomeCloseShortcut')
+            return ''
+        end
+        -- if core.current_mode() == 'n' or core.current_mode() == 'a' then
+        --     if trans == ':' and options.strict_scroll then
+        --         funcs.log('got :')
+        --         return ''
+        --     end
+        --     local t = core.get_current_terminal()
+        --     if t.remote_command and trans ~= 'i' then
+        --         funcs.log('captured ' .. vim.inspect(trans))
+        --         core.send_to_current(trans, true)
+        --         return ''
+        --     end
+        -- end
         if funcs.compare_shortcuts(trans, options.modifier)
             and core.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
             and (options.workflow == 'tmux' or options.workflow == 'vesper')
