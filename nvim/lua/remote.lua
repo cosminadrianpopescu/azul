@@ -156,6 +156,9 @@ EV.persistent_on('ModeChanged', function(args)
     end
 
     M.remote_enter_scroll_mode()
+    if options.workflow ~= 'tmux' or (m == 'n' and args[1] == 'M') then
+        core.enter_mode('t')
+    end
 end)
 
 EV.persistent_on('TerminalAdded', function(args)
