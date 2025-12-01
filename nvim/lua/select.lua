@@ -1,5 +1,8 @@
 -- local from_entry = require "telescope.from_entry"
 local core = require('core')
+if require('telescope') == nil then
+    return {}
+end
 local sets = require('telescope.actions.set')
 local actions = require('telescope.actions')
 local pickers = require "telescope.pickers"

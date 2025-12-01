@@ -41,7 +41,6 @@ local events = {
     DirectoryChanged = {},
 
     MouseClick = {},
-    WelcomeCloseShortcut = {},
 }
 
 local persistent_events = {}

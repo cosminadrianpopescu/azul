@@ -25,7 +25,7 @@ local rebuild_zindex_floats = function()
     table.sort(floats, function(a, b) return a.last_access < b.last_access end)
     for i, f in ipairs(floats) do
         f.win_config.zindex = i
-        if f.win_id ~= nil then
+        if f.win_id ~= nil and vim.api.nvim_win_is_valid(f.win_id) then
             vim.api.nvim_win_set_config(f.win_id, f.win_config)
         end
     end

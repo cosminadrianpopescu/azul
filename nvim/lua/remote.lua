@@ -151,14 +151,23 @@ end)
 EV.persistent_on('ModeChanged', function(args)
     local t = core.get_current_terminal()
     local m = args[2]
-    if (m ~= 'n' and m ~= 'a') or t.remote_command == nil then
+    if (m ~= 'n' and m ~= 'a') or t == nil or t.remote_command == nil then
         return
     end
 
     M.remote_enter_scroll_mode()
-    if options.workflow ~= 'tmux' or (m == 'n' and args[1] == 'M') then
+    if options.workflow == 'vesper' or (args[1] == 'M' and options.workflow == 'tmux') then
         core.enter_mode('t')
     end
+end)
+
+EV.persistent_on('PaneChanged', function(args)
+    local t = args[1]
+    if t.remote_command == nil then
+        return
+    end
+
+    M.remote_exit_scroll_mode()
 end)
 
 EV.persistent_on('TerminalAdded', function(args)
@@ -171,7 +180,21 @@ EV.persistent_on('TerminalAdded', function(args)
 end)
 
 M.remote_enter_scroll_mode = function()
+    local t = core.get_current_terminal()
+    if t.term_id == nil then
+        return
+    end
+    t.is_scroll = true
     core.send_to_current('<C-\\><C-n>', true)
+end
+
+M.remote_exit_scroll_mode = function()
+    local t = core.get_current_terminal()
+    if t.term_id == nil or t.is_scroll == nil then
+        return
+    end
+    t.is_scroll = nil
+    core.send_to_current('i', true)
 end
 
 return M

@@ -1,6 +1,10 @@
 import { writeFileSync } from "fs";
 import { test } from "./test";
 
+const DEFAULT_OPTIONS = {show_welcome_message: false}
+
+const get_options = (opts: Object) => Object.assign({}, DEFAULT_OPTIONS, (opts || {}))
+
 const build_config = (base_path: string, options: {[key: string]: any}) => {
         let config = `
 [Options]
@@ -25,7 +29,7 @@ ${Object.keys(ss).map(k => `${k} = ${ss[k]}`).join("\n")}
 function test_factory(test_case: string, options: {[key: string]: any} = {}, which = test) {
     options.shell = 'bash';
     which(test_case, (base_path: string) => {
-        build_config(base_path, options);
+        build_config(base_path, get_options(options));
         return {};
     });
 }
@@ -88,7 +92,7 @@ const do_misc = () => {
     test_factory('reload-config');
     test_factory('reload-config', {workflow: 'tmux'});
     test('remotes', (base_path: string) => {
-        build_config(base_path, {shell: 'bash'});
+        build_config(base_path, get_options({shell: 'bash'}));
         return {
             VESPER_REMOTE_CONNECTION: `vesper://${base_path}/bin/vesper`,
             SHELL: 'bash'

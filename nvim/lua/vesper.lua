@@ -82,5 +82,6 @@ M.undo = U.undo
 M.toggle_fullscreen = F.toggle_fullscreen
 
 M.cd = core.cd
+M.find_key_map = core.find_key_map
 
 return M

@@ -27,6 +27,7 @@ local M = {
     autosave = 'always',
     autosave_location = nil,
     undo_restore_cmd = 'cat',
+
     strict_scroll = true,
 }
 

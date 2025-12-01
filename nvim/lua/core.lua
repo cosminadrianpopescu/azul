@@ -33,6 +33,7 @@ local dead_terminal = nil
 --- @field current_selected_pane boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
 --- @field remote_command string The terminal's remote connection
 --- @field group string The float current group, if the terminal is a float
+--- @field is_scroll boolean Set to true if a remote pane is in scroll mode
 local terminals = {}
 local tab_id = 0
 local vesper_win_id = 0
@@ -790,7 +791,8 @@ M.send_to_buf = function(buf, data, escape)
 end
 
 M.send_to_current = function(data, escape)
-    M.send_to_buf(vim.fn.bufnr(), data, escape)
+    local t = M.get_current_terminal()
+    M.send_to_buf(t.buf, data, escape)
 end
 
 M.split = function(dir, remote_command, cwd)
@@ -1377,6 +1379,10 @@ M.cd = function(new_cwd, t)
     else
         when_done(new_cwd)
     end
+end
+
+M.find_key_map = function(m, ls)
+    return funcs.find(function(_m) return _m.m == m and funcs.compare_shortcuts(_m.ls, ls) end, mode_mappings)
 end
 
 EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()

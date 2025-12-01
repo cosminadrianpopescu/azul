@@ -61,19 +61,33 @@ local update_config_ini = function()
 end
 
 EV.persistent_on('VesperStarted', function()
-    if not options.show_welcome_message then
+    if not options.show_welcome_message or funcs.is_marionette() then
         return
     end
 
-    create_window()
-end)
+    local map = core.find_key_map('t', '<C-q>')
+    local rs = nil
+    local options = nil
+    if map ~= nil then
+        rs = map.rs
+        options = map.options
+    end
 
-EV.persistent_on('WelcomeCloseShortcut', function()
-    funcs.safe_close_window(win_id)
-    vim.fn.timer_start(1, function()
-        update_config_ini()
-    end)
-    win_id = nil
+    core.set_key_map('t', '<C-q>', '', {
+        callback = function()
+            funcs.safe_close_window(win_id)
+            vim.fn.timer_start(1, function()
+                update_config_ini()
+            end)
+            win_id = nil
+            if map ~= nil then
+                core.set_key_map('t', '<C-q>', rs, options)
+            end
+        end,
+        description = "Close the welcome screen"
+    })
+
+    create_window()
 end)
 
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
