@@ -254,7 +254,6 @@ M.open = function(buf, opts)
     local cwd = opts.cwd or (current ~= nil and current.cwd) or vim.fn.getcwd()
     vim.api.nvim_command("lcd " .. cwd)
     local _opts = {
-        term = true,
         cwd = cwd,
         env = environment,
     }
@@ -272,14 +271,14 @@ M.open = function(buf, opts)
         local cmd = (opts.remote_command == nil and {vim.o.shell}) or opts.remote_command
         if not is_started and opts.remote_command == nil then
             local safe, _ = pcall(function()
-                vim.fn.jobstart(cmd, _opts)
+                vim.fn.termopen(cmd, _opts)
             end)
             if not safe then
                 FILES.write_file(os.getenv('VESPER_RUN_DIR') .. '/' .. os.getenv('VESPER_SESSION') .. '-failed', '')
                 vim.api.nvim_command('quit!')
             end
         else
-            vim.fn.jobstart(cmd, _opts)
+            vim.fn.termopen(cmd, _opts)
         end
         if do_on_enter then
             OnEnter({buf = _buf})
