@@ -28,7 +28,7 @@ local M = {
     autosave_location = nil,
     undo_restore_cmd = 'cat',
 
-    strict_scroll = true,
+    strict_scroll = false,
 }
 
 M.set_option = function(key, value)

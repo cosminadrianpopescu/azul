@@ -6,6 +6,7 @@ local FILES = require('files')
 local TABS = require('tab_vars')
 local options = require('options')
 local F = require('floats')
+local R = require('remote')
 
 local record_undo = true
 local undo_list = {}
@@ -72,7 +73,7 @@ local undo_tab = function(rec)
     else
         vim.api.nvim_command('0tabnew')
     end
-    core.open(vim.fn.bufnr('%'), {cwd = rec.term.cwd, remote_info = rec.term.remote_info})
+    core.open(vim.fn.bufnr('%'), {cwd = rec.term.cwd, remote_command = R.get_remote_command(rec.term.remote_info)})
 end
 
 local undo_split = function(rec)
@@ -93,7 +94,7 @@ local undo_split = function(rec)
         end, 1)
     end)
     core.select_pane(t.buf)
-    core.split(rec.create.params[1], rec.term.remote_info)
+    core.split(rec.create.params[1], R.get_remote_command(rec.term.remote_info))
 end
 
 local undo_float = function(rec)
@@ -104,7 +105,7 @@ local undo_float = function(rec)
     end)
     core.stop_updating_titles()
     F.open_float({
-        group = rec.term.group, win_config = rec.term.win_config, remote_info = rec.term.remote_info,
+        group = rec.term.group, win_config = rec.term.win_config, remote_command = R.get_remote_command(rec.term.remote_info),
         cwd = rec.term.cwd,
     })
 end

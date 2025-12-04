@@ -250,21 +250,6 @@ local generic_key_handler = function()
             reset()
             return ''
         end
-        local vim_mode = vim.fn.mode()
-        if result == nil and vim_mode == 'n' and (key == 'q' or key == 'r') then
-            local t = core.get_current_terminal()
-            if funcs.remote_state(t) == 'disconnected' then
-                reset()
-                pcall(function()
-                    if key == 'q' then
-                        core.remote_quit(t)
-                    else
-                        core.remote_reconnect(t)
-                    end
-                end)
-                return ''
-            end
-        end
         if result == 'skip' then
             return nil
         end

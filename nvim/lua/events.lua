@@ -41,6 +41,7 @@ local events = {
     DirectoryChanged = {},
 
     MouseClick = {},
+    RemoteQuit = {},
 }
 
 local persistent_events = {}
@@ -98,10 +99,10 @@ M.persistent_on = function(ev, callback)
 end
 
 M.single_shot = function(ev, callback)
-    local L = {}
-    L.id = add_event(ev, function(args)
+    local id
+    id = add_event(ev, function(args)
         callback(args)
-        M.clear_event(ev, L.id)
+        M.clear_event(ev, id)
     end, events)
 end
 

@@ -177,29 +177,6 @@ local join = function(t, delimiter)
     return result
 end
 
-local remote_info = function(connection)
-    local p = '([a-z]+)://([^@]+)@?(.*)$'
-    if connection == nil or not string.match(connection, p) then
-        return nil
-    end
-    local proto, bin, host = string.gmatch(connection, p)()
-    local cmd = ''
-    local uid = uuid()
-    if proto == 'vesper' then
-        cmd = bin .. ' -a ' .. uid .. ' -m'
-    elseif proto == 'dtach' then
-        cmd = bin .. ' -A ' .. uid .. ' ' .. vim.o.shell
-    elseif proto == 'abduco' then
-        cmd = bin .. ' -A ' .. uid
-    end
-    if host ~= '' and host ~= nil then
-        return 'ssh ' .. host .. " -t '" .. cmd .. "'"
-    end
-    return {
-        host = host, proto = proto, bin = bin, cmd = cmd, uid = uid,
-    }
-end
-
 local is_marionette = function()
     return os.getenv('VESPER_IS_MARIONETTE') == '1'
 end
@@ -318,7 +295,6 @@ end
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
-    remote_info = remote_info,
     session_child_file = session_child_file,
     safe_close_window = safe_close_window,
     safe_buf_delete = safe_buf_delete,
