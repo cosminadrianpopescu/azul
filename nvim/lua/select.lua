@@ -1,6 +1,9 @@
 -- local from_entry = require "telescope.from_entry"
 local core = require('core')
-if require('telescope') == nil then
+local safe, _ = pcall(function()
+    require('telescope')
+end)
+if not safe then
     return {}
 end
 local sets = require('telescope.actions.set')

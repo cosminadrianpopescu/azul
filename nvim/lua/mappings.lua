@@ -8,6 +8,10 @@ local INS = require('insert')
 local is_editing = false
 
 local ns_id = vim.api.nvim_create_namespace('VIM_ON_KEY')
+local M = {}
+
+local key_parsers = {}
+local id = 0
 
 local get_mappings_for_mode = function(mode)
     local result = vim.tbl_filter(function(x) return x.m == mode end, core.get_mode_mappings())
@@ -133,13 +137,24 @@ local generic_key_handler = function()
             reset()
             return nil
         end
+        local block = false
+        for _, parser in pairs(key_parsers) do
+            if parser(trans) == true then
+                block = true
+            end
+        end
+
+        if block then
+            return ''
+        end
+
         if core.current_mode() == 'n' or core.current_mode() == 'a' then
             if trans == ':' and options.strict_scroll then
                 return ''
             end
         end
         -- local t = core.get_current_terminal()
-        -- if core.current_mode() == 'n' or core.current_mode() == 'M' or core.current_mode() == 'a' and t.remote_command ~= nil then
+        -- if core.current_mode() == 'n' or core.current_mode() == 'M' or core.current_mode() == 'a' and t.remote_info ~= nil then
         --     if funcs.compare_shortcuts(trans, '<C-b>') then
         --         if core.current_mode() == 'M' then
         --             core.enter_mode('a')
@@ -281,3 +296,15 @@ core.set_key_map('P', options.passthrough_escape, '', {
 EV.persistent_on('VesperStarted', function()
     generic_key_handler()
 end)
+
+M.add_key_parser = function(callback)
+    key_parsers['key-parser-' .. id] = callback
+    id = id + 1
+    return id - 1
+end
+
+M.remove_key_parser = function(id)
+    key_parsers['key-parser-' .. id] = nil
+end
+
+return M

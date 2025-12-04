@@ -12,7 +12,7 @@ local undo_list = {}
 local M = {}
 
 local restore_lines = function(buf, rec)
-    if rec.term.remote_command ~= nil then
+    if rec.term.remote_info ~= nil then
         return
     end
     local lines = (rec and rec.lines) or {}
@@ -72,7 +72,7 @@ local undo_tab = function(rec)
     else
         vim.api.nvim_command('0tabnew')
     end
-    core.open(vim.fn.bufnr('%'), {cwd = rec.term.cwd, remote_command = rec.term.remote_command})
+    core.open(vim.fn.bufnr('%'), {cwd = rec.term.cwd, remote_info = rec.term.remote_info})
 end
 
 local undo_split = function(rec)
@@ -93,7 +93,7 @@ local undo_split = function(rec)
         end, 1)
     end)
     core.select_pane(t.buf)
-    core.split(rec.create.params[1], rec.term.remote_command)
+    core.split(rec.create.params[1], rec.term.remote_info)
 end
 
 local undo_float = function(rec)
@@ -104,7 +104,7 @@ local undo_float = function(rec)
     end)
     core.stop_updating_titles()
     F.open_float({
-        group = rec.term.group, win_config = rec.term.win_config, remote_command = rec.term.remote_command,
+        group = rec.term.group, win_config = rec.term.win_config, remote_info = rec.term.remote_info,
         cwd = rec.term.cwd,
     })
 end
@@ -161,7 +161,7 @@ M.undo = function()
         print("Nothing to undo")
         return
     end
-    rec.term.remote_command = rec.term._remote_command
+    rec.term.remote_info = rec.term._remote_info
     if rec.is_float then
         return undo_float(rec)
     elseif (rec and rec.create and rec.create.operation) == 'create' then

@@ -27,7 +27,7 @@ local get_custom_values = function()
         result[t.panel_id .. ""] = {
             vesper_win_id = t.vesper_win_id,
             vesper_cmd = t.vesper_cmd or nil,
-            remote_command = t.remote_command,
+            remote_info = t.remote_info,
             cwd = t.cwd,
         }
     end
@@ -44,15 +44,15 @@ local post_restored = function(t, customs, callback)
     if c.vesper_cmd ~= nil then
         t.vesper_cmd = c.vesper_cmd
     end
-    if c.remote_command ~= nil then
-        t.remote_command = c.remote_command
+    if c.remote_info ~= nil then
+        t.remote_info = c.remote_info
     end
 
     if callback ~= nil then
         callback(t, t.vesper_win_id)
     end
 
-    if t.vesper_cmd ~= nil and t.remote_command == nil then
+    if t.vesper_cmd ~= nil and t.remote_info == nil then
         local _cmd = t.vesper_cmd .. '<cr>'
         vim.fn.timer_start(1000, function()
             core.send_to_buf(t.buf, _cmd, true)
@@ -79,7 +79,7 @@ local session_exists = function()
 end
 
 L.restore_remotes = function()
-    local remotes = vim.tbl_filter(function(t) return t.remote_command ~= nil end, core.get_terminals())
+    local remotes = vim.tbl_filter(function(t) return t.remote_info ~= nil end, core.get_terminals())
     for _, r in ipairs(remotes) do
         vim.fn.jobstop(r.term_id)
     end

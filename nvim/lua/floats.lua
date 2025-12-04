@@ -74,7 +74,7 @@ end
 --- @field cwd? string The current working directory of the new terminal
 --- @field env? table A list of key/values to represent the environment variables to be set fo the new terminal
 --- @field callback? function If set, then the callback will be called everytime for a new line in the terminal
---- @field remote_command? string If set, then open the tab remotely by using the command indicated
+--- @field remote_info? remote_info If set, then open the tab remotely by using the command indicated
 --- @field group? string The group in which to open the float
 --- @field to_restore? terminals The float terminal to restore
 --- @field win_config? table The window options

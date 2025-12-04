@@ -1,7 +1,6 @@
 local cmd = vim.api.nvim_create_autocmd
 local funcs = require('functions')
 local core = require('core')
-local options = require('options')
 local EV = require('events')
 local F = require('floats')
 
@@ -10,7 +9,7 @@ local M = {}
 local get_disconnected_content = function(t)
     local content = {
         "This buffer is connected remotely to ",
-        t.remote_command,
+        t.remote_info.cmd,
         "",
         "The remote connection was lost",
         "    [q] quit and close this pane",
@@ -48,7 +47,7 @@ end
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
     pattern = "*", callback = function(ev)
         local t = funcs.find(function(t) return (t.win_id or '') .. '' == ev.file end, core.get_terminals())
-        if t == nil or t.remote_command == nil or funcs.remote_state(t) ~= 'disconnected' or t.win_id == nil then
+        if t == nil or t.remote_info == nil or funcs.remote_state(t) ~= 'disconnected' or t.win_id == nil then
             return
         end
         t.win_config = vim.api.nvim_win_get_config(t.win_id)
@@ -81,7 +80,7 @@ local remote_disconnected = function(t)
     -- })
     -- vim.api.nvim_buf_set_keymap(t.buf, 't', 'q', '', {
     --     callback = function()
-    --         -- t.remote_command = nil
+    --         -- t.remote_info = nil
     --         core.remote_quit(t)
     --     end
     -- })
@@ -89,14 +88,14 @@ end
 
 local parse_remote_connection = function(force, callback)
     local when_done = function(result)
-        local remote_command = funcs.remote_command(result)
-        if remote_command == nil then
+        local remote_info = funcs.remote_info(result)
+        if remote_info == nil then
             return
         end
         EV.single_shot('TerminalAdded', function(args)
-            args[1].remote_command = remote_command
+            args[1].remote_info = remote_info
         end)
-        callback(remote_command)
+        callback(remote_info)
     end
     if force == true or not funcs.is_handling_remote() then
         core.user_input({prompt = "Please enter a remote connection:"}, function(result)
@@ -119,8 +118,8 @@ M.open_float_remote = function(force, options)
     if options == nil then
         options = {}
     end
-    parse_remote_connection(force, function(cmd)
-        F.open_float({group = options.group, win_config = options.win_config, to_restore = options.to_restore, remote_command = cmd})
+    parse_remote_connection(force, function(info)
+        F.open_float({group = options.group, win_config = options.win_config, to_restore = options.to_restore, remote_info = info})
     end)
 end
 
@@ -135,8 +134,8 @@ end
 ---@param force boolean If true, then always ask for the remote connection, even if the VESPER_REMOTE_CONNECTION var is set
 ---@param buf number The current buffer number (optional)
 M.open_remote = function(force, buf)
-    parse_remote_connection(force, function(cmd)
-        core.open(buf, {remote_command = cmd})
+    parse_remote_connection(force, function(info)
+        core.open(buf, {remote_info = info})
     end)
 end
 
@@ -146,37 +145,6 @@ end
 
 EV.persistent_on('RemoteDisconnected', function(args)
     remote_disconnected(args[1])
-end)
-
-EV.persistent_on('ModeChanged', function(args)
-    local t = core.get_current_terminal()
-    local m = args[2]
-    if (m ~= 'n' and m ~= 'a') or t == nil or t.remote_command == nil then
-        return
-    end
-
-    M.remote_enter_scroll_mode()
-    if options.workflow == 'vesper' or (args[1] == 'M' and options.workflow == 'tmux') then
-        core.enter_mode('t')
-    end
-end)
-
-EV.persistent_on('PaneChanged', function(args)
-    local t = args[1]
-    if t.remote_command == nil then
-        return
-    end
-
-    M.remote_exit_scroll_mode()
-end)
-
-EV.persistent_on('TerminalAdded', function(args)
-    local t = args[1]
-    local info = vim.api.nvim_get_chan_info(t.term_id)
-    if #info.argv <= 1 then
-        return
-    end
-    t.remote_command = info.argv[#info.argv]
 end)
 
 M.remote_enter_scroll_mode = function()

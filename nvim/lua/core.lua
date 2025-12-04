@@ -17,6 +17,13 @@ local vesper_started = false
 local last_access = 0
 local dead_terminal = nil
 
+--- @class remote_info
+--- @field host string The host
+--- @field proto 'tmux'|'vesper'|'zellij'|'dtach'|'abduco' The type of the remote connection
+--- @field bin string The binary to be executed
+--- @field cmd string The command to be executed
+--- @field uid string The UID of the remote connection
+
 --- @class terminals
 --- @field is_current boolean If true, it means that this is the current terminal
 --- @field cwd string The current working dir
@@ -31,7 +38,7 @@ local dead_terminal = nil
 --- @field win_config table The current neovim window config
 --- @field _win_config table The current neovim window config before a full screen
 --- @field current_selected_pane boolean If a tab contains more than one embedded pane, this will be true for the currently selected pane
---- @field remote_command string The terminal's remote connection
+--- @field remote_info remote_info The terminal's info about the remote connection
 --- @field group string The float current group, if the terminal is a float
 --- @field is_scroll boolean Set to true if a remote pane is in scroll mode
 local terminals = {}
@@ -228,7 +235,7 @@ end
 --- @field cwd? string The current working directory of the new terminal
 --- @field env? table A list of key/values to represent the environment variables to be set fo the new terminal
 --- @field callback? function If set, then the callback will be called everytime for a new line in the terminal
---- @field remote_command? string If set, then open the tab remotely by using the command indicated
+--- @field remote_info? remote_info If set, then open the tab remotely by using the command indicated
 
 --- Opens a new terminal in the current window
 ---
@@ -268,8 +275,8 @@ M.open = function(buf, opts)
     end
 
     local do_open = function()
-        local cmd = (opts.remote_command == nil and {vim.o.shell}) or opts.remote_command
-        if not is_started and opts.remote_command == nil then
+        local cmd = (opts.remote_info == nil and {vim.o.shell}) or opts.remote_info.cmd
+        if not is_started and opts.remote_info == nil then
             local safe, _ = pcall(function()
                 vim.fn.termopen(cmd, _opts)
             end)
@@ -295,7 +302,7 @@ local OnTermClose = function(ev)
     if t == nil then
         return
     end
-    if t.remote_command ~= nil then
+    if t.remote_info ~= nil then
         EV.trigger_event('RemoteDisconnected', {t})
         vim.fn.timer_start(1, function()
             M.refresh_buf(t.buf, false)
@@ -794,7 +801,7 @@ M.send_to_current = function(data, escape)
     M.send_to_buf(t.buf, data, escape)
 end
 
-M.split = function(dir, remote_command, cwd)
+M.split = function(dir, remote_info, cwd)
     local t = M.get_current_terminal()
     if funcs.is_float(t) then
         EV.error("You can only split an embeded pane", nil)
@@ -818,7 +825,7 @@ M.split = function(dir, remote_command, cwd)
     end
 
     vim.api.nvim_command(cmd)
-    M.open(vim.fn.bufnr('%'), {remote_command = remote_command, cwd = cwd or vim.fn.getcwd()})
+    M.open(vim.fn.bufnr('%'), {remote_info = remote_info, cwd = cwd or vim.fn.getcwd()})
     vim.fn.timer_start(1, function()
         M.update_titles()
     end)
@@ -1255,14 +1262,14 @@ end
 
 M.do_open_remote = function(force, callback)
     local when_done = function(result)
-        local remote_command = funcs.remote_command(result)
-        if remote_command == nil then
+        local remote_info = funcs.remote_info(result)
+        if remote_info == nil then
             return
         end
         EV.single_shot('TerminalAdded', function(args)
-            args[1].remote_command = remote_command
+            args[1].remote_info = remote_info
         end)
-        callback(remote_command)
+        callback(remote_info)
     end
     if force == true or not funcs.is_handling_remote() then
         M.user_input({prompt = "Please enter a remote connection:"}, function(result)
@@ -1279,7 +1286,7 @@ M.do_open_remote = function(force, callback)
 end
 
 M.remote_reconnect = function(t)
-    if t.remote_command == nil then
+    if t.remote_info == nil then
         EV.error("The terminal " .. t.term_id .. " is not a remote terminal", nil)
         return
     end
@@ -1298,7 +1305,7 @@ M.remote_reconnect = function(t)
         end)
     end
     M.suspend()
-    M.open(t.buf, {remote_command = t.remote_command})
+    M.open(t.buf, {remote_info = t.remote_info})
     M.resume()
     EV.trigger_event('RemoteReconnected', {t})
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
@@ -1306,8 +1313,8 @@ M.remote_reconnect = function(t)
 end
 
 M.remote_quit = function(t)
-    t._remote_command = t.remote_command
-    t.remote_command = nil
+    t._remote_info = t.remote_info
+    t.remote_info = nil
     local term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
     if term_id ~= nil then
         vim.fn.jobstop(funcs.safe_get_buf_var(t.buf, 'terminal_job_id'))
@@ -1352,7 +1359,7 @@ M.set_global_vesper_win_id = function(id)
 end
 
 M.copy_terminal_properties = function (src, dest, with_ids)
-    local props = {'tab_page', 'win_config', 'vesper_placeholders', 'group', 'overriden_title', 'vesper_win_id', 'vesper_cmd', 'remote_command'}
+    local props = {'tab_page', 'win_config', 'vesper_placeholders', 'group', 'overriden_title', 'vesper_win_id', 'vesper_cmd', 'remote_info'}
     if with_ids == true then
         local ids = {'panel_id', 'tab_id'}
         for _, id in ipairs(ids) do

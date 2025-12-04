@@ -5,6 +5,8 @@ local win_id = nil
 local EV = require('events')
 local options = require('options')
 local funcs = require('functions')
+local key_parser_id = nil
+local MAP = require('mappings')
 
 local welcome_content = function()
     return {"Welcome to VESPER"}
@@ -60,32 +62,28 @@ local update_config_ini = function()
     end
 end
 
+local key_parser = function(key)
+    if not funcs.compare_shortcuts('<C-q>', key) then
+        return false
+    end
+
+    funcs.safe_close_window(win_id)
+    vim.fn.timer_start(1, function()
+        update_config_ini()
+    end)
+    win_id = nil
+    if key_parser_id ~= nil then
+        MAP.remove_key_parser(key_parser_id)
+    end
+    key_parser_id = nil
+    return true
+end
+
 EV.persistent_on('VesperStarted', function()
     if not options.show_welcome_message or funcs.is_marionette() then
         return
     end
-
-    local map = core.find_key_map('t', '<C-q>')
-    local rs = nil
-    local options = nil
-    if map ~= nil then
-        rs = map.rs
-        options = map.options
-    end
-
-    core.set_key_map('t', '<C-q>', '', {
-        callback = function()
-            funcs.safe_close_window(win_id)
-            vim.fn.timer_start(1, function()
-                update_config_ini()
-            end)
-            win_id = nil
-            if map ~= nil then
-                core.set_key_map('t', '<C-q>', rs, options)
-            end
-        end,
-        description = "Close the welcome screen"
-    })
+    key_parser_id = MAP.add_key_parser(key_parser)
 
     create_window()
 end)

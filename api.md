@@ -94,8 +94,8 @@ Hides the floats if they are displayed
     in the terminal. Use it with caution, since it will accumulate memory
     until the current terminal is closed. If you set this on a currently long
     running shell, you might experience high memory consumption.
-  - remote_command If set, then open the new terminal remotelly, using the
-    connection indicated in the remote_command (see the remote section)
+  - remote_info If set, then open the new terminal remotelly, using the
+    connection indicated in the `remote_info.cmd` (see the remote section)
 
 Opens a new pane with a new shell.
 
@@ -136,8 +136,8 @@ floats are shown
     in the terminal. Use it with caution, since it will accumulate memory
     until the current terminal is closed. If you set this on a currently long
     running shell, you might experience high memory consumption.
-  - remote_command If set, then open the new terminal remotelly, using the
-    connection indicated in the remote_command (see the remote section)
+  - remote_info If set, then open the new terminal remotelly, using the
+    connection indicated in the `remote_info.cmd` (see the remote section)
   - group The group for which to open a new float
   - win_config The win_config to pass (see `vim.api.nvim_win_get_config`)
   - to_restore If the opened float is a restored float from a layout, it
@@ -253,7 +253,7 @@ is sent.
 **Parameters**:
 
 * dir The direction in which to split (left, right up or down)
-* remote_command If set, then instead of opening a local terminal, open a
+* remote_info If set, then instead of opening a local terminal, open a
   remote terminal (see the remote section in the readme file)
 
 Splits the currently selected tab in the direction indicated.

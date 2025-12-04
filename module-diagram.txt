@@ -1,0 +1,168 @@
+VESPER LUA MODULE ARCHITECTURE
+==============================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                           vesper.lua                                │
+│                      (Public API Entry Point)                       │
+│  Exports all public functions for external use                      │
+└──────────────┬──────────────────────────────────────────────────────┘
+               │
+               ├──────────────────────────────────────────────────────┐
+               │                                                      │
+               ▼                                                      ▼
+┌──────────────────────────┐                        ┌─────────────────────────┐
+│       core.lua           │                        │     session.lua         │
+│  (Central Controller)    │                        │  (Session Management)   │
+│                          │                        │                         │
+│ • Terminal management    │                        │ • Save/restore layout   │
+│ • Mode handling          │                        │ • Autosave              │
+│ • Key mappings           │                        │ • Session tracking      │
+│ • Window operations      │                        └────────┬────────────────┘
+└──────┬───────────────────┘                                 │
+       │                                                     │
+       │ ┌───────────────────────────────────────────────────┘
+       │ │
+       │ │  ┌──────────────────────────────────────────────────────────┐
+       │ │  │                                                          │
+       ▼ ▼  ▼                                                          ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
+│  floats.lua  │  │ remote.lua   │  │  undo.lua    │  │   config.lua     │
+│              │  │              │  │              │  │                  │
+│ • Float mgmt │  │ • SSH panes  │  │ • History    │  │ • Workflows      │
+│ • Positioning│  │ • Providers  │  │ • Restore    │  │ • Shortcuts      │
+│ • Fullscreen │  │ • Scrolling  │  │   closed     │  │ • Actions        │
+└──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘
+       │                 │                 │                   │
+       │                 │                 │                   │
+       └─────────────────┴─────────────────┴───────────────────┘
+                                 │
+                                 ▼
+       ┌─────────────────────────────────────────────────────────┐
+       │                  UTILITY MODULES                        │
+       └─────────────────────────────────────────────────────────┘
+                                 │
+       ┌─────────────────────────┼─────────────────────────────┐
+       │                         │                             │
+       ▼                         ▼                             ▼
+┌──────────────┐      ┌──────────────────┐        ┌──────────────────┐
+│ functions.lua│      │   events.lua     │        │   files.lua      │
+│              │      │                  │        │                  │
+│ • Helpers    │      │ • Event system   │        │ • File I/O       │
+│ • Utilities  │      │ • Callbacks      │        │ • Path handling  │
+│ • Checks     │      │ • Hooks          │        │ • Config loading │
+└──────────────┘      └──────────────────┘        └──────────────────┘
+
+       ▼                         ▼                             ▼
+┌──────────────┐      ┌──────────────────┐        ┌──────────────────┐
+│ history.lua  │      │  tab_vars.lua    │        │  options.lua     │
+│              │      │                  │        │                  │
+│ • Cmd hist   │      │ • Tab metadata   │        │ • Settings       │
+│ • Tracking   │      │ • Variables      │        │ • Defaults       │
+└──────────────┘      └──────────────────┘        └──────────────────┘
+
+       ▼                         ▼                             ▼
+┌──────────────┐      ┌──────────────────┐        ┌──────────────────┐
+│  split.lua   │      │ environment.lua  │        │  vim_ui.lua      │
+│              │      │                  │        │                  │
+│ • Pane split │      │ • Env vars       │        │ • UI overrides   │
+│ • Layout     │      │ • Config         │        │ • Input dialogs  │
+└──────────────┘      └──────────────────┘        └──────────────────┘
+
+
+       ┌─────────────────────────────────────────────────────────┐
+       │                  UI & INTERACTION                       │
+       └─────────────────────────────────────────────────────────┘
+                                 │
+       ┌─────────────────────────┼─────────────────────────────┐
+       │                         │                             │
+       ▼                         ▼                             ▼
+┌──────────────┐      ┌──────────────────┐        ┌──────────────────┐
+│  theme.lua   │      │  mappings.lua    │        │ cheatsheet.lua   │
+│              │      │                  │        │                  │
+│ • Lualine    │      │ • Key bindings   │        │ • Help display   │
+│ • Statusbar  │      │ • Mode maps      │        │ • Mode info      │
+│ • Tabline    │      │ • Shortcuts      │        │ • Hints          │
+└──────────────┘      └──────────────────┘        └──────────────────┘
+
+       ▼                         ▼                             ▼
+┌──────────────┐      ┌──────────────────┐        ┌──────────────────┐
+│ welcome.lua  │      │  insert.lua      │        │  select.lua      │
+│              │      │                  │        │                  │
+│ • Start msg  │      │ • Insert mode    │        │ • Telescope      │
+│ • Session    │      │ • Paste          │        │ • Pane picker    │
+│   list       │      │                  │        │ • Session picker │
+└──────────────┘      └──────────────────┘        └──────────────────┘
+
+       ▼
+┌──────────────┐
+│ commands.lua │
+│              │
+│ • Vesper*    │
+│   commands   │
+└──────────────┘
+
+
+DEPENDENCY FLOW
+===============
+
+vesper.lua (API)
+    ↓
+core.lua (Controller) ←──────────────────┐
+    ↓                                    │
+    ├→ floats.lua ─────────────────────→ │
+    ├→ remote.lua                        │
+    ├→ session.lua ───────────────────→ core.lua
+    ├→ undo.lua ─────────────────────→   │
+    ├→ config.lua                        │
+    ├→ mappings.lua ──────────────────→  │
+    ├→ cheatsheet.lua ────────────────→  │
+    ├→ theme.lua ─────────────────────→  │
+    ├→ welcome.lua ───────────────────→  │
+    ├→ select.lua ────────────────────→  │
+    ├→ insert.lua ────────────────────→  │
+    ├→ vim_ui.lua ────────────────────→  │
+    └→ commands.lua                      │
+                                         │
+All modules depend on:                   │
+    • functions.lua (utilities)          │
+    • events.lua (event system) ─────────┘
+    • options.lua (configuration)
+    • files.lua (file operations)
+    • tab_vars.lua (tab metadata)
+    • history.lua (command history)
+
+
+KEY RELATIONSHIPS
+=================
+
+1. vesper.lua → Public API facade
+2. core.lua → Central orchestrator
+3. floats.lua ↔ core.lua → Circular dependency for float management
+4. session.lua ↔ core.lua → Circular for save/restore
+5. events.lua → Used by ALL modules for event-driven architecture
+6. functions.lua → Utility library used everywhere
+7. config.lua → Defines workflows and actions
+8. theme.lua → UI presentation layer
+9. remote.lua → SSH/remote pane handling
+10. undo.lua → History and restoration
+
+
+MODULE CATEGORIES
+=================
+
+CORE:
+  • vesper.lua, core.lua
+
+FEATURES:
+  • floats.lua, remote.lua, session.lua, undo.lua
+
+CONFIGURATION:
+  • config.lua, options.lua, environment.lua
+
+UI/INTERACTION:
+  • theme.lua, mappings.lua, cheatsheet.lua, welcome.lua
+  • insert.lua, select.lua, vim_ui.lua, commands.lua
+
+UTILITIES:
+  • functions.lua, events.lua, files.lua, split.lua
+  • history.lua, tab_vars.lua
