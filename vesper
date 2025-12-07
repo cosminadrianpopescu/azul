@@ -8,6 +8,7 @@ usage() {
     echo "    -l                List the existing sessions"
     echo "    -m                Start in marionette mode"
     echo "    -r                If VESPER_REMOTE_CONNECTION var is set, then the first tab will also be remote"
+    echo "    -v <cmd>          Execute a vim command via the lua api vim.api.nvim_command"
     echo "    -x                Skip loading the session if a session exists"
     echo "    -s <cmd>          Send the command to an existing session (only together with -a)"
     echo "    -c <config-path>  Load the config from the <config-path> location"
@@ -54,6 +55,7 @@ then
 fi
 
 export VESPER_CHILD_FILE=""
+export VESPER_VIM_CMD=""
 
 if [ "$VESPER_SESSION" != "" ]
 then
@@ -66,7 +68,7 @@ export VESPER_SESSION=""
 export VESPER_LIST=""
 VESPER_CMD=""
 
-while getopts "a:t:lrxmhs:c:" o
+while getopts "a:t:lrxmhs:c:v:" o
 do
     case "${o}" in
         -)
@@ -95,6 +97,9 @@ do
             ;;
         m)
             export VESPER_IS_MARIONETTE="1"
+            ;;
+        v)
+            export VESPER_VIM_CMD=$OPTARG
             ;;
         r)
             export VESPER_START_REMOTE="1"
@@ -130,6 +135,13 @@ if [[ "$VESPER_CMD" != "" && "$VESPER_SESSION" != "" ]]
 then
     check_session $VESPER_SESSION
     $VESPER_NVIM_EXE --remote-send "$VESPER_CMD" --server $VESPER_RUN_DIR/$VESPER_SESSION
+    exit 0
+fi
+
+if [[ "$VESPER_VIM_CMD" != "" && $VESPER_SESSION != "" ]]
+then
+    check_session $VESPER_SESSION
+    $VESPER_NVIM_EXE --remote-expr "luaeval('vim.api.nvim_command(\"$VESPER_VIM_CMD\")')" --server $VESPER_RUN_DIR/$VESPER_SESSION
     exit 0
 fi
 

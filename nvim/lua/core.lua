@@ -98,8 +98,8 @@ M.debug = function()
     -- print("WIN ID IS " .. vim.fn.win_getid(vim.fn.winnr()))
     -- print("TITLE IS ALREADY" .. vim.b.term_title)
     -- print("JOB ID IS " .. vim.b.terminal_job_id)
-    -- print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
-    -- print("MAPPINGS ARE" .. vim.inspect(vim.tbl_filter(function(m) return m.m == 'P' end, mode_mappings)))
+    print("MAPPINGS ARE" .. vim.inspect(mode_mappings))
+    -- print("MAPPINGS ARE" .. vim.inspect(vim.tbl_filter(function(m) return m.m == 'n' end, mode_mappings)))
     -- print("MODE IS" .. mode)
     -- print("HISTORY IS " .. vim.inspect(history))
 end
@@ -348,6 +348,9 @@ end
 --- Enters a custom mode. Use this function for changing custom modes
 --- @param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'|'a'
 M.enter_mode = function(new_mode)
+    if is_suspended then
+        return
+    end
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then

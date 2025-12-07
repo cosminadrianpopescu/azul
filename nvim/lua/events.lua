@@ -42,6 +42,8 @@ local events = {
 
     MouseClick = {},
     RemoteQuit = {},
+    RemoteStartedScroll = {},
+    RemoteEndedScroll = {},
 }
 
 local persistent_events = {}

@@ -29,6 +29,7 @@ local M = {
     undo_restore_cmd = 'cat',
 
     strict_scroll = false,
+    scroll_to_copy = '<C-y>'
 }
 
 M.set_option = function(key, value)

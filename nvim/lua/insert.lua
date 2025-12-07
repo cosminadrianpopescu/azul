@@ -27,7 +27,7 @@ EV.persistent_on({
     'UndoFinished', 'FullscreenToggled', 'DirectoryChanged',
 }, do_start_insert)
 
-EV.persistent_on({'MouseClick'}, function()
+EV.persistent_on({'MouseClick', 'RemoteStartedScroll'}, function()
     start_insert(true)
 end)
 

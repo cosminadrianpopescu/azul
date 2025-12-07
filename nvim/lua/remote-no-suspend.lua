@@ -4,14 +4,15 @@ local core = require('core')
 local EV = require('events')
 local F = require('floats')
 local MAP = require('mappings')
-local options = require('options')
 
 local M = {}
 
 local current_terminal = nil
 local current_mode = nil
-local current_provider = nil
-local exit_shortcuts = {}
+
+EV.persistent_on('PaneChanged', function(args)
+    current_terminal = args[1]
+end)
 
 local get_provider = nil
 
@@ -239,26 +240,10 @@ EV.persistent_on('RemoteDisconnected', function(args)
     remote_disconnected(args[1])
 end)
 
-EV.persistent_on('PaneChanged', function(args)
-    current_terminal = args[1]
-end)
-
-EV.persistent_on('ModeChanged', function(args)
-    current_mode = args[2]
-    if current_mode == 'c' or current_terminal == nil or current_terminal.remote_info == nil or funcs.remote_state(current_terminal) == 'disconnected' then
-        return
-    end
-    local enter_scroll = (options.workflow == 'tmux' and args[1] == 'M' and args[2] == 'n')
-        or ((options.workflow == 'vesper' or options.workflow == 'zellij') and args[1] == 'a' and args[2] == 'n')
-
-    if enter_scroll then
-        M.remote_enter_scroll_mode()
-    end
-end)
-
 M.remote_enter_scroll_mode = function()
-    local provider = get_provider(current_terminal.remote_info)
-    if current_terminal.term_id == nil or provider == nil then
+    local t = core.get_current_terminal()
+    local provider = get_provider(t.remote_info)
+    if t.term_id == nil or provider == nil then
         return
     end
 
@@ -267,41 +252,37 @@ M.remote_enter_scroll_mode = function()
     end
 
     if type(provider.scroll_start) == 'function' then
-        provider.scroll_start(current_terminal)
+        provider.scroll_start(t)
     else
-        current_terminal.is_scroll = true
+        t.is_scroll = true
         core.send_to_current(provider.scroll_start, true)
     end
-    current_provider = provider
-    exit_shortcuts = get_exit_scroll_shortcuts()
-    EV.trigger_event('RemoteStartedScroll', {current_terminal})
-    core.set_key_map('n', options.scroll_to_copy, '<C-\\><C-n>', {})
-    core.suspend()
+    EV.trigger_event('RemoteStartedScroll', {t})
 end
 
 M.remote_exit_scroll_mode = function()
-    if current_terminal.term_id == nil or current_provider == nil then
+    local t = core.get_current_terminal()
+    if t.term_id == nil then
+        return
+    end
+    local provider = get_provider(t.remote_info)
+
+    if provider.scroll_end == nil then
         return
     end
 
-    if current_provider.scroll_end == nil then
+    if t.is_scroll == nil and type(provider.scroll_end) ~= 'function' then
         return
     end
 
-    if current_terminal.is_scroll == nil and type(current_provider.scroll_end) ~= 'function' then
-        return
-    end
-
-    if type(current_provider.scroll_end) == 'function' then
-        current_provider.scroll_end(current_terminal)
+    if type(provider.scroll_end) == 'function' then
+        provider.scroll_end(t)
     else
-        current_terminal.is_scroll = nil
-        core.send_to_current(current_provider.scroll_end, true)
+        t.is_scroll = nil
+        core.send_to_current(provider.scroll_end, true)
     end
-    current_provider = nil
-    EV.trigger_event('RemoteEndedScroll', {current_terminal})
-    core.resume()
-    core.remove_key_map('n', options.scroll_to_copy)
+    EV.trigger_event('RemoteEndedScroll', {t})
+    -- core.resume()
     core.enter_mode('t')
 end
 
@@ -357,17 +338,6 @@ MAP.add_key_parser(function(key)
         end)
         return true
     end
-
-    if current_mode ~= 'n' or current_provider == nil then
-        return false
-    end
-
-    if #vim.tbl_filter(function(s) return funcs.compare_shortcuts(s, key) end, exit_shortcuts) == 0 then
-        return false
-    end
-
-    M.remote_exit_scroll_mode()
-    return true
 end)
 
 return M
