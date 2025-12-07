@@ -42,7 +42,9 @@ local send_to_vesper = function(t, vim_cmd)
     if info.host ~= nil and info.host ~= '' then
         cmd = 'ssh -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. ' ' .. cmd
     end
-    os.execute(cmd)
+    funcs.log("START " .. vim.inspect(cmd))
+    local job = vim.fn.jobstart(cmd)
+    funcs.log("RETURNED " .. vim.inspect(job))
 end
 
 local providers = {
