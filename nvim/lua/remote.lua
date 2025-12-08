@@ -13,6 +13,7 @@ local current_mode = nil
 local current_provider = nil
 local exit_shortcuts = {}
 local is_core_suspended = false
+local last_key = nil
 local caught_esc = false
 
 local get_provider = nil
@@ -45,7 +46,7 @@ local get_exit_scroll_shortcuts = function()
     return mappings
 end
 
-local send_to_vesper = function(t, vim_cmd)
+local send_to_vesper = function(t, vim_cmd, opts)
     if t == nil or t.remote_info == nil then
         return
     end
@@ -54,19 +55,22 @@ local send_to_vesper = function(t, vim_cmd)
     if info.host ~= nil and info.host ~= '' then
         cmd = 'ssh -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. ' ' .. cmd
     end
-    local job = vim.fn.jobstart(cmd)
+    if opts ~= nil then
+        vim.fn.jobstart(cmd, opts)
+    else
+        vim.fn.jobstart(cmd)
+    end
 end
 
 local providers = {
     vesper = {
-        -- scroll_page_up = {'<C-b>', '<PageUp>', '<C-b>'},
-        -- scroll_page_down = {'<C-f>', '<PageDown>', '<C-f>'},
-        -- scroll_left = {'h', '<left>', 'h'},
-        -- scroll_down = {'j', '<down>', 'j'},
-        -- scroll_right = {'l', '<right>', 'l'},
-        -- scroll_up = {'k', '<up>', 'k'},
         scroll_start = function(t)
-            send_to_vesper(t, 'stopinsert')
+            local opts = {
+                on_exit = function()
+                    core.send_to_current(last_key, true)
+                end
+            }
+            send_to_vesper(t, 'stopinsert', (options.workflow == 'tmux' and last_key ~= ':' and opts) or nil)
         end,
         scroll_end = function(t)
             send_to_vesper(t, 'startinsert')
@@ -363,6 +367,7 @@ M.remote_quit = function(t)
 end
 
 MAP.add_key_parser(function(key)
+    last_key = key
     if current_mode == 'c' or vim.fn.mode() == 'c' or current_terminal == nil or current_terminal.remote_info == nil then
         return false
     end
