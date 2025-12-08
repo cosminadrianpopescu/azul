@@ -285,17 +285,23 @@ M.restore_layout = function(where, callback)
         EV.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
         return
     end
-    -- local f = io.open(where, "r")
-    -- if f == nil then
-    --     EV.error("Could not open " .. where, nil)
-    --     return
-    -- end
-    -- local h = funcs.deserialize(f:read("*a"))
     if not FILES.exists(where) then
         EV.error("Could not open " .. where, nil)
         return
     end
-    local h = table.load(where)
+    local content = FILES.read_file(where)
+    local h
+    if vim.fn.match(content, "^return") == -1 then
+        local f = io.open(where, "r")
+        if f == nil then
+            EV.error("Could not open " .. where, nil)
+            return
+        end
+        h = funcs.deserialize(f:read("*a"))
+        f:close()
+    else
+        h = table.load(where)
+    end
     h.callback = callback
     core.stop_updating_titles()
     TABS.del_var(0, 'vesper_placeholders')
@@ -316,7 +322,6 @@ M.restore_layout = function(where, callback)
     EV.trigger_event('LayoutRestoringStarted')
     current_in_saved_layout = h.current
     L.restore_tab_history(h, 1, 1, nil, 0)
-    f:close()
 end
 
 EV.persistent_on('ExitVesper', function()

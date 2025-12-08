@@ -12,8 +12,20 @@ local current_terminal = nil
 local current_mode = nil
 local current_provider = nil
 local exit_shortcuts = {}
+local is_core_suspended = false
+local caught_esc = false
 
 local get_provider = nil
+
+local suspend = function()
+    is_core_suspended = true
+    core.suspend()
+end
+
+local resume = function()
+    is_core_suspended = false
+    core.resume()
+end
 
 local get_sock_name = function(info)
     if info == nil then
@@ -251,6 +263,12 @@ EV.persistent_on('ModeChanged', function(args)
     local enter_scroll = (options.workflow == 'tmux' and args[1] == 'M' and args[2] == 'n')
         or ((options.workflow == 'vesper' or options.workflow == 'zellij') and args[1] == 'a' and args[2] == 'n')
 
+
+    if caught_esc then
+        caught_esc = false
+        return
+    end
+
     if enter_scroll then
         M.remote_enter_scroll_mode()
     end
@@ -276,11 +294,13 @@ M.remote_enter_scroll_mode = function()
     exit_shortcuts = get_exit_scroll_shortcuts()
     EV.trigger_event('RemoteStartedScroll', {current_terminal})
     core.set_key_map('n', options.scroll_to_copy, '<C-\\><C-n>', {})
-    core.suspend()
+    suspend()
 end
 
-M.remote_exit_scroll_mode = function()
-    if current_terminal.term_id == nil or current_provider == nil then
+M.remote_exit_scroll_mode = function(t, to_mode)
+    local x = t or current_terminal
+    local m = to_mode or 't'
+    if x.term_id == nil or current_provider == nil then
         return
     end
 
@@ -288,21 +308,21 @@ M.remote_exit_scroll_mode = function()
         return
     end
 
-    if current_terminal.is_scroll == nil and type(current_provider.scroll_end) ~= 'function' then
+    if x.is_scroll == nil and type(current_provider.scroll_end) ~= 'function' then
         return
     end
 
     if type(current_provider.scroll_end) == 'function' then
-        current_provider.scroll_end(current_terminal)
+        current_provider.scroll_end(x)
     else
-        current_terminal.is_scroll = nil
+        x.is_scroll = nil
         core.send_to_current(current_provider.scroll_end, true)
     end
     current_provider = nil
-    EV.trigger_event('RemoteEndedScroll', {current_terminal})
-    core.resume()
+    resume()
     core.remove_key_map('n', options.scroll_to_copy)
-    core.enter_mode('t')
+    core.enter_mode(m)
+    EV.trigger_event('RemoteEndedScroll', {x})
 end
 
 M.remote_reconnect = function(t)
@@ -318,15 +338,15 @@ M.remote_reconnect = function(t)
     end
     vim.api.nvim_buf_delete(old_buf, {force = true})
     if id ~= nil then
-        core.suspend()
+        suspend()
         vim.fn.jobstop(id)
         vim.fn.timer_start(1, function()
-            core.resume()
+            resume()
         end)
     end
-    core.suspend()
+    suspend()
     core.open(t.buf, {remote_command = M.get_remote_command(t.remote_info)})
-    core.resume()
+    resume()
     EV.trigger_event('RemoteReconnected', {t})
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
     core.update_titles()
@@ -356,6 +376,11 @@ MAP.add_key_parser(function(key)
             end
         end)
         return true
+    end
+
+    if current_mode == 'M' and funcs.compare_shortcuts('<esc>', key) then
+        caught_esc = true
+        return false
     end
 
     if current_mode ~= 'n' or current_provider == nil then

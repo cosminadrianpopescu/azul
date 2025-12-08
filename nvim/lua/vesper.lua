@@ -85,5 +85,6 @@ M.toggle_fullscreen = F.toggle_fullscreen
 M.cd = core.cd
 M.find_key_map = core.find_key_map
 M.add_key_parser = MAP.add_key_parser
+M.remote_exit_scroll_mode = R.remote_exit_scroll_mode
 
 return M
