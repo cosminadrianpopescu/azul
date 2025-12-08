@@ -3,6 +3,7 @@ local files = require('files')
 local funcs = require('functions')
 require('mappings')
 require('welcome')
+require('table-save')
 
 vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
 vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME

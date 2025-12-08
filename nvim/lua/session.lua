@@ -285,12 +285,17 @@ M.restore_layout = function(where, callback)
         EV.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
         return
     end
-    local f = io.open(where, "r")
-    if f == nil then
+    -- local f = io.open(where, "r")
+    -- if f == nil then
+    --     EV.error("Could not open " .. where, nil)
+    --     return
+    -- end
+    -- local h = funcs.deserialize(f:read("*a"))
+    if not FILES.exists(where) then
         EV.error("Could not open " .. where, nil)
         return
     end
-    local h = funcs.deserialize(f:read("*a"))
+    local h = table.load(where)
     h.callback = callback
     core.stop_updating_titles()
     TABS.del_var(0, 'vesper_placeholders')
@@ -318,7 +323,7 @@ EV.persistent_on('ExitVesper', function()
     can_save_layout = false
 end)
 
-M.save_layout = function(where, auto)
+local get_layout_table = function()
     for _, t in ipairs(core.get_terminals()) do
         core.refresh_tab_page(t)
     end
@@ -340,7 +345,7 @@ M.save_layout = function(where, auto)
             pane_id = t.panel_id,
         }
     end
-    FILES.write_file(where, vim.inspect({
+    return {
         floats = vim.tbl_filter(function(x) return funcs.is_float(x) end, core.get_terminals()),
         history = history_to_save,
         customs = get_custom_values(),
@@ -351,7 +356,11 @@ M.save_layout = function(where, auto)
             columns = vim.o.columns,
             lines = vim.o.lines
         }
-    }))
+    }
+end
+
+M.save_layout = function(where, auto)
+    table.save(get_layout_table(), where)
     EV.trigger_event("LayoutSaved", {where, auto})
 end
 
