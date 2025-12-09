@@ -45,16 +45,20 @@ local actions = {
     'copy', 'paste', 'rotate_panel',
     'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
     'show_mode_cheatsheet', 'remote_scroll', 'undo', 'toggle_fullscreen',
+    'start_search',
 }
 
 local modes = {
-    terminal = 't', vesper = 'a', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v', passthrough = 'P',
+    terminal = 't', vesper = 'n', resize = 'r', pane = 'p', move = 'm', split = 's', tabs = 'T', visual = 'v', passthrough = 'P',
     modifier = 'M',
 }
 
 M.default_config = {
     shortcuts = {
         vesper = {
+            vesper = {
+                start_search = '/',
+            },
             terminal = {
                 paste = '<C-v>',
             },
@@ -228,6 +232,9 @@ M.default_config = {
             visual = {
                 copy = 'y$$$<C-c>',
             },
+            vesper = {
+                start_search = '/',
+            }
         },
         zellij = {
             terminal = {
@@ -298,6 +305,9 @@ M.default_config = {
             },
             visual = {
                 copy = 'y$$$<C-c>',
+            },
+            vesper = {
+                start_search = '/',
             }
         },
         emacs = {
@@ -362,6 +372,7 @@ M.default_config = {
                 remote_scroll = '<C-x>[',
                 undo = '<C-z>',
                 toggle_fullscreen = '<F11>',
+                start_search = '<C-S-/>',
             },
         }
     }
@@ -644,6 +655,16 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 require('floats').toggle_fullscreen(require('core').get_current_terminal())
             end,
             desc = 'Toggles the fullscreen state',
+            action = action,
+            arg = arg,
+        })
+    elseif action == 'start_search' then
+        map(mode, shortcut, '', {
+            callback = function()
+                vim.api.nvim_command('stopinsert')
+                require('core').feedkeys('/', 'n')
+            end,
+            desc = 'Starts a new search',
             action = action,
             arg = arg,
         })

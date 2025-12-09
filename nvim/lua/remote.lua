@@ -11,10 +11,12 @@ local M = {}
 local current_terminal = nil
 local current_mode = nil
 local current_provider = nil
-local exit_shortcuts = {}
+local scroll_exit_shortcuts = {}
+local search_exit_shortcuts = {}
 local is_core_suspended = false
 local last_key = nil
 local caught_esc = false
+local is_searching = false
 
 local get_provider = nil
 
@@ -46,12 +48,11 @@ local get_exit_scroll_shortcuts = function()
     return mappings
 end
 
-local send_to_vesper = function(t, vim_cmd, opts)
+local send_to_provider = function(t, cmd, opts)
     if t == nil or t.remote_info == nil then
         return
     end
     local info = t.remote_info
-    local cmd = info.bin .. ' -v ' .. vim_cmd .. ' -a ' .. info.uid
     if info.host ~= nil and info.host ~= '' then
         cmd = 'ssh -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. ' ' .. cmd
     end
@@ -60,6 +61,14 @@ local send_to_vesper = function(t, vim_cmd, opts)
     else
         vim.fn.jobstart(cmd)
     end
+end
+
+local send_to_vesper = function(t, vim_cmd, opts)
+    send_to_provider(t, t.remote_info.bin .. ' -v ' .. vim_cmd .. ' -a ' .. t.remote_info.uid, opts)
+end
+
+local send_to_tmux = function(t, cmd, opts)
+    send_to_provider(t, t.remote_info.bin .. ' ' .. cmd .. ' -t ' .. t.remote_info.uid, opts)
 end
 
 local providers = {
@@ -75,7 +84,23 @@ local providers = {
         scroll_end = function(t)
             send_to_vesper(t, 'startinsert')
         end,
+        search = {
+            enter = '/',
+            exit = {'<esc>', '<cr>', '<C-c>'}
+        },
         cmd_template = '#bin# -a #session_id# -m',
+    },
+    tmux = {
+        cmd_template = '#bin# -2 new-session -A -s #session_id#',
+        scroll_start = function(t)
+            local opts = {
+                on_exit = function()
+                    core.send_to_current(last_key, true)
+                end
+            }
+            send_to_tmux(t, 'copy-mode', (options.workflow == 'tmux' and last_key ~= ':' and opts) or nil)
+        end,
+        scroll_end = '<C-c>',
     }
 }
 
@@ -295,7 +320,7 @@ M.remote_enter_scroll_mode = function()
         core.send_to_current(provider.scroll_start, true)
     end
     current_provider = provider
-    exit_shortcuts = get_exit_scroll_shortcuts()
+    scroll_exit_shortcuts = get_exit_scroll_shortcuts()
     EV.trigger_event('RemoteStartedScroll', {current_terminal})
     core.set_key_map('n', options.scroll_to_copy, '<C-\\><C-n>', {})
     suspend()
@@ -312,7 +337,7 @@ M.remote_exit_scroll_mode = function(t, to_mode)
         return
     end
 
-    if x.is_scroll == nil and type(current_provider.scroll_end) ~= 'function' then
+    if x.is_scroll == nil and type(current_provider.scroll_end) ~= 'function' and type(current_provider.scroll_start) ~= 'function' then
         return
     end
 
@@ -368,7 +393,7 @@ end
 
 MAP.add_key_parser(function(key)
     last_key = key
-    if current_mode == 'c' or vim.fn.mode() == 'c' or current_terminal == nil or current_terminal.remote_info == nil then
+    if current_mode == 'c' or vim.fn.mode() == 'c' or vim.fn.mode() == 'i' or current_terminal == nil or current_terminal.remote_info == nil then
         return false
     end
 
@@ -392,7 +417,17 @@ MAP.add_key_parser(function(key)
         return false
     end
 
-    if #vim.tbl_filter(function(s) return funcs.compare_shortcuts(s, key) end, exit_shortcuts) == 0 then
+    if key == ':' and vim.fn.mode() == 't' and not options.strict_scroll then
+        vim.api.nvim_command('stopinsert')
+        core.feedkeys(':', 't')
+        M.remote_exit_scroll_mode(current_terminal, 'n')
+        return true
+    end
+
+    if key == '/' then
+    end
+
+    if #vim.tbl_filter(function(s) return funcs.compare_shortcuts(s, key) end, scroll_exit_shortcuts) == 0 then
         return false
     end
 

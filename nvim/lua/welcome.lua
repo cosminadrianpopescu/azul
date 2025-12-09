@@ -9,16 +9,50 @@ local key_parser_id = nil
 local MAP = require('mappings')
 
 local welcome_content = function()
-    return {"Welcome to VESPER"}
+    local result = {
+        "",
+        "",
+        "Welcome to Vesper! Your first session is now running.",
+        "",
+        "Here are the 3 essentials to get you started:",
+        "",
+        "1. The prefix key",
+        "All commands start with <Ctrl>+<a>. Press it, release, then the command key.",
+        "",
+        "2. Pane management",
+        "<Prefix> then <s>  (Change into split mode)",
+        "then <j>  (Split Vertically)",
+        "then <h>  (Split Horizontally)",
+        "<Prefix> then <p>  (Change into pane select mode)",
+        "then h/j/k/l (Navigate Panes)",
+        "",
+        "3. Session Control",
+        "<Prefix> then <d>  (Detach and keep running)",
+        "In your main shell, run `vesper -a <session-name>` to return.",
+        "",
+        "Press <Esc> or <q> to close. This message will not appear again.",
+        "",
+        "",
+    }
+
+    for i, _ in pairs(result) do
+        if result[i] ~= "" then
+            local pad = math.floor((100 - string.len(result[i])) / 2)
+            local spaces = string.rep(" ", pad)
+            result[i] = spaces .. result[i] .. spaces
+        end
+    end
+
+    return result
 end
 
 local get_win_config = function()
+    local content = welcome_content()
     local f1 = math.ceil(vim.o.columns / 10)
-    local f2 = math.ceil(vim.o.lines / 10)
-    local w = vim.o.columns - f1 * 2
-    local h = vim.o.lines - f2 * 2
-    local x = f1
-    local y = f2 - 1
+    local w = vim.o.columns - f1 * 4
+    local h = #content
+    local x = f1 * 2
+    local y = math.ceil((vim.o.lines - h) / 2)
     return {
         width = w, height = h, col = x, row = y, focusable = false, zindex = 500,
         border = 'rounded', relative = 'editor', style = 'minimal',
@@ -63,7 +97,7 @@ local update_config_ini = function()
 end
 
 local key_parser = function(key)
-    if not funcs.compare_shortcuts('<C-q>', key) then
+    if not funcs.compare_shortcuts('<esc>', key) and not funcs.compare_shortcuts('q', key) then
         return false
     end
 
