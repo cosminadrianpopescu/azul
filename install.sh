@@ -50,6 +50,11 @@ then
     mkdir -p $VESPER_PREFIX/share/vesper/nvim/lua
 fi
 
+if [ ! -d $VESPER_PREFIX/share/vesper/provider-configs ]
+then
+    mkdir -p $VESPER_PREFIX/share/vesper/provider-configs
+fi
+
 if [ "$VESPER_CONFIG" == "" ]
 then
     export VESPER_CONFIG="${XDG_CONFIG_HOME:-$HOME}/.config/vesper"
@@ -84,6 +89,7 @@ cp $VESPER_DIR/nvim/lua/tab_vars.lua $VESPER_PREFIX/share/vesper/nvim/lua
 cp $VESPER_DIR/nvim/lua/floats.lua $VESPER_PREFIX/share/vesper/nvim/lua
 cp $VESPER_DIR/nvim/lua/welcome.lua $VESPER_PREFIX/share/vesper/nvim/lua
 cp $VESPER_DIR/nvim/lua/table-save.lua $VESPER_PREFIX/share/vesper/nvim/lua
+cp $VESPER_DIR/provider-configs/* $VESPER_PREFIX/share/vesper/provider-configs
 cp $VESPER_DIR/nvim/init.lua $VESPER_PREFIX/share/vesper/nvim
 
 if [ ! -d $VESPER_CONFIG ]

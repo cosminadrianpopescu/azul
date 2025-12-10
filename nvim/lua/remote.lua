@@ -10,54 +10,14 @@ local M = {}
 
 local current_terminal = nil
 local current_mode = nil
-local current_provider = nil
-local scroll_exit_shortcuts = {}
-local search_shortcuts = {}
-local is_core_suspended = false
-local last_key = nil
-local caught_esc = false
-local is_searching = false
 
 local get_provider = nil
-
-local suspend = function()
-    is_core_suspended = true
-    core.suspend()
-end
-
-local resume = function()
-    is_core_suspended = false
-    core.resume()
-end
 
 local get_sock_name = function(info)
     if info == nil then
         return nil
     end
     return os.getenv('VESPER_RUN_DIR') .. '/' .. info.uid .. '-sock'
-end
-
-local is_search_shortcut = function(key)
-    return #vim.tbl_filter(function(s) return funcs.compare_shortcuts(s, key) end, search_shortcuts) > 0
-end
-
-local get_exit_scroll_shortcuts = function()
-    local mappings = vim.tbl_filter(function(x)
-        return (x.m == 'n' or x.m == 'a') and x.options ~= nil and x.options.action == 'enter_mode' and x.options.arg == 't'
-    end, core.get_mode_mappings())
-    local result = vim.tbl_map(function(m) return m.ls end, mappings)
-    table.insert(result, 'i')
-    table.insert(result, 'a')
-    table.insert(result, 'A')
-    table.insert(result, '<INS>')
-    return result
-end
-
-local get_search_shortcuts = function()
-    local mappings = vim.tbl_filter(function(x)
-        return x.m == 'n' and x.options ~= nil and x.options.action == 'start_search'
-    end, core.get_mode_mappings())
-    return vim.tbl_map(function(m) return m.ls end, mappings)
 end
 
 local send_to_provider = function(t, cmd, opts)
@@ -86,40 +46,37 @@ end
 local providers = {
     vesper = {
         scroll_start = function(t)
-            local opts = {
-                on_exit = function()
-                    core.send_to_current(last_key, true)
-                end
-            }
-            send_to_vesper(t, 'stopinsert', (options.workflow == 'tmux' and last_key ~= ':' and opts) or nil)
+            send_to_vesper(t, 'stopinsert')
         end,
         scroll_end = function(t)
             send_to_vesper(t, 'startinsert')
         end,
-        search = {
-            enter = '/',
-            exit = {'<esc>', '<cr>', '<C-c>'}
-        },
         cmd_template = '#bin# -a #session_id# -m',
     },
     tmux = {
-        cmd_template = '#bin# -2 new-session -A -s #session_id#',
+        cmd_template = '#bin# -2 -f ' .. os.getenv('VESPER_PREFIX') .. '/share/vesper/provider-configs/tmux.conf new-session -A -s #session_id#',
         scroll_start = function(t)
-            local opts = {
-                on_exit = function()
-                    core.send_to_current(last_key, true)
-                end
-            }
-            send_to_tmux(t, 'copy-mode', (options.workflow == 'tmux' and last_key ~= ':' and opts) or nil)
+            send_to_tmux(t, 'copy-mode')
         end,
         scroll_end = '<C-c>',
+    },
+    zellij = {
+        cmd_template = '#bin# options --no-pane-frames --session-name #session_id# --attach-to-session true',
+        scroll_start = '<C-g>s',
+        scroll_end = '<C-c>',
+    },
+    dtach = {
+        cmd_template = "#bin# -A #session_id# #shell#",
+    },
+    abduco = {
+        cmd_template = "#bin# -A #session_id# #shell#"
+    },
+    screen = {
+        cmd_template = '#bin# -R #session_id#',
+        scroll_start = '<C-a>[',
+        scroll_end = '<cr>',
     }
 }
-
-local start_searching = function()
-    core.send_to_current(current_provider.search.enter, true)
-    is_searching = true
-end
 
 get_provider = function(info)
     if info == nil or providers[info.proto] == nil then
@@ -197,7 +154,7 @@ M.get_remote_command = function(info)
         return nil
     end
 
-    local result = string.gsub(provider.cmd_template, '#bin#', info.bin):gsub('#session_id#', info.uid)
+    local result = string.gsub(provider.cmd_template, '#bin#', info.bin):gsub('#session_id#', info.uid):gsub('#shell#', options.shell)
 
     if info.host ~= '' and info.host ~= nil then
         result = 'ssh -oControlMaster=yes -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. " -t '" .. result .. "'"
@@ -293,6 +250,10 @@ M.create_tab_remote = function()
     M.open_remote()
 end
 
+EV.persistent_on('ModeChanged', function(args)
+    current_mode = args[2]
+end)
+
 EV.persistent_on('RemoteDisconnected', function(args)
     remote_disconnected(args[1])
 end)
@@ -301,32 +262,10 @@ EV.persistent_on('PaneChanged', function(args)
     current_terminal = args[1]
 end)
 
-EV.persistent_on('ModeChanged', function(args)
-    current_mode = args[2]
-    if current_mode == 'c' or current_terminal == nil or current_terminal.remote_info == nil or funcs.remote_state(current_terminal) == 'disconnected' then
-        return
-    end
-    if current_mode == 'M' then
-        scroll_exit_shortcuts = get_exit_scroll_shortcuts()
-        search_shortcuts = get_search_shortcuts()
-    end
-    local enter_scroll = (options.workflow == 'tmux' and args[1] == 'M' and args[2] == 'n')
-        or ((options.workflow == 'vesper' or options.workflow == 'zellij') and args[1] == 'a' and args[2] == 'n')
-
-
-    if caught_esc then
-        caught_esc = false
-        return
-    end
-
-    if enter_scroll then
-        M.remote_enter_scroll_mode()
-    end
-end)
-
 M.remote_enter_scroll_mode = function()
-    local provider = get_provider(current_terminal.remote_info)
-    if current_terminal.term_id == nil or provider == nil then
+    local t = core.get_current_terminal()
+    local provider = get_provider(t.remote_info)
+    if t.term_id == nil or provider == nil then
         return
     end
 
@@ -335,43 +274,36 @@ M.remote_enter_scroll_mode = function()
     end
 
     if type(provider.scroll_start) == 'function' then
-        provider.scroll_start(current_terminal)
+        provider.scroll_start(t)
     else
-        current_terminal.is_scroll = true
+        t.is_scroll = true
         core.send_to_current(provider.scroll_start, true)
     end
-    current_provider = provider
-    EV.trigger_event('RemoteStartedScroll', {current_terminal})
-    core.set_key_map('n', options.scroll_to_copy, '<C-\\><C-n>', {})
-    suspend()
+    EV.trigger_event('RemoteStartedScroll', {t})
 end
 
-M.remote_exit_scroll_mode = function(t, to_mode)
-    local x = t or current_terminal
-    local m = to_mode or 't'
-    if x.term_id == nil or current_provider == nil then
+M.remote_exit_scroll_mode = function()
+    local t = core.get_current_terminal()
+    if t.term_id == nil then
+        return
+    end
+    local provider = get_provider(t.remote_info)
+
+    if provider.scroll_end == nil then
         return
     end
 
-    if current_provider.scroll_end == nil then
+    if t.is_scroll == nil and type(provider.scroll_end) ~= 'function' then
         return
     end
 
-    if x.is_scroll == nil and type(current_provider.scroll_end) ~= 'function' and type(current_provider.scroll_start) ~= 'function' then
-        return
-    end
-
-    if type(current_provider.scroll_end) == 'function' then
-        current_provider.scroll_end(x)
+    if type(provider.scroll_end) == 'function' then
+        provider.scroll_end(t)
     else
-        x.is_scroll = nil
-        core.send_to_current(current_provider.scroll_end, true)
+        t.is_scroll = nil
+        core.send_to_current(provider.scroll_end, true)
     end
-    current_provider = nil
-    resume()
-    core.remove_key_map('n', options.scroll_to_copy)
-    core.enter_mode(m)
-    EV.trigger_event('RemoteEndedScroll', {x})
+    EV.trigger_event('RemoteEndedScroll', {t})
 end
 
 M.remote_reconnect = function(t)
@@ -387,15 +319,15 @@ M.remote_reconnect = function(t)
     end
     vim.api.nvim_buf_delete(old_buf, {force = true})
     if id ~= nil then
-        suspend()
+        core.suspend()
         vim.fn.jobstop(id)
         vim.fn.timer_start(1, function()
-            resume()
+            core.resume()
         end)
     end
-    suspend()
+    core.suspend()
     core.open(t.buf, {remote_command = M.get_remote_command(t.remote_info)})
-    resume()
+    core.resume()
     EV.trigger_event('RemoteReconnected', {t})
     t.term_id = funcs.safe_get_buf_var(t.buf, 'terminal_job_id')
     core.update_titles()
@@ -412,12 +344,11 @@ M.remote_quit = function(t)
 end
 
 MAP.add_key_parser(function(key)
-    last_key = key
-    if current_mode == 'c' or vim.fn.mode() == 'c' or vim.fn.mode() == 'i' or current_terminal == nil or current_terminal.remote_info == nil then
+    if current_mode == 'c' or vim.fn.mode() == 'c' or current_terminal == nil or current_terminal.remote_info == nil then
         return false
     end
 
-    if funcs.remote_state(current_terminal) == 'disconnected' and (key == 'q' or key == 'r') then
+    if funcs.remote_state(current_terminal) == 'disconnected' and vim.fn.mode() == 'n' and (key == 'q' or key == 'r') then
         pcall(function()
             if key == 'q' then
                 M.remote_quit(current_terminal)
@@ -428,47 +359,7 @@ MAP.add_key_parser(function(key)
         return true
     end
 
-    if current_mode == 'M' and funcs.compare_shortcuts('<esc>', key) then
-        caught_esc = true
-        return false
-    end
-
-    if current_mode == 'M' and options.workflow == 'tmux' and is_search_shortcut(key) then
-        core.enter_mode('n')
-        vim.fn.timer_start(1, function()
-            vim.api.nvim_command('startinsert')
-        end)
-        return true
-    end
-
-    if current_mode ~= 'n' or current_provider == nil then
-        return false
-    end
-
-    if key == ':' and vim.fn.mode() == 't' and not options.strict_scroll then
-        vim.api.nvim_command('stopinsert')
-        core.feedkeys(':', 't')
-        M.remote_exit_scroll_mode(current_terminal, 'n')
-        return true
-    end
-
-    if is_search_shortcut(key) then
-        start_searching()
-        return true
-    end
-
-    if is_searching and #vim.tbl_filter(function(s) return funcs.compare_shortcuts(s, key) end, current_provider.search.exit) > 0 then
-        is_searching = false
-        core.send_to_current(key, true)
-        return true
-    end
-
-    if is_searching or #vim.tbl_filter(function(s) return funcs.compare_shortcuts(s, key) end, scroll_exit_shortcuts) == 0 then
-        return false
-    end
-
-    M.remote_exit_scroll_mode()
-    return true
+    return false
 end)
 
 return M

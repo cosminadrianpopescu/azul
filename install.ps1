@@ -27,6 +27,7 @@ else {
     if (-not (Test-Path "$prefix\.config")) {
         mkdir $prefix\.config
         mkdir $prefix\.config\vesper
+        mkdir $prefix\.config\vesper\provider-configs
         mkdir $prefix\.config\vesper\lua
         mkdir $prefix\.config\vesper\pack
         mkdir $prefix\.config\vesper\pack\start

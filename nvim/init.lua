@@ -27,12 +27,6 @@ if not funcs.is_marionette() then
 
     cfg.run_init_lua()
 else
-    -- Prevent exit from search mode by removing all the characters
-    -- from the search prompt
-    vim.keymap.set('c', '<BS>', function()
-      return vim.fn.getcmdline() == '' and '' or '<BS>'
-    end, { expr = true })
-
     require('insert')
     vesper.set_workflow('emacs')
     vim.o.laststatus = 0
