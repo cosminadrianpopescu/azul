@@ -258,7 +258,7 @@ local term_by_panel_id = function(id, terminals)
 end
 
 local _buf = function(t)
-    return t.editing_buf or t.buf
+    return t.overriding_buf or t.buf
 end
 
 local get_visible_floatings = function(terminals)

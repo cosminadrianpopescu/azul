@@ -1,3 +1,8 @@
+vim.cmd([[
+  highlight Normal guibg=none
+  highlight VesperInactiveWin guibg=#141c24 guifg=NvimLightGrey4
+]])
+
 local vesper = require('vesper')
 local files = require('files')
 local funcs = require('functions')
@@ -28,6 +33,7 @@ if not funcs.is_marionette() then
     cfg.run_init_lua()
 else
     require('insert')
+    require('commands').setup()
     vesper.set_workflow('emacs')
     vim.o.laststatus = 0
     vim.o.cmdheight = 0

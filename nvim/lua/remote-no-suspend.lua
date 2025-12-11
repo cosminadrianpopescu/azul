@@ -4,15 +4,12 @@ local core = require('core')
 local EV = require('events')
 local F = require('floats')
 local MAP = require('mappings')
+local options = require('options')
 
 local M = {}
 
 local current_terminal = nil
 local current_mode = nil
-
-EV.persistent_on('PaneChanged', function(args)
-    current_terminal = args[1]
-end)
 
 local get_provider = nil
 
@@ -23,37 +20,38 @@ local get_sock_name = function(info)
     return os.getenv('VESPER_RUN_DIR') .. '/' .. info.uid .. '-sock'
 end
 
-local get_exit_scroll_shortcuts = function()
-    local mappings = vim.tbl_filter(function(x)
-        return (x.m == 'n' or x.m == 'a') and x.options ~= nil and x.options.action == 'enter_mode' and x.options.arg == 't'
-    end, core.get_mode_mappings())
-    table.insert(mappings, 'i')
-    table.insert(mappings, 'a')
-    table.insert(mappings, 'A')
-    table.insert(mappings, '<INS>')
-    return mappings
-end
-
-local send_to_vesper = function(t, vim_cmd)
+local send_to_provider = function(t, cmd, opts)
     if t == nil or t.remote_info == nil then
         return
     end
     local info = t.remote_info
-    local cmd = info.bin .. ' -v ' .. vim_cmd .. ' -a ' .. info.uid
     if info.host ~= nil and info.host ~= '' then
         cmd = 'ssh -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. ' ' .. cmd
     end
-    os.execute(cmd)
+    if opts ~= nil then
+        vim.fn.jobstart(cmd, opts)
+    else
+        vim.fn.jobstart(cmd)
+    end
 end
+
+local send_to_vesper = function(t, vim_cmd, opts)
+    send_to_provider(t, t.remote_info.bin .. ' -v ' .. vim_cmd .. ' -a ' .. t.remote_info.uid, opts)
+end
+
+local send_to_tmux = function(t, cmd, opts)
+    send_to_provider(t, t.remote_info.bin .. ' ' .. cmd .. ' -t ' .. t.remote_info.uid, opts)
+end
+
+--- @class profile_options
+--- @field type string The remote provider type
+--- @field host? string The host
+--- @field bin? string The binary to be executed on the host via ssh
+
+local remote_profiles = {}
 
 local providers = {
     vesper = {
-        -- scroll_page_up = {'<C-b>', '<PageUp>', '<C-b>'},
-        -- scroll_page_down = {'<C-f>', '<PageDown>', '<C-f>'},
-        -- scroll_left = {'h', '<left>', 'h'},
-        -- scroll_down = {'j', '<down>', 'j'},
-        -- scroll_right = {'l', '<right>', 'l'},
-        -- scroll_up = {'k', '<up>', 'k'},
         scroll_start = function(t)
             send_to_vesper(t, 'stopinsert')
         end,
@@ -61,6 +59,29 @@ local providers = {
             send_to_vesper(t, 'startinsert')
         end,
         cmd_template = '#bin# -a #session_id# -m',
+    },
+    tmux = {
+        cmd_template = '#bin# -2 -f ' .. os.getenv('VESPER_PREFIX') .. '/share/vesper/provider-configs/tmux.conf new-session -A -s #session_id#',
+        scroll_start = function(t)
+            send_to_tmux(t, 'copy-mode')
+        end,
+        scroll_end = '<C-c>',
+    },
+    zellij = {
+        cmd_template = '#bin# options --no-pane-frames --session-name #session_id# --attach-to-session true',
+        scroll_start = '<C-g>s',
+        scroll_end = '<C-c>',
+    },
+    dtach = {
+        cmd_template = "#bin# -A #session_id# #shell#",
+    },
+    abduco = {
+        cmd_template = "#bin# -A #session_id# #shell#"
+    },
+    screen = {
+        cmd_template = '#bin# -h 2000 -R #session_id#',
+        scroll_start = '<C-a>[',
+        scroll_end = '<cr>',
     }
 }
 
@@ -118,11 +139,22 @@ local get_disconnected_content = function(t)
 end
 
 local get_remote_info = function(connection)
-    local p = '([a-z]+)://([^@]+)@?(.*)$'
-    if connection == nil or not string.match(connection, p) then
+    local p = '([a-z]+)://([^/]+)/?(.*)$'
+    if connection == nil and remote_profiles[connection] == nil then
         return nil
     end
-    local proto, bin, host = string.gmatch(connection, p)()
+    local proto, host, bin
+    if not string.match(connection, p) then
+        proto = remote_profiles[connection].type
+        host = remote_profiles[connection].host
+        bin = remote_profiles[connection].bin
+    else
+        proto, host, bin = string.gmatch(connection, p)()
+    end
+    if bin == nil or bin == '' then
+        bin = host
+        host = nil
+    end
     local uid = funcs.uuid()
     return {
         host = host, proto = proto, bin = bin, uid = uid,
@@ -140,7 +172,7 @@ M.get_remote_command = function(info)
         return nil
     end
 
-    local result = string.gsub(provider.cmd_template, '#bin#', info.bin):gsub('#session_id#', info.uid)
+    local result = string.gsub(provider.cmd_template, '#bin#', info.bin):gsub('#session_id#', info.uid):gsub('#shell#', options.shell)
 
     if info.host ~= '' and info.host ~= nil then
         result = 'ssh -oControlMaster=yes -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. " -t '" .. result .. "'"
@@ -191,7 +223,7 @@ local parse_remote_connection = function(force, callback)
         callback(remote_info)
     end
     if force == true or not funcs.is_handling_remote() then
-        core.user_input({prompt = "Please enter a remote connection:"}, function(result)
+        core.user_input({prompt = "Please enter a remote connection or a profile name:"}, function(result)
             if result == nil or result == '' then
                 return
             end
@@ -217,8 +249,8 @@ M.open_float_remote = function(force, options)
 end
 
 M.split_remote = function(force, dir)
-    parse_remote_connection(force, function(cmd)
-        core.split(dir, cmd)
+    parse_remote_connection(force, function(info)
+        core.split(dir, M.get_remote_command(info))
     end)
 end
 
@@ -236,8 +268,16 @@ M.create_tab_remote = function()
     M.open_remote()
 end
 
+EV.persistent_on('ModeChanged', function(args)
+    current_mode = args[2]
+end)
+
 EV.persistent_on('RemoteDisconnected', function(args)
     remote_disconnected(args[1])
+end)
+
+EV.persistent_on('PaneChanged', function(args)
+    current_terminal = args[1]
 end)
 
 M.remote_enter_scroll_mode = function()
@@ -282,8 +322,6 @@ M.remote_exit_scroll_mode = function()
         core.send_to_current(provider.scroll_end, true)
     end
     EV.trigger_event('RemoteEndedScroll', {t})
-    -- core.resume()
-    core.enter_mode('t')
 end
 
 M.remote_reconnect = function(t)
@@ -323,12 +361,19 @@ M.remote_quit = function(t)
     EV.trigger_event('RemoteQuit', {t})
 end
 
+--- registers a new remote profile
+--- @param name string The profile name
+--- @param opts profile_options The profile options
+M.register_remote_profile = function(name, opts)
+    remote_profiles[name] = opts
+end
+
 MAP.add_key_parser(function(key)
     if current_mode == 'c' or vim.fn.mode() == 'c' or current_terminal == nil or current_terminal.remote_info == nil then
         return false
     end
 
-    if funcs.remote_state(current_terminal) == 'disconnected' and (key == 'q' or key == 'r') then
+    if funcs.remote_state(current_terminal) == 'disconnected' and vim.fn.mode() == 'n' and (key == 'q' or key == 'r') then
         pcall(function()
             if key == 'q' then
                 M.remote_quit(current_terminal)
@@ -338,6 +383,8 @@ MAP.add_key_parser(function(key)
         end)
         return true
     end
+
+    return false
 end)
 
 return M

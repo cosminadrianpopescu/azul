@@ -17,6 +17,7 @@ return {
         local core = require('core')
         local session = require('session')
         local F = require('floats')
+        local FILES = require('files')
 
         vim.api.nvim_create_user_command('VesperHideFloats', function()
             F.hide_floats()
@@ -137,5 +138,8 @@ return {
         vim.api.nvim_create_user_command('VesperCd', function(opts)
             core.cd(opts.fargs[1])
         end, {desc = 'Changes the current directory of the current pane', complete = "dir", nargs = '?'})
+        vim.api.nvim_create_user_command('VesperDumpScrollback', function(opts)
+            FILES.write_file(opts.fargs[1], core.fetch_scrollback())
+        end, {desc = 'Dumps the content of the scrollback buffer of the current terminal in the indicated file', complete = "file", nargs = 1})
     end
 }

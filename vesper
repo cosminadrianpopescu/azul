@@ -145,7 +145,7 @@ fi
 if [[ "$VESPER_VIM_CMD" != "" && $VESPER_SESSION != "" ]]
 then
     check_session $VESPER_SESSION
-    $VESPER_NVIM_EXE --remote-expr "luaeval('vim.api.nvim_command(\"$VESPER_VIM_CMD\")')" --server $VESPER_RUN_DIR/$VESPER_SESSION
+    $VESPER_NVIM_EXE --remote-expr "luaeval('vim.api.nvim_command(\"$VESPER_VIM_CMD\")')" --server $VESPER_RUN_DIR/$VESPER_SESSION >/dev/null
     exit 0
 fi
 

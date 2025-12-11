@@ -28,7 +28,7 @@ local dead_terminal = nil
 --- @field is_current boolean If true, it means that this is the current terminal
 --- @field cwd string The current working dir
 --- @field buf number The corresponding nvim buffer number
---- @field editing_buf number If the scroll back tab is being edited in the $EDITOR, this is the editor buf if
+--- @field overriding_buf number If the current terminal is being overriden by another buffer, this is the buffer overriding it
 --- @field tab_page number The corresponding neovim tab
 --- @field win_id number The current neovim window id
 --- @field term_id number The current neovim channel id
@@ -1128,17 +1128,17 @@ M.rename_current_tab = function()
     M.rename_tab(vim.fn.tabpagenr())
 end
 
-M.edit = function(t, file, on_finish)
-    if t.editing_buf ~= nil then
-        EV.error('The current terminal is already displaying an editor')
+M.override_terminal = function(t, cmd, on_finish)
+    if t.overriding_buf ~= nil then
+        EV.error('The current terminal is already overriden')
     end
     M.suspend()
     local buf = vim.api.nvim_create_buf(false, true)
-    t.editing_buf = buf
+    t.overriding_buf = buf
     vim.api.nvim_win_set_buf(t.win_id, buf)
     local on_exit = function()
         M.suspend()
-        t.editing_buf = nil
+        t.overriding_buf = nil
         vim.api.nvim_win_set_buf(t.win_id, t.buf)
         vim.fn.timer_start(10, function()
             M.resume()
@@ -1153,20 +1153,31 @@ M.edit = function(t, file, on_finish)
         on_exit = on_exit
     }
     local safe, _ = pcall(function()
-        vim.fn.termopen({options.editor or os.getenv('EDITOR'), file}, opts)
+        vim.fn.termopen(cmd, opts)
     end)
     if not safe then
         on_exit()
         EV.error("The EDITOR variable does not seem to be set properly.")
     end
     M.resume()
+end
+
+M.edit = function(t, file, on_finish)
+    M.override_terminal(t, {options.editor or os.getenv('EDITOR'), file}, on_finish)
     EV.trigger_event('Edit', {t, file})
 end
 
+M.fetch_scrollback = function(t)
+    if t == nil then
+        t = M.get_current_terminal()
+    end
+
+    return table.concat(vim.api.nvim_buf_get_lines(t.buf, 0, -1, false), "\n")
+end
+
 M.edit_scrollback = function(t)
-    local lines = table.concat(vim.api.nvim_buf_get_lines(t.buf, 0, -1, false), "\n")
     local file = os.tmpname()
-    FILES.write_file(file, lines)
+    FILES.write_file(file, M.fetch_scrollback(t))
     M.edit(t, file, function()
         os.remove(file)
     end)

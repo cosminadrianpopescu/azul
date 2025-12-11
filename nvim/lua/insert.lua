@@ -24,10 +24,10 @@ EV.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'VesperStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
     'WinIdSet', 'ConfigReloaded', 'VesperConnected', 'Error', 'LayoutRestored',
-    'UndoFinished', 'FullscreenToggled', 'DirectoryChanged',
+    'UndoFinished', 'FullscreenToggled', 'DirectoryChanged', 'RemoteStartedScroll'
 }, do_start_insert)
 
-EV.persistent_on({'MouseClick', 'RemoteStartedScroll', 'RemoteEndedScroll'}, function()
+EV.persistent_on({'MouseClick', 'RemoteEndedScroll'}, function()
     start_insert(true)
 end)
 

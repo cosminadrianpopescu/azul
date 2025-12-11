@@ -13,7 +13,7 @@ local restore_float = function(t)
         return
     end
     vim.api.nvim_open_win(funcs.get_real_buffer(t), true, t.win_config)
-    if t.editing_buf == nil then
+    if t.overriding_buf == nil then
         core.refresh_buf(t.buf)
     else
         t.win_id = vim.fn.win_getid(vim.fn.winnr())

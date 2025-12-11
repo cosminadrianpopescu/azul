@@ -3,6 +3,7 @@ local funcs = require('functions')
 local core = require('core')
 local EV = require('events')
 local F = require('floats')
+local FILES = require('files')
 local MAP = require('mappings')
 local options = require('options')
 
@@ -10,6 +11,7 @@ local M = {}
 
 local current_terminal = nil
 local current_mode = nil
+local caught_esc = false
 
 local get_provider = nil
 
@@ -26,21 +28,13 @@ local send_to_provider = function(t, cmd, opts)
     end
     local info = t.remote_info
     if info.host ~= nil and info.host ~= '' then
-        cmd = 'ssh -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. ' ' .. cmd
+        cmd = 'ssh -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. ' "' .. string.gsub(cmd, '"', '\\"') .. '"'
     end
     if opts ~= nil then
         vim.fn.jobstart(cmd, opts)
     else
         vim.fn.jobstart(cmd)
     end
-end
-
-local send_to_vesper = function(t, vim_cmd, opts)
-    send_to_provider(t, t.remote_info.bin .. ' -v ' .. vim_cmd .. ' -a ' .. t.remote_info.uid, opts)
-end
-
-local send_to_tmux = function(t, cmd, opts)
-    send_to_provider(t, t.remote_info.bin .. ' ' .. cmd .. ' -t ' .. t.remote_info.uid, opts)
 end
 
 --- @class profile_options
@@ -50,38 +44,57 @@ end
 
 local remote_profiles = {}
 
+local get_scrollback = function(t, local_cmd, callback)
+    local opts = {
+        on_stdout = function(_, data, _)
+            callback(table.concat(data or {}, "\n"))
+        end,
+        stdout_buffered = true,
+    }
+
+    send_to_provider(t, local_cmd, opts)
+end
+
+local get_scrollback_local = function(t, callback)
+    callback(core.fetch_scrollback(t))
+end
+
 local providers = {
     vesper = {
-        scroll_start = function(t)
-            send_to_vesper(t, 'stopinsert')
-        end,
-        scroll_end = function(t)
-            send_to_vesper(t, 'startinsert')
-        end,
         cmd_template = '#bin# -a #session_id# -m',
+        get_scrollback = function(t, callback)
+            local local_cmd = t.remote_info.bin .. ' -v ' .. '"VesperDumpScrollback /tmp/' .. t.remote_info.uid .. '" -a ' .. t.remote_info.uid .. ' && cat /tmp/' .. t.remote_info.uid
+            get_scrollback(t, local_cmd, callback)
+        end,
     },
     tmux = {
         cmd_template = '#bin# -2 -f ' .. os.getenv('VESPER_PREFIX') .. '/share/vesper/provider-configs/tmux.conf new-session -A -s #session_id#',
-        scroll_start = function(t)
-            send_to_tmux(t, 'copy-mode')
+        get_scrollback = function(t, callback)
+            local local_cmd = t.remote_info.bin .. ' capture-pane -pS - -t ' .. t.remote_info.uid
+            get_scrollback(t, local_cmd, callback)
         end,
-        scroll_end = '<C-c>',
     },
     zellij = {
         cmd_template = '#bin# options --no-pane-frames --session-name #session_id# --attach-to-session true',
-        scroll_start = '<C-g>s',
-        scroll_end = '<C-c>',
+        get_scrollback = function(t, callback)
+            local local_cmd = t.remote_info.bin .. ' --session ' .. t.remote_info.uid .. ' action dump-screen --full /tmp/' .. t.remote_info.uid .. ' && cat /tmp/' .. t.remote_info.uid
+            get_scrollback(t, local_cmd, callback)
+        end
     },
     dtach = {
         cmd_template = "#bin# -A #session_id# #shell#",
+        get_scrollback = get_scrollback_local,
     },
     abduco = {
-        cmd_template = "#bin# -A #session_id# #shell#"
+        cmd_template = "#bin# -A #session_id# #shell#",
+        get_scrollback = get_scrollback_local,
     },
     screen = {
         cmd_template = '#bin# -h 2000 -R #session_id#',
-        scroll_start = '<C-a>[',
-        scroll_end = '<cr>',
+        get_scrollback = function(t, callback)
+            local local_cmd = t.remote_info.bin .. ' -S ' .. t.remote_info.uid .. ' -X hardcopy -h /tmp/' .. t.remote_info.uid .. ' && sleep 0.1 && cat /tmp/' .. t.remote_info.uid
+            get_scrollback(t, local_cmd, callback)
+        end,
     }
 }
 
@@ -270,6 +283,21 @@ end
 
 EV.persistent_on('ModeChanged', function(args)
     current_mode = args[2]
+    if current_mode == 'c' or current_terminal == nil or current_terminal.remote_info == nil or funcs.remote_state(current_terminal) == 'disconnected' then
+        return
+    end
+    local enter_scroll = (options.workflow == 'tmux' and args[1] == 'M' and args[2] == 'n')
+        or ((options.workflow == 'vesper' or options.workflow == 'zellij') and args[1] == 'a' and args[2] == 'n')
+
+
+    if caught_esc then
+        caught_esc = false
+        return
+    end
+
+    if enter_scroll then
+        M.remote_enter_scroll_mode()
+    end
 end)
 
 EV.persistent_on('RemoteDisconnected', function(args)
@@ -287,17 +315,22 @@ M.remote_enter_scroll_mode = function()
         return
     end
 
-    if provider.scroll_start == nil then
-        return
-    end
-
-    if type(provider.scroll_start) == 'function' then
-        provider.scroll_start(t)
-    else
-        t.is_scroll = true
-        core.send_to_current(provider.scroll_start, true)
-    end
-    EV.trigger_event('RemoteStartedScroll', {t})
+    provider.get_scrollback(t, function(data)
+        local f = '/tmp/scroll-' .. os.getenv('VESPER_SESSION') .. '-' .. t.panel_id
+        FILES.write_file(f, data)
+        local file_type = vim.fn.substitute(options.shell or vim.o.shell, "\\v^.*\\/([^\\/]+)$", "\\1", "g")
+        core.override_terminal(t, {
+            os.getenv('VESPER_NVIM_EXE'), '--clean', '-u',
+            os.getenv('VESPER_PREFIX') .. '/share/vesper/provider-configs/nvim.lua', f,
+            '-n', '--cmd', 'set filetype=' .. file_type
+        }, function()
+            os.remove(f)
+            core.resume()
+            core.enter_mode('t')
+        end)
+        core.suspend()
+        EV.trigger_event('RemoteStartedScroll', {t})
+    end)
 end
 
 M.remote_exit_scroll_mode = function()
@@ -382,6 +415,13 @@ MAP.add_key_parser(function(key)
             end
         end)
         return true
+    end
+
+    if options.workflow == 'tmux' then
+        if current_mode == 'M' and (funcs.compare_shortcuts('<esc>', key) or funcs.compare_shortcuts(':', key)) then
+            caught_esc = true
+            return false
+        end
     end
 
     return false
