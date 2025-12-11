@@ -43,6 +43,13 @@ local send_to_tmux = function(t, cmd, opts)
     send_to_provider(t, t.remote_info.bin .. ' ' .. cmd .. ' -t ' .. t.remote_info.uid, opts)
 end
 
+--- @class profile_options
+--- @field type string The remote provider type
+--- @field host? string The host
+--- @field bin? string The binary to be executed on the host via ssh
+
+local remote_profiles = {}
+
 local providers = {
     vesper = {
         scroll_start = function(t)
@@ -72,7 +79,7 @@ local providers = {
         cmd_template = "#bin# -A #session_id# #shell#"
     },
     screen = {
-        cmd_template = '#bin# -R #session_id#',
+        cmd_template = '#bin# -h 2000 -R #session_id#',
         scroll_start = '<C-a>[',
         scroll_end = '<cr>',
     }
@@ -132,11 +139,22 @@ local get_disconnected_content = function(t)
 end
 
 local get_remote_info = function(connection)
-    local p = '([a-z]+)://([^@]+)@?(.*)$'
-    if connection == nil or not string.match(connection, p) then
+    local p = '([a-z]+)://([^/]+)/?(.*)$'
+    if connection == nil and remote_profiles[connection] == nil then
         return nil
     end
-    local proto, bin, host = string.gmatch(connection, p)()
+    local proto, host, bin
+    if not string.match(connection, p) then
+        proto = remote_profiles[connection].type
+        host = remote_profiles[connection].host
+        bin = remote_profiles[connection].bin
+    else
+        proto, host, bin = string.gmatch(connection, p)()
+    end
+    if bin == nil or bin == '' then
+        bin = host
+        host = nil
+    end
     local uid = funcs.uuid()
     return {
         host = host, proto = proto, bin = bin, uid = uid,
@@ -205,7 +223,7 @@ local parse_remote_connection = function(force, callback)
         callback(remote_info)
     end
     if force == true or not funcs.is_handling_remote() then
-        core.user_input({prompt = "Please enter a remote connection:"}, function(result)
+        core.user_input({prompt = "Please enter a remote connection or a profile name:"}, function(result)
             if result == nil or result == '' then
                 return
             end
@@ -231,8 +249,8 @@ M.open_float_remote = function(force, options)
 end
 
 M.split_remote = function(force, dir)
-    parse_remote_connection(force, function(cmd)
-        core.split(dir, cmd)
+    parse_remote_connection(force, function(info)
+        core.split(dir, M.get_remote_command(info))
     end)
 end
 
@@ -341,6 +359,13 @@ M.remote_quit = function(t)
         vim.fn.jobstop(funcs.safe_get_buf_var(t.buf, 'terminal_job_id'))
     end
     EV.trigger_event('RemoteQuit', {t})
+end
+
+--- registers a new remote profile
+--- @param name string The profile name
+--- @param opts profile_options The profile options
+M.register_remote_profile = function(name, opts)
+    remote_profiles[name] = opts
 end
 
 MAP.add_key_parser(function(key)

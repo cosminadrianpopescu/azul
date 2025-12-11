@@ -86,5 +86,6 @@ M.cd = core.cd
 M.find_key_map = core.find_key_map
 M.add_key_parser = MAP.add_key_parser
 M.remote_exit_scroll_mode = R.remote_exit_scroll_mode
+M.register_remote_profile = R.register_remote_profile
 
 return M
