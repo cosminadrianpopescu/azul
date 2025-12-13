@@ -1039,6 +1039,9 @@ M.rotate_panel = function()
 end
 
 M.get_mode_mappings = function()
+    if is_suspended then
+        return {}
+    end
     return mode_mappings
 end
 
@@ -1152,12 +1155,12 @@ M.override_terminal = function(t, cmd, on_finish)
         cdw = vim.fn.getcwd(),
         on_exit = on_exit
     }
-    local safe, _ = pcall(function()
+    local safe, err = pcall(function()
         vim.fn.termopen(cmd, opts)
     end)
     if not safe then
         on_exit()
-        EV.error("The EDITOR variable does not seem to be set properly.")
+        EV.error("The EDITOR variable does not seem to be set properly. " .. vim.inspect(err))
     end
     M.resume()
 end

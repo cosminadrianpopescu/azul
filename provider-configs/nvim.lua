@@ -6,6 +6,7 @@ vim.o.laststatus = 0
 -- vim.o.filetype = 'fish'
 vim.o.buftype = 'nowrite'
 vim.o.modifiable = false
+vim.o.clipboard = "unnamedplus"
 
 vim.api.nvim_command("normal G")
 vim.api.nvim_create_autocmd({'BufEnter'}, {

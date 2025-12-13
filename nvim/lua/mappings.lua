@@ -153,17 +153,6 @@ local generic_key_handler = function()
                 return ''
             end
         end
-        -- local t = core.get_current_terminal()
-        -- if core.current_mode() == 'n' or core.current_mode() == 'M' or core.current_mode() == 'a' and t.remote_info ~= nil then
-        --     if funcs.compare_shortcuts(trans, '<C-b>') then
-        --         if core.current_mode() == 'M' then
-        --             core.enter_mode('a')
-        --             return ''
-        --         end
-        --         core.send_to_current(trans, true)
-        --         return ''
-        --     end
-        -- end
         if funcs.compare_shortcuts(trans, options.modifier)
             and core.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
             and (options.workflow == 'tmux' or options.workflow == 'vesper')

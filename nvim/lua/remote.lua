@@ -11,7 +11,6 @@ local M = {}
 
 local current_terminal = nil
 local current_mode = nil
-local caught_esc = false
 
 local get_provider = nil
 
@@ -47,6 +46,11 @@ local remote_profiles = {}
 local get_scrollback = function(t, local_cmd, callback)
     local opts = {
         on_stdout = function(_, data, _)
+            local i = #data
+            while data[i] == '' do
+                table.remove(data, i)
+                i = i - 1
+            end
             callback(table.concat(data or {}, "\n"))
         end,
         stdout_buffered = true,
@@ -290,13 +294,13 @@ EV.persistent_on('ModeChanged', function(args)
         or ((options.workflow == 'vesper' or options.workflow == 'zellij') and args[1] == 'a' and args[2] == 'n')
 
 
-    if caught_esc then
-        caught_esc = false
-        return
-    end
-
     if enter_scroll then
-        M.remote_enter_scroll_mode()
+        local term_id = current_terminal.term_id
+        vim.fn.timer_start(10, function()
+            if current_mode == 'n' and current_terminal.term_id == term_id then
+                M.remote_enter_scroll_mode()
+            end
+        end)
     end
 end)
 
@@ -415,13 +419,6 @@ MAP.add_key_parser(function(key)
             end
         end)
         return true
-    end
-
-    if options.workflow == 'tmux' then
-        if current_mode == 'M' and (funcs.compare_shortcuts('<esc>', key) or funcs.compare_shortcuts(':', key)) then
-            caught_esc = true
-            return false
-        end
     end
 
     return false
