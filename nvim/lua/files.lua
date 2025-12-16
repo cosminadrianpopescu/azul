@@ -16,6 +16,11 @@ M.exists = function(which)
     return false
 end
 
+M.dir_exists = function(which)
+    local ok, _, _ = os.rename(which, which)
+    return ok
+end
+
 M.try_load_config = function(which)
     if M.exists(which) == false then
         return false

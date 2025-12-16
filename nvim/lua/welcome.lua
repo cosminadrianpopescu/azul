@@ -9,52 +9,52 @@ local key_parser_id = nil
 local MAP = require('mappings')
 
 local welcome_content = function()
-    local result = {
+    local center = function(s)
+        local pad = math.floor((80 - string.len(s)) / 2)
+        local spaces = string.rep(" ", pad)
+        return spaces .. s .. spaces
+    end
+    return {
         "",
         "",
-        "Welcome to Vesper! Your first session is now running.",
+        center("Welcome to Vesper! Your first session is now running."),
         "",
-        "Here are the 3 essentials to get you started:",
+        center("Here are the 3 essentials to get you started:"),
         "",
-        "1. The prefix key",
-        "All commands start with <Ctrl>+<a>. Press it, release, then the command key.",
         "",
-        "2. Pane management",
-        "<Prefix> then <s>  (Change into split mode)",
-        "then <j>  (Split Vertically)",
-        "then <h>  (Split Horizontally)",
-        "<Prefix> then <p>  (Change into pane select mode)",
-        "then h/j/k/l (Navigate Panes)",
+        center("1. The prefix key"),
+        "   * All commands start with `Ctrl`+`a`. Press it, release, then the command key.",
         "",
-        "3. Session Control",
-        "<Prefix> then <d>  (Detach and keep running)",
-        "In your main shell, run `vesper -a <session-name>` to return.",
         "",
-        "Press <Esc> or <q> to close. This message will not appear again.",
+        center("2. Pane management"),
+        "   * `Prefix` then `s`  (Change into split mode)",
+        "              then ↓  (Split Vertically)",
+        "              then ←  (Split Horizontally)",
+        "   * `Prefix` then `p`  (Change into pane select mode)",
+        "              then ←, →, ↑, ↓ (Navigate Panes)",
+        "",
+        "",
+        center("3. Session Control"),
+        "   * `Prefix` then `d`  (Detach and keep running)",
+        "   * In your main shell, run `vesper -a <session-name>` to return.",
+        "",
+        "",
+        "",
+        "   Press `Esc` or `q` to close. This message will not appear again.",
         "",
         "",
     }
-
-    for i, _ in pairs(result) do
-        if result[i] ~= "" then
-            local pad = math.floor((100 - string.len(result[i])) / 2)
-            local spaces = string.rep(" ", pad)
-            result[i] = spaces .. result[i] .. spaces
-        end
-    end
-
-    return result
 end
 
 local get_win_config = function()
     local content = welcome_content()
     local f1 = math.ceil(vim.o.columns / 10)
-    local w = vim.o.columns - f1 * 4
+    local w = vim.o.columns - f1 * 5
     local h = #content
-    local x = f1 * 2
+    local x = f1 * 2.5
     local y = math.ceil((vim.o.lines - h) / 2)
     return {
-        width = w, height = h, col = x, row = y, focusable = false, zindex = 500,
+        width = w, height = h, col = x, row = y, focusable = true, zindex = 500,
         border = 'rounded', relative = 'editor', style = 'minimal',
     }
 end
@@ -65,13 +65,8 @@ local create_window = function()
     win_buffer = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_lines(win_buffer, 0, -1, false, welcome_content())
     win_id = vim.api.nvim_open_win(win_buffer, false, get_win_config())
-    vim.filetype.add({
-        filename = {
-            vesper_cheatsheet_window = 'vesper_welcome',
-        }
-    })
-    vim.api.nvim_set_option_value('winhighlight', 'Normal:Identifier', {scope = 'local', win = win_id})
-    vim.api.nvim_set_option_value('filetype', 'vesper_welcome', {buf = win_buffer})
+    -- vim.api.nvim_set_option_value('winhighlight', 'Normal:Identifier', {scope = 'local', win = win_id})
+    vim.api.nvim_set_option_value('filetype', 'markdown', {buf = win_buffer})
     vim.api.nvim_set_current_win(current_win)
     core.resume()
 end

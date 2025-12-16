@@ -156,17 +156,21 @@ local get_disconnected_content = function(t)
 end
 
 local get_remote_info = function(connection)
-    local p = '([a-z]+)://([^/]+)/?(.*)$'
+    local p1 = '([a-z]+)://([^/]+)/?(.*)$'
+    local p2 = '([a-z]+)://(.*)$'
+    -- vesper:///tmp/vesper-tmp/bin/vesper
     if connection == nil and remote_profiles[connection] == nil then
         return nil
     end
     local proto, host, bin
-    if not string.match(connection, p) then
+    if not string.match(connection, p1) and not string.match(connection, p2) then
         proto = remote_profiles[connection].type
         host = remote_profiles[connection].host
         bin = remote_profiles[connection].bin
+    elseif string.match(connection, p1) then
+        proto, host, bin = string.gmatch(connection, p1)()
     else
-        proto, host, bin = string.gmatch(connection, p)()
+        proto, bin = string.gmatch(connection, p2)()
     end
     if bin == nil or bin == '' then
         bin = host

@@ -5,6 +5,7 @@ usage() {
     echo "Options: "
     echo "    -a <session-name> Attach to an existing session or create it if it does not exists"
     echo "    -t <session-name> Create a new session if it doesn't exists but don't attach to it"
+    echo "    -n                No config (skip config.ini and init.lua)"
     echo "    -l                List the existing sessions"
     echo "    -m                Start in marionette mode"
     echo "    -r                If VESPER_REMOTE_CONNECTION var is set, then the first tab will also be remote"
@@ -69,7 +70,7 @@ export VESPER_SESSION=""
 export VESPER_LIST=""
 VESPER_CMD=""
 
-while getopts "a:t:lrxmhs:c:v:p:" o
+while getopts "a:t:lrxnmhs:c:v:p:" o
 do
     case "${o}" in
         -)
@@ -92,6 +93,9 @@ do
             ;;
         s)
             VESPER_CMD=$OPTARG
+            ;;
+        n)
+            export VESPER_SKIP_CONFIG="1"
             ;;
         c)
             export VESPER_CONFIG_HOME=$OPTARG

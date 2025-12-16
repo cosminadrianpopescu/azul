@@ -30,7 +30,9 @@ if not funcs.is_marionette() then
 
     require('theme')
 
-    cfg.run_init_lua()
+    if os.getenv('VESPER_SKIP_CONFIG') ~= '1' then
+        cfg.run_init_lua()
+    end
 else
     require('insert')
     require('commands').setup()

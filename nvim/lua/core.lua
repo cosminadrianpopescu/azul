@@ -259,7 +259,10 @@ M.open = function(buf, opts)
     environment['VIMRUNTIME'] = ''
     environment['VESPER_PANEL_ID'] = panel_id
     local cwd = opts.cwd or (current ~= nil and current.cwd) or vim.fn.getcwd()
-    vim.api.nvim_command("lcd " .. cwd)
+    if not FILES.dir_exists(cwd) then
+        cwd = ''
+    end
+    vim.api.nvim_command("silent lcd " .. cwd)
     local _opts = {
         cwd = cwd,
         env = environment,

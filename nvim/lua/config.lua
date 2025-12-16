@@ -749,7 +749,7 @@ M.set_shortcuts = function(shortcuts)
 end
 
 M.apply_config = function(_config)
-    if files.exists(files.config_dir .. '/config.ini') then
+    if files.exists(files.config_dir .. '/config.ini') and os.getenv('VESPER_SKIP_CONFIG') ~= '1' then
         M.load_config(files.config_dir .. '/config.ini')
     end
     require('core').set_workflow(options.workflow, options.modifier)

@@ -41,7 +41,7 @@ local MOD_MAP = {
         color = colors.command.a.fg,
     },
     n = {
-        text = '   VESPER  ',
+        text = 'SCROLL/FIND',
         color = colors.normal.a.fg,
     },
     a = {

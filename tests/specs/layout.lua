@@ -64,6 +64,7 @@ t.wait_events({TabTitleChanged = 1}, function()
                                 t.simulate_keys(t.action_shortcut('toggle_floats'), {PaneChanged = 1}, function()
                                     term = vesper.get_current_terminal()
                                     t.single_shot('PaneChanged', function()
+                                        vim.api.nvim_command('startinsert')
                                         L.close_all_panes(function()
                                             t.single_shot("LayoutRestored", function()
                                                 -- Need to wait for the commands to be restored
