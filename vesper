@@ -3,18 +3,26 @@ usage() {
     echo "    vesper [options]"
     echo ""
     echo "Options: "
-    echo "    -a <session-name> Attach to an existing session or create it if it does not exists"
-    echo "    -t <session-name> Create a new session if it doesn't exists but don't attach to it"
-    echo "    -n                No config (skip config.ini and init.lua)"
-    echo "    -l                List the existing sessions"
-    echo "    -m                Start in marionette mode"
-    echo "    -r                If VESPER_REMOTE_CONNECTION var is set, then the first tab will also be remote"
-    echo "    -p <profile>      Function with all the connections remote as the indicated profile"
-    echo "    -v <cmd>          Execute a vim command via the lua api vim.api.nvim_command"
-    echo "    -x                Skip loading the session if a session exists"
-    echo "    -s <cmd>          Send the command to an existing session (only together with -a)"
-    echo "    -c <config-path>  Load the config from the <config-path> location"
-    echo "    -h --help         Displays this help and exists"
+    echo "    -a, --session <session-name>  Attach to an existing session or create it if it does not exists"
+    echo "    -t <session-name>             Create a new session if it doesn't exists but don't attach to it"
+    echo "    -n                            No config (skip config.ini and init.lua)"
+    echo "    -l                            List the existing sessions"
+    echo "    -m                            Start in marionette mode"
+    echo "    --first-tab-remote            If VESPER_REMOTE_CONNECTION var is set, then the first tab will also be remote"
+    echo "    -p, --profile <profile>       Sets the remote connection to the indicated profile"
+    echo "    -v <cmd>                      Execute a vim command via the lua api vim.api.nvim_command"
+    echo "    -x                            Skip loading the session if a session exists"
+    echo "    -s <cmd>                      Send the command to an existing session (only together with -a)"
+    echo "    -c, --config <config-path>    Load the config from the <config-path> location"
+    echo "    -x, --skip-session            Skip loading the session if a session exists"
+    echo "    -h, --help                    Displays this help and exists"
+}
+
+throw_error() {
+    echo "$1"
+    echo ""
+    usage
+    exit 1
 }
 
 export VESPER_RUN_DIR="/tmp/vesper-`id -u`"
@@ -70,7 +78,7 @@ export VESPER_SESSION=""
 export VESPER_LIST=""
 VESPER_CMD=""
 
-while getopts "a:t:lrxnmhs:c:v:p:" o
+while getopts "a:t:lrxnmhs:c:v:p:-:" o
 do
     case "${o}" in
         -)
@@ -79,11 +87,47 @@ do
                     usage
                     exit 1
                     ;;
+                config)
+                    export VESPER_CONFIG_HOME="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                    ;;
+                config=*)
+                    export VESPER_CONFIG_HOME="${OPTARG#*=}"
+                    ;;
+                session)
+                    export VESPER_SESSION="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                    ;;
+                session=*)
+                    export VESPER_SESSION="${OPTARG#*=}"
+                    ;;
+                profile)
+                    export VESPER_REMOTE_CONNECTION="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                    ;;
+                profile=*)
+                    export VESPER_REMOTE_CONNECTION="${OPTARG#*=}"
+                    ;;
+                skip-session)
+                    export VESPER_NO_AUTOSAVE="1"
+                    ;;
+                first-tab-remote)
+                    export VESPER_START_REMOTE="1"
+                    ;;
+                *)
+                    usage
+                    exit 1
+                    ;;
             esac;;
         a)
+            if [[ "$OPTARG" == -* ]]; then
+                echo "Error: Option -a requires a value, got '$OPTARG'"
+                usage
+                exit 1
+            fi
             VESPER_SESSION=$OPTARG
             ;;
         t)
+            if [[ "$OPTARG" == -* ]]; then
+                throw_error "Error: Option -t requires a value, got '$OPTARG'"
+            fi
             VESPER_SESSION=$OPTARG
             VESPER_SKIP_CONNECT=1
             ;;
@@ -92,25 +136,34 @@ do
             exit 0
             ;;
         s)
+            if [[ "$OPTARG" == -* ]]; then
+                throw_error "Error: Option -s requires a value, got '$OPTARG'"
+            fi
             VESPER_CMD=$OPTARG
             ;;
         n)
             export VESPER_SKIP_CONFIG="1"
             ;;
         c)
+            if [[ "$OPTARG" == -* ]]; then
+                throw_error "Error: Option -c requires a value, got '$OPTARG'"
+            fi
             export VESPER_CONFIG_HOME=$OPTARG
             ;;
         p)
+            if [[ "$OPTARG" == -* ]]; then
+                throw_error "Error: Option -p requires a value, got '$OPTARG'"
+            fi
             export VESPER_REMOTE_CONNECTION=$OPTARG
             ;;
         m)
             export VESPER_IS_MARIONETTE="1"
             ;;
         v)
+            if [[ "$OPTARG" == -* ]]; then
+                throw_error "Error: Option -v requires a value, got '$OPTARG'"
+            fi
             export VESPER_VIM_CMD=$OPTARG
-            ;;
-        r)
-            export VESPER_START_REMOTE="1"
             ;;
         x)
             export VESPER_NO_AUTOSAVE="1"
@@ -118,6 +171,9 @@ do
         h)
             usage
             exit 1
+            ;;
+        ?)
+            throw_error "Unkown or missing argument."
             ;;
     esac
 done
