@@ -1,5 +1,6 @@
 -- local from_entry = require "telescope.from_entry"
 local core = require('core')
+local ERRORS = require('error_handling')
 local safe, _ = pcall(function()
     require('telescope')
 end)
@@ -135,7 +136,7 @@ local term_select = function(opts)
             title = "Term Preview",
             keep_last_buf = true,
             define_preview = function(self, entry, _)
-                vim.fn.timer_start(100, function()
+                ERRORS.defer(100, function()
                     vim.api.nvim_win_set_buf(self.state.winid, entry.terminal.buf)
                 end)
             end,

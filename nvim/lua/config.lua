@@ -9,6 +9,7 @@ local options = require('options')
 local env = require('environment')
 local F = require('floats')
 local R = require('remote')
+local ERRORS = require('error_handling')
 
 M.ini_shortcuts = {}
 
@@ -19,7 +20,7 @@ cmd({'TabNew', 'VimEnter'}, {
             core.set_tab_variable('float_group', 'default')
             return
         end
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             core.set_tab_variable('float_group', 'tab-' .. tabs)
             tabs = tabs + 1
         end)
@@ -592,7 +593,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'rename_tab' then
         map(mode, shortcut, '', {
             callback = function()
-                vim.defer_fn(core.rename_current_tab, 1);
+                ERRORS.defer(1, core.rename_current_tab);
             end,
             desc = 'Renames the current tab',
             action = action,
@@ -820,7 +821,7 @@ M.reload_config = function()
     M.apply_config()
     M.set_vim_options()
     M.run_init_lua()
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         core.update_titles()
         require('events').trigger_event('ConfigReloaded')
     end)

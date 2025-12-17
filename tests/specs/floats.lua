@@ -2,6 +2,7 @@ local t = require('test-env')
 local vesper = require('vesper')
 local options = require('options')
 local funcs = require('functions')
+local ERRORS = require('error_handling')
 
 local by_state = function(state)
     return (state and 'floating') or 'embedded'
@@ -61,5 +62,5 @@ t.wait_events({TabTitleChanged = 1}, function()
     end)
 end)
 
-vim.fn.timer_start((options.workflow == 'emacs' and 500) or 100, function()
+ERRORS.defer((options.workflow == 'emacs' and 500) or 100, function()
 end)

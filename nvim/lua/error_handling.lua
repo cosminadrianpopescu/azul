@@ -5,6 +5,7 @@ local EV = require('events')
 local M = {}
 
 local is_panicking = false
+local is_handling_error = false
 
 local build_message = function(stacktrace, msg)
     return (msg or '') .. '\n\n' .. stacktrace
@@ -15,11 +16,16 @@ M.try_execute = function(try_callback, catch_callback, error_message)
     if safe then
         return result
     end
+    if is_handling_error then
+        return
+    end
+    is_handling_error = true
     local msg = build_message(result, error_message)
     EV.trigger_event('Error', msg)
     if catch_callback ~= nil then
         catch_callback(result, error_message)
     end
+    is_handling_error = false
 end
 
 M.panic_handler = function(stacktrace, msg)
@@ -38,6 +44,15 @@ end
 
 M.is_panicking = function()
     return is_panicking
+end
+
+M.defer = function(timeout, callback)
+    return vim.fn.timer_start(timeout, function()
+        M.try_execute(callback, function(err)
+            EV.trigger_event('Error', {err})
+            error(err)
+        end)
+    end)
 end
 
 return M

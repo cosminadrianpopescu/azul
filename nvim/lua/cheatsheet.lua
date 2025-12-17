@@ -2,6 +2,7 @@ local core = require('core')
 local funcs = require('functions')
 local options = require('options')
 local EV = require('events')
+local ERRORS = require('error_handling')
 
 local win_id = nil
 local win_buffer = nil
@@ -225,7 +226,7 @@ local create_window = function(mappings, full, position)
     vim.api.nvim_buf_set_lines(win_buffer, 0, height + 3, false, cheatsheet_content(mappings, height, _full))
     core.resume()
     if position == nil and options.modes_cheatsheet_position == 'auto' then
-        position_timer = vim.fn.timer_start(100, function()
+        position_timer = ERRORS.defer(100, function()
             if win_id == nil then
                 return
             end

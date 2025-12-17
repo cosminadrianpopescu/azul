@@ -3,6 +3,7 @@ local core = require('core')
 local options = require('options')
 local EV = require('events')
 local TABS = require('tab_vars')
+local ERRORS = require('error_handling')
 
 local current_group = nil
 
@@ -35,7 +36,7 @@ local close_float = function(float)
     core.refresh_win_config(float)
     funcs.safe_close_window(float.win_id)
     float.win_id = nil
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         local t = core.get_current_terminal()
         if t == nil then
             return
@@ -64,7 +65,7 @@ M.show_floats = function(group)
     for _, f in ipairs(floatings) do
         restore_float(f)
     end
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         EV.trigger_event('FloatsVisible')
     end)
     core.update_titles()
@@ -104,7 +105,7 @@ M.open_float = function(options)
     end
     vim.api.nvim_open_win(buf, true, _opts)
     core.open(buf, options)
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         local opened = core.term_by_buf_id(buf)
         EV.trigger_event('FloatOpened', {opened})
         if options.to_restore ~= nil then
@@ -126,7 +127,7 @@ M.hide_floats = function()
     if #floats > 0 then
         EV.trigger_event('FloatHidden')
     end
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         core.update_titles()
     end)
 end
@@ -138,7 +139,7 @@ M.toggle_floats = function(group)
     else
         M.hide_floats()
     end
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         core.enter_mode('t')
     end)
 end

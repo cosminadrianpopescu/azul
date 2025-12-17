@@ -6,6 +6,7 @@ local F = require('floats')
 local FILES = require('files')
 local MAP = require('mappings')
 local options = require('options')
+local ERRORS = require('error_handling')
 
 local M = {}
 
@@ -236,7 +237,9 @@ local remote_disconnected = function(t)
     vim.api.nvim_set_option_value('modifiable', false, {buf = t.buf})
     vim.api.nvim_set_option_value('filetype', 'VesperRemoteTerm', {buf = t.buf})
     t.term_id = nil
-    vim.api.nvim_buf_delete(old_buf, {force = true})
+    if vim.api.nvim_buf_is_valid(old_buf) then
+        vim.api.nvim_buf_delete(old_buf, {force = true})
+    end
     local sock = get_sock_name(t.remote_info)
     if sock ~= nil and FILES.dir_exists(sock) then
         os.remove(sock)
@@ -311,7 +314,7 @@ EV.persistent_on('ModeChanged', function(args)
 
     if enter_scroll then
         local term_id = current_terminal.term_id
-        vim.fn.timer_start(10, function()
+        ERRORS.defer(10, function()
             if current_mode == 'n' and current_terminal.term_id == term_id then
                 M.remote_enter_scroll_mode()
             end
@@ -403,7 +406,7 @@ M.remote_reconnect = function(t)
     if id ~= nil then
         core.suspend()
         vim.fn.jobstop(id)
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             core.resume()
         end)
     end

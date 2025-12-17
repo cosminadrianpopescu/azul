@@ -1,6 +1,7 @@
 local history = {}
 local EV = require('events')
 local funcs = require('functions')
+local ERRORS = require('error_handling')
 
 local M = {}
 
@@ -41,7 +42,7 @@ M.get_history = function()
 end
 
 M.debug = function()
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         funcs.log("HISTORY IS " .. vim.inspect(history))
     end)
 end

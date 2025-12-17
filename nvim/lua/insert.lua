@@ -1,6 +1,7 @@
 local EV = require('events')
 local core = require('core')
 local options = require('options')
+local ERRORS = require('error_handling')
 
 local mode_before_disconnected = nil
 
@@ -15,7 +16,7 @@ local start_insert = function(force)
 end
 
 local do_start_insert = function()
-    vim.fn.timer_start(100, function()
+    ERRORS.defer(100, function()
         start_insert(true)
     end)
 end
@@ -43,7 +44,7 @@ EV.persistent_on('ModeChanged', function(args)
     if new_mode ~= 't' and new_mode ~= 'P' then
         return
     end
-    vim.fn.timer_start(50, function()
+    ERRORS.defer(50, function()
         start_insert(true)
     end)
 end)
@@ -53,7 +54,7 @@ EV.persistent_on('EnterDisconnectedPane', function()
     if mode_before_disconnected == 'n' or mode_before_disconnected == 'a' or options.workflow == 'tmux' or mode_before_disconnected == 'M' then
         return
     end
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         core.enter_mode(mode_before_disconnected)
     end)
 end)

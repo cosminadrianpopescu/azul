@@ -119,7 +119,7 @@ M.refresh_win_config = function(t)
     end
     if old_config == nil or old_config.col ~= t.win_config.col or old_config.height ~= t.win_config.height
         or old_config.row ~= t.win_config.row or old_config.width ~= t.win_config.width then
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             EV.trigger_event('WinConfigChanged', {t})
         end)
     end
@@ -296,7 +296,7 @@ end
 
 local OnTermClose = function(ev)
     if is_suspended then
-        table.insert(closed_during_suspend, ev)
+        -- table.insert(closed_during_suspend, ev)
         return
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
@@ -305,7 +305,7 @@ local OnTermClose = function(ev)
     end
     if t.remote_info ~= nil then
         EV.trigger_event('RemoteDisconnected', {t})
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             M.refresh_buf(t.buf, false)
         end)
         return
@@ -324,7 +324,7 @@ local OnTermClose = function(ev)
     end
     vim.api.nvim_buf_delete(ev.buf, {force = true})
     EV.trigger_event("PaneClosed", {t})
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         ev.buf = vim.fn.bufnr()
         OnEnter(ev)
     end)
@@ -332,7 +332,7 @@ end
 
 local cleanup_terminals = function()
     for _, t in pairs(terminals) do
-        if vim.api.nvim_get_chan_info(t.term_id).id == nil then
+        if t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id == nil then
             OnTermClose({buf = t.buf})
         end
     end
@@ -370,7 +370,7 @@ M.enter_mode = function(new_mode)
     end
     mode = new_mode
     if mode == 'P' then
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             if options.hide_in_passthrough then
                 global_last_status = vim.o.laststatus
                 vim.o.laststatus = 0
@@ -523,7 +523,7 @@ cmd({"VimLeave"},{
 cmd({'TabNew', 'TermClose', 'TabEnter'}, {
     pattern= '*', callback = function()
         ERRORS.try_execute(function()
-            vim.fn.timer_start(1, function()
+            ERRORS.defer(1, function()
                 M.update_titles()
             end)
         end, cleanup_terminals)
@@ -607,7 +607,7 @@ cmd({'FileType', 'BufEnter'}, {
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
     pattern = "*", callback = function()
         ERRORS.try_execute(function()
-            vim.fn.timer_start(1, function()
+            ERRORS.defer(1, function()
                 vim.o.cmdheight = 0
             end)
         end, cleanup_terminals)
@@ -631,7 +631,7 @@ cmd({'WinEnter'}, {
             if is_suspended or is_user_editing then
                 return
             end
-            vim.fn.timer_start(1, function()
+            ERRORS.defer(1, function()
                 ev.buf = vim.fn.bufnr('%')
                 local buftype = vim.api.nvim_get_option_value('buftype', {buf = ev.buf})
                 local filetype = vim.api.nvim_get_option_value('filetype', {buf = ev.buf})
@@ -668,7 +668,7 @@ cmd({'ModeChanged'}, {
             if funcs.remote_state(M.get_current_terminal()) == 'disconnected' then
                 -- Block insert or visual mode for a disconnected buffer
                 if to == 'i' or to == 'v' then
-                    vim.fn.timer_start(1, function()
+                    ERRORS.defer(1, function()
                         vim.api.nvim_command('stopinsert')
                         -- M.feedkeys('<Esc>', to)
                     end)
@@ -766,9 +766,9 @@ end
 M.select_next_pane = function(dir, group)
     if funcs.are_floats_hidden(group, terminals) then
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             vim.api.nvim_command('wincmd ' .. which)
-            vim.fn.timer_start(1, function()
+            ERRORS.defer(1, function()
                 M.update_titles()
             end)
         end)
@@ -804,9 +804,9 @@ M.select_next_pane = function(dir, group)
         return
     end
 
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         M.select_pane(funcs.get_real_buffer(found))
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             M.update_titles()
         end)
     end)
@@ -863,7 +863,7 @@ M.split = function(dir, remote_command, cwd)
 
     vim.api.nvim_command(cmd)
     M.open(vim.fn.bufnr('%'), {remote_command = remote_command, cwd = cwd or vim.fn.getcwd()})
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         M.update_titles()
     end)
     vim.o.splitright = splitright
@@ -873,7 +873,7 @@ end
 M.redraw = function()
     local lines = vim.o.lines
     vim.api.nvim_command('set lines=' .. (lines - 1))
-    vim.fn.timer_start(100, function()
+    ERRORS.defer(100, function()
         vim.api.nvim_command('set lines=' .. lines)
     end)
 end
@@ -1080,7 +1080,7 @@ end
 
 M.user_input = function(opts, callback, force)
     if not options.use_dressing then
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             EV.trigger_event('UserInputPrompt')
         end)
     end
@@ -1176,7 +1176,7 @@ M.override_terminal = function(t, cmd, on_finish)
         M.suspend()
         t.overriding_buf = nil
         vim.api.nvim_win_set_buf(t.win_id, t.buf)
-        vim.fn.timer_start(10, function()
+        ERRORS.defer(10, function()
             M.resume()
             M.refresh_buf(t.buf)
             if on_finish ~= nil then
@@ -1242,7 +1242,9 @@ end
 
 M.run_map = function(m)
     if m.options.callback ~= nil then
-        m.options.callback()
+        ERRORS.try_execute(function()
+            m.options.callback()
+        end)
     elseif m.rs ~= nil then
         M.feedkeys(m.rs, m.real_mode)
     end
@@ -1307,7 +1309,7 @@ end
 
 M.create_tab = function()
     M.open()
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         EV.trigger_event('TabCreated')
     end)
 end
@@ -1395,9 +1397,14 @@ EV.persistent_on('PaneChanged', function(args)
     set_current_panel(t.tab_id)
 end)
 
-EV.persistent_on('Error', function()
-    M.resume()
-end)
+local on_error = function()
+    if is_suspended then
+        M.resume()
+    end
+    cleanup_terminals()
+end
+
+EV.persistent_on('Error', on_error)
 
 EV.persistent_on('TerminalAdded', function(args)
     local t = args[1]
@@ -1408,9 +1415,17 @@ EV.persistent_on('RemoteQuit', function(args)
     OnTermClose({buf = args[1].buf})
 end)
 
-EV.on_unhandled_error(function(err)
-    funcs.log(err)
+EV.persistent_on('ModeChanged', function(args)
+    if is_user_editing or (args[2] ~= 't' and args[2] ~= 'i') then
+        return
+    end
     cleanup_terminals()
+end)
+
+EV.on_unhandled_error(function(err)
+    funcs.log("Caught unexpected error:")
+    funcs.log(err)
+    on_error()
 end)
 
 return M

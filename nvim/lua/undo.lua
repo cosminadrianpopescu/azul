@@ -7,6 +7,7 @@ local TABS = require('tab_vars')
 local options = require('options')
 local F = require('floats')
 local R = require('remote')
+local ERRORS = require('error_handling')
 
 local record_undo = true
 local undo_list = {}
@@ -31,12 +32,12 @@ local restore_lines = function(buf, rec)
     end
     local file = os.tmpname()
     FILES.write_file(file, funcs.join(lines, '\n'))
-    vim.defer_fn(function()
+    ERRORS.defer(200, function()
         core.send_to_buf(buf, options.undo_restore_cmd .. ' ' .. file .. '<cr>', true)
-        vim.defer_fn(function()
+        ERRORS.defer(200, function()
             os.remove(file)
-        end, 200)
-    end, 200)
+        end)
+    end)
 end
 
 local finish = function()
@@ -57,14 +58,14 @@ end
 local undo_tab = function(rec)
     EV.single_shot('PaneChanged', function(args)
         core.copy_terminal_properties(rec.term, args[1])
-        vim.defer_fn(function()
+        ERRORS.defer(1, function()
             for k, _ in pairs(rec.tab_vars) do
                 TABS.set_var(0, k, rec.tab_vars[k])
             end
 
             restore_lines(args[1].buf, rec)
             finish()
-        end, 1)
+        end)
     end)
     core.stop_updating_titles()
     if rec.term.tab_page ~= 1 then
@@ -84,14 +85,14 @@ local undo_split = function(rec)
     end
     EV.single_shot('PaneChanged', function(args)
         core.copy_terminal_properties(rec.term, args[1], true)
-        vim.defer_fn(function()
+        ERRORS.defer(1, function()
             restore_lines(args[1].buf, rec)
             local history = H.get_history()
             if #history > 0 then
                 history[#history].to = rec.create.to
             end
             finish()
-        end, 1)
+        end)
     end)
     core.select_pane(t.buf)
     core.split(rec.create.params[1], R.get_remote_command(rec.term.remote_info))

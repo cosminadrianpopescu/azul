@@ -7,6 +7,7 @@ local options = require('options')
 local funcs = require('functions')
 local key_parser_id = nil
 local MAP = require('mappings')
+local ERRORS = require('error_handling')
 
 local welcome_content = function()
     local center = function(s)
@@ -97,7 +98,7 @@ local key_parser = function(key)
     end
 
     funcs.safe_close_window(win_id)
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         update_config_ini()
     end)
     win_id = nil

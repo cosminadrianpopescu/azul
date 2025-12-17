@@ -1,4 +1,5 @@
 local funcs = require('functions')
+local ERRORS = require('error_handling')
 
 local get_file_if_missing = function(opts, callback)
     local core = require('core')
@@ -62,7 +63,7 @@ return {
             if core.get_current_workflow() ~= '' then
                 core.enter_mode('t')
             end
-            vim.fn.timer_start(1, function()
+            ERRORS.defer(1, function()
                 core.toggle_passthrough(delim)
             end)
         end, {desc = "Toggle the nesting of the current session", nargs = '?'})

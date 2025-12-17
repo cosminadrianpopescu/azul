@@ -69,7 +69,7 @@ ERRORS.try_execute(function()
 
     vim.o.shadafile = files.config_dir .. '/nvim/shada'
 
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         require('session').start()
     end)
 end, ERRORS.panic_handler, 'There seem to be an issue trying to start vesper. If --clean option fixes the problem, then check your config file')

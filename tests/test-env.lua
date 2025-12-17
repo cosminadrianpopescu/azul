@@ -8,6 +8,7 @@ local test_running = nil
 local core = require('core')
 local sess = require('session')
 local EV = require('events')
+local ERRORS = require('error_handling')
 
 vim.g.vesper_errors_log = base_path .. "/runtime-errors"
 local TIMEOUT_BETWEEN_KEYS = 150
@@ -88,7 +89,7 @@ L = {}
 L.simulate_keys = function(keys, idx, after)
     if idx > #keys then
         if after ~= nil then
-            vim.fn.timer_start(1, function()
+            ERRORS.defer(1, function()
                 after()
             end)
         end
@@ -97,7 +98,7 @@ L.simulate_keys = function(keys, idx, after)
     if keys[idx] ~= '' then
         core.feedkeys(keys[idx], 't')
     end
-    vim.fn.timer_start(TIMEOUT_BETWEEN_KEYS - ((options.workflow == 'emacs' and 120) or 0), function()
+    ERRORS.defer(TIMEOUT_BETWEEN_KEYS - ((options.workflow == 'emacs' and 120) or 0), function()
         L.simulate_keys(keys, idx + 1, after)
     end)
 end
@@ -253,10 +254,10 @@ return {
         wait_events(events, function()
             do_exec = true
         end)
-        vim.fn.timer_start(100, function()
+        ERRORS.defer(100, function()
             L.simulate_keys(extract_chars(what), 1, function()
                 if (events == nil and after ~= nil) or (after ~= nil and (do_exec or #vim.tbl_keys(events) == 0)) then
-                    vim.fn.timer_start((events or {}).Timeout or 0, after)
+                    ERRORS.defer((events or {}).Timeout or 0, after)
                 end
             end)
         end)

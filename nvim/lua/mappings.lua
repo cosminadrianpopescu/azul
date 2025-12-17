@@ -4,6 +4,7 @@ local funcs = require('functions')
 local options = require('options')
 local FILES = require('files')
 local INS = require('insert')
+local ERRORS = require('error_handling')
 
 local is_editing = false
 
@@ -72,7 +73,7 @@ local generic_key_handler = function()
 
     EV.persistent_on('ModeChanged', function(args)
         local old_mode = args[1]
-        vim.fn.timer_start(1, function()
+        ERRORS.defer(1, function()
             mode = core.current_mode()
             if mode == 'M' then
                 mode_before_modifier = old_mode
@@ -121,7 +122,7 @@ local generic_key_handler = function()
         end
         if options.workflow == 'tmux' and core.current_mode() ~= 'n' and core.current_mode() ~= 'a' then
             vim.api.nvim_command('stopinsert')
-            vim.fn.timer_start(1, function()
+            ERRORS.defer(1, function()
                 core.enter_mode('M')
             end)
         else
@@ -164,7 +165,7 @@ local generic_key_handler = function()
         --     return ''
         -- end
         reset_timer()
-        timer = vim.fn.timer_start(options.modifer_timeout, function()
+        timer = ERRORS.defer(options.modifer_timeout, function()
             try_select(collection, c)
             reset()
         end)
@@ -172,7 +173,7 @@ local generic_key_handler = function()
         if core.current_mode() == 'M' then
             if funcs.compare_shortcuts(trans, "<C-c>") or funcs.compare_shortcuts(trans, "<esc>") then
                 reset()
-                vim.fn.timer_start(1, function()
+                ERRORS.defer(1, function()
                     vim.api.nvim_command('startinsert')
                 end)
                 return ''
@@ -183,7 +184,7 @@ local generic_key_handler = function()
             end
             if funcs.compare_shortcuts(trans, options.modifier) and c == '' then
                 core.send_to_current(options.modifier, true)
-                vim.fn.timer_start(1, function()
+                ERRORS.defer(1, function()
                     reset()
                     vim.api.nvim_command('startinsert')
                 end)

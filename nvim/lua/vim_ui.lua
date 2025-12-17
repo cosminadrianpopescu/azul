@@ -1,5 +1,19 @@
-local funcs = require('functions')
 local core = require('core')
+local ERRORS = require('error_handling')
+
+local safe_put_text_to_buffer = function(buf, row, col, txt, after, me)
+    local safe, _ = pcall(function()
+        vim.api.nvim_buf_set_text(buf, row, col, row, col, {txt})
+    end)
+
+    if not safe then
+        vim.fn.timer_start(1, function()
+            me(buf, row, col, txt, after, me)
+        end)
+    else
+        after()
+    end
+end
 
 local function wininput(opts, on_confirm, win_opts)
     local win_id = nil
@@ -15,9 +29,9 @@ local function wininput(opts, on_confirm, win_opts)
         if win_id ~= nil then
             vim.api.nvim_win_close(win_id, true)
         end
-        vim.defer_fn(function()
+        ERRORS.defer(1, function()
             on_confirm(input)
-        end, 1)
+        end)
     end
 
     vim.fn.prompt_setprompt(buf, '> ')
@@ -50,18 +64,21 @@ local function wininput(opts, on_confirm, win_opts)
 
     vim.cmd("startinsert")
 
-    vim.defer_fn(function()
+    vim.fn.timer_start(1, function()
         if default_text ~= '' then
+            -- safe_put_text_to_buffer(buf, 0, 2, default_text, function()
+            --     vim.cmd("startinsert!") -- bang: go to end of line
+            -- end, safe_put_text_to_buffer)
             funcs.safe_put_text_to_buffer(buf, 0, 2, default_text, function()
                 vim.cmd("startinsert!") -- bang: go to end of line
             end)
         end
-    end, 1)
+    end)
 end
 
 vim.ui.input = function(opts, on_confirm)
     core.suspend()
-    vim.fn.timer_start(1, function()
+    ERRORS.defer(1, function()
         core.resume()
     end)
     wininput(opts, function(input)

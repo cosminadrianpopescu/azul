@@ -48,7 +48,7 @@ local events = {
 
 local persistent_events = {}
 
-local error_interceptors = {}
+local unexpected_error_interceptors = {}
 
 for k in pairs(events) do
     persistent_events[k] = {}
@@ -72,7 +72,7 @@ local add_event = function(ev, callback, where)
 end
 
 local handle_unexpected_errors = function(err)
-    for _, h in pairs(error_interceptors) do
+    for _, h in pairs(unexpected_error_interceptors) do
         h(err)
     end
 end
@@ -100,7 +100,7 @@ M.on = function(ev, callback)
 end
 
 M.on_unhandled_error = function(callback)
-    table.insert(error_interceptors, callback)
+    table.insert(unexpected_error_interceptors, callback)
 end
 
 M.on_action = function(action, callback)

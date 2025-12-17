@@ -55,7 +55,7 @@ local post_restored = function(t, customs, callback)
 
     if t.vesper_cmd ~= nil and t.remote_info == nil then
         local _cmd = t.vesper_cmd .. '<cr>'
-        vim.fn.timer_start(1000, function()
+        ERRORS.defer(1000, function()
             core.send_to_buf(t.buf, _cmd, true)
         end)
     end
@@ -96,10 +96,10 @@ L.restore_remotes = function()
         if not funcs.is_float(t) then
             F.hide_floats()
         end
-        vim.defer_fn(function()
+        ERRORS.defer(1, function()
             core.select_pane(t.buf)
             current_in_saved_layout = nil
-        end, 1)
+        end)
     end
     core.enter_mode('t')
 end
@@ -131,7 +131,7 @@ L.restore_ids = function(title_placeholders, title_overrides)
         end
     end
 
-    vim.fn.timer_start(1, L.restore_remotes)
+    ERRORS.defer(1, L.restore_remotes)
 end
 
 local get_cwd = function(panel_id, histories)
@@ -153,7 +153,7 @@ L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     if panel_id_wait ~= nil then
         local t = funcs.term_by_panel_id(panel_id_wait, core.get_terminals())
         if t == nil then
-            vim.fn.timer_start(10, function()
+            ERRORS.defer(10, function()
                 L.restore_floats(histories, idx, panel_id_wait, timeout + 1)
             end)
             return
@@ -184,7 +184,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if panel_id_wait ~= nil then
         local t = funcs.term_by_panel_id(panel_id_wait, core.get_terminals())
         if t == nil then
-            vim.fn.timer_start(10, function()
+            ERRORS.defer(10, function()
                 L.restore_tab_history(histories, i, j, panel_id_wait, timeout + 1)
             end)
             return
@@ -213,7 +213,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
             TABS.set_var(0, 'vesper_tab_id', core.get_global_tab_id())
         end
         core.open(buf, {cwd = get_cwd(h.to, histories)})
-        vim.fn.timer_start(10, function()
+        ERRORS.defer(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)
         return
@@ -228,7 +228,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         end
         core.select_pane(t.buf)
         core.split(h.params[1], nil, get_cwd(h.to, histories))
-        vim.fn.timer_start(10, function()
+        ERRORS.defer(10, function()
             L.restore_tab_history(histories, i, j + 1, h.to, 0)
         end)
         return
@@ -241,7 +241,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
             return
         end
         vim.fn.chanclose(t.term_id)
-        vim.fn.timer_start(10, function()
+        ERRORS.defer(10, function()
             L.restore_tab_history(histories, i, j + 1, nil, 0)
         end)
         return
@@ -255,7 +255,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         end
         core.select_pane(t.buf)
         core.resize(h.params[1])
-        vim.fn.timer_start(10, function()
+        ERRORS.defer(10, function()
             L.restore_tab_history(histories, i, j + 1, nil, 0)
         end)
         return
@@ -269,7 +269,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         end
         core.select_pane(t.buf)
         core.rotate_panel()
-        vim.fn.timer_start(10, function()
+        ERRORS.defer(10, function()
             L.restore_tab_history(histories, i, j + 1, nil, 0)
         end)
         return
@@ -366,7 +366,15 @@ local get_layout_table = function()
 end
 
 M.save_layout = function(where, auto)
-    table.save(get_layout_table(), where)
+    local bak = where .. '-bak'
+    ERRORS.try_execute(function()
+        table.save(get_layout_table(), bak)
+        os.rename(bak, where)
+    end, function(err)
+        if FILES.exists(bak) then
+            os.remove(bak)
+        end
+    end)
     EV.trigger_event("LayoutSaved", {where, auto})
 end
 
@@ -382,9 +390,9 @@ M.auto_restore_layout = function()
     if FILES.exists(session_save_name() .. '.lua') then
         callback = FILES.load_as_module(os.getenv('VESPER_SESSION') .. session_extension, sessions_folder())
     end
-    vim.defer_fn(function()
+    ERRORS.defer(1, function()
         M.restore_layout(session_save_name(), callback)
-    end, 1)
+    end)
 end
 
 M.start = function()
@@ -415,9 +423,9 @@ EV.persistent_on('ExitVesper', function()
 end)
 
 local do_autosave = function()
-    vim.defer_fn(function()
+    ERRORS.defer(1, function()
         M.auto_save_layout()
-    end, 1)
+    end)
 end
 
 EV.persistent_on({
@@ -436,7 +444,7 @@ EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()
     if not can_save_layout then
         return
     end
-    vim.fn.timer_start(200, function()
+    ERRORS.defer(200, function()
         core.start_updating_titles()
         core.update_titles()
     end)
