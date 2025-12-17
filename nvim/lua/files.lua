@@ -77,7 +77,7 @@ M.read_ini = function(which)
             error('There is an error loading the config file ' .. which .. '. The setting at line ' .. idx .. ' is outside any section')
         end
         if #parts ~= 2 then
-            error("There is an error loading the config file " .. which .. " at line " .. idx)
+            error("There is an error loading the config file " .. which .. " at line " .. idx .. "\n\n<<" .. line .. '>>\n')
         end
         if result[current_section] == nil then
             result[current_section] = {}

@@ -5,13 +5,12 @@ usage() {
     echo "Options: "
     echo "    -a, --session <session-name>  Attach to an existing session or create it if it does not exists"
     echo "    -t <session-name>             Create a new session if it doesn't exists but don't attach to it"
-    echo "    -n                            No config (skip config.ini and init.lua)"
+    echo "    -n, --clean                   No config (skip config.ini and init.lua)"
     echo "    -l                            List the existing sessions"
     echo "    -m                            Start in marionette mode"
     echo "    --first-tab-remote            If VESPER_REMOTE_CONNECTION var is set, then the first tab will also be remote"
     echo "    -p, --profile <profile>       Sets the remote connection to the indicated profile"
     echo "    -v <cmd>                      Execute a vim command via the lua api vim.api.nvim_command"
-    echo "    -x                            Skip loading the session if a session exists"
     echo "    -s <cmd>                      Send the command to an existing session (only together with -a)"
     echo "    -c, --config <config-path>    Load the config from the <config-path> location"
     echo "    -x, --skip-session            Skip loading the session if a session exists"
@@ -92,6 +91,9 @@ do
                     ;;
                 config=*)
                     export VESPER_CONFIG_HOME="${OPTARG#*=}"
+                    ;;
+                clean)
+                    export VESPER_SKIP_CONFIG="1"
                     ;;
                 session)
                     export VESPER_SESSION="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
@@ -260,7 +262,11 @@ then
 
     if [ -f "$VESPER_FAILED_FILE" ]
     then
-        echo "There is an issue running vesper. Check your shell setting in the config file. Vesper will exit now"
+        echo ""
+        cat $VESPER_FAILED_FILE
+        echo ""
+        echo ""
+        echo "There is an issue running vesper. Vesper has terminated"
     fi
 
 else

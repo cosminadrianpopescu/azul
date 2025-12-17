@@ -1,73 +1,77 @@
-vim.cmd([[
-  highlight Normal guibg=none
-  highlight VesperInactiveWin guibg=#141c24 guifg=NvimLightGrey4
-]])
+local status, err = xpcall(function()
+    vim.cmd([[
+      highlight Normal guibg=none
+      highlight VesperInactiveWin guibg=#141c24 guifg=NvimLightGrey4
+    ]])
 
-local vesper = require('vesper')
-local files = require('files')
-local funcs = require('functions')
-require('mappings')
-require('welcome')
-require('table-save')
+    vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
+    vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
+    local files = require('files')
+    files.init()
 
-vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
-vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
+    local vesper = require('vesper')
+    local funcs = require('functions')
+    require('mappings')
+    require('welcome')
+    require('table-save')
 
-files.init()
+    if not funcs.is_marionette() then
+        local cfg = require('config')
+        cfg.apply_config()
 
+        require('cheatsheet')
+        require('remote')
+        require('insert')
+        require('undo')
+        require('commands').setup()
 
-if not funcs.is_marionette() then
-    local cfg = require('config')
-    cfg.apply_config()
+        cfg.set_vim_options()
 
-    require('cheatsheet')
-    require('remote')
-    require('insert')
-    require('undo')
-    require('commands').setup()
+        require('theme')
 
-    cfg.set_vim_options()
+        if os.getenv('VESPER_SKIP_CONFIG') ~= '1' then
+            cfg.run_init_lua()
+        end
+    else
+        require('insert')
+        require('commands').setup()
+        vesper.set_workflow('emacs')
+        vim.o.laststatus = 0
+        vim.o.cmdheight = 0
+        vim.o.termguicolors = true
+        vim.o.number = false
+        vim.o.relativenumber = false
+        vim.o.belloff = "all"
+        vim.o.bufhidden = "hide"
+        vim.o.hidden = true
 
-    require('theme')
+        -- vim.o.expandtab = true
+        -- vim.o.smarttab = true
+        vim.o.showtabline = 0
+        -- vim.o.completeopt = "menu,menuone,noselect"
+        -- vim.o.wildmode = "longest,list"
+        vim.o.timeout = true
+        vim.o.timeoutlen = 300
 
-    if os.getenv('VESPER_SKIP_CONFIG') ~= '1' then
-        cfg.run_init_lua()
+        vesper.persistent_on('ModeChanged', function(args)
+            vim.o.laststatus = ((args[2] == 'n' or args[2] == 'a') and 3) or 0
+        end)
+
+        local config_file = files.config_dir .. '/init.lua'
+        if not files.try_load_config(config_file) then
+            files.try_load_config(files.config_dir .. '/init.vim')
+        end
     end
-else
-    require('insert')
-    require('commands').setup()
-    vesper.set_workflow('emacs')
-    vim.o.laststatus = 0
-    vim.o.cmdheight = 0
-    vim.o.termguicolors = true
-    vim.o.number = false
-    vim.o.relativenumber = false
-    vim.o.belloff = "all"
-    vim.o.bufhidden = "hide"
-    vim.o.hidden = true
 
-    -- vim.o.expandtab = true
-    -- vim.o.smarttab = true
-    vim.o.showtabline = 0
-    -- vim.o.completeopt = "menu,menuone,noselect"
-    -- vim.o.wildmode = "longest,list"
-    vim.o.timeout = true
-    vim.o.timeoutlen = 300
+    require('environment').load_from_lua()
 
-    vesper.persistent_on('ModeChanged', function(args)
-        vim.o.laststatus = ((args[2] == 'n' or args[2] == 'a') and 3) or 0
+    vim.o.shadafile = files.config_dir .. '/nvim/shada'
+
+    vim.fn.timer_start(1, function()
+        require('session').start()
     end)
+end, debug.traceback)
 
-    local config_file = files.config_dir .. '/init.lua'
-    if not files.try_load_config(config_file) then
-        files.try_load_config(files.config_dir .. '/init.vim')
-    end
+if not status then
+    require('recovery').panic_handler(err)
 end
-
-require('environment').load_from_lua()
-
-vim.o.shadafile = files.config_dir .. '/nvim/shada'
-
-vim.fn.timer_start(1, function()
-    require('session').start()
-end)

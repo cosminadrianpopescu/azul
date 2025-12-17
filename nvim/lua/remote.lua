@@ -196,6 +196,10 @@ M.get_remote_command = function(info)
     local result = string.gsub(provider.cmd_template, '#bin#', info.bin):gsub('#session_id#', info.uid):gsub('#shell#', options.shell)
 
     if info.host ~= '' and info.host ~= nil then
+        local sock = get_sock_name(info)
+        if sock ~= nil and FILES.dir_exists(sock) then
+            os.remove(sock)
+        end
         result = 'ssh -oControlMaster=yes -oControlPath=' .. get_sock_name(info) .. ' ' .. info.host .. " -t '" .. result .. "'"
     end
     return result
@@ -216,6 +220,9 @@ cmd({'TabEnter', 'WinResized', 'VimResized'}, {
 })
 
 local remote_disconnected = function(t)
+    if t.overriding_term_id ~= nil then
+        vim.fn.jobstop(t.overriding_term_id)
+    end
     local old_buf = t.buf
     t.buf = vim.api.nvim_create_buf(true, true)
     if t.win_id ~= nil then
@@ -230,6 +237,10 @@ local remote_disconnected = function(t)
     vim.api.nvim_set_option_value('filetype', 'VesperRemoteTerm', {buf = t.buf})
     t.term_id = nil
     vim.api.nvim_buf_delete(old_buf, {force = true})
+    local sock = get_sock_name(t.remote_info)
+    if sock ~= nil and FILES.dir_exists(sock) then
+        os.remove(sock)
+    end
 end
 
 local parse_remote_connection = function(force, callback)
@@ -316,8 +327,18 @@ EV.persistent_on('PaneChanged', function(args)
     current_terminal = args[1]
 end)
 
+EV.persistent_on('VesperConnected', function()
+    local t = core.get_current_terminal()
+    if t ~= nil and t.overriding_term_id ~= nil then
+        vim.fn.jobstop(t.overriding_term_id)
+    end
+end)
+
 M.remote_enter_scroll_mode = function()
     local t = core.get_current_terminal()
+    if t == nil then
+        return
+    end
     local provider = get_provider(t.remote_info)
     if t.term_id == nil or provider == nil then
         return
@@ -327,13 +348,15 @@ M.remote_enter_scroll_mode = function()
         local f = '/tmp/scroll-' .. os.getenv('VESPER_SESSION') .. '-' .. t.panel_id
         FILES.write_file(f, data)
         local file_type = vim.fn.substitute(options.shell or vim.o.shell, "\\v^.*\\/([^\\/]+)$", "\\1", "g")
-        core.override_terminal(t, {
+        t.overriding_term_id = core.override_terminal(t, {
             os.getenv('VESPER_NVIM_EXE'), '--clean', '-u',
             os.getenv('VESPER_PREFIX') .. '/share/vesper/provider-configs/nvim.lua', f,
             '-n', '--cmd', 'set filetype=' .. file_type
         }, function()
             os.remove(f)
+            EV.trigger_event('RemoteEndedScroll', {t})
             core.resume()
+            t.overriding_term_id = nil
             core.enter_mode('t')
         end)
         core.suspend()

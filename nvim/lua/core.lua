@@ -15,7 +15,8 @@ local is_started = false
 local updating_titles = true
 local vesper_started = false
 local last_access = 0
-local dead_terminal = nil
+local dead_terminals = {}
+local closed_during_suspend = {}
 
 --- @class remote_info
 --- @field host string The host
@@ -29,6 +30,7 @@ local dead_terminal = nil
 --- @field cwd string The current working dir
 --- @field buf number The corresponding nvim buffer number
 --- @field overriding_buf number If the current terminal is being overriden by another buffer, this is the buffer overriding it
+--- @field overriding_term_id number The job id of the overriding job
 --- @field tab_page number The corresponding neovim tab
 --- @field win_id number The current neovim window id
 --- @field term_id number The current neovim channel id
@@ -173,9 +175,11 @@ local OnEnter = function(ev)
     if is_suspended then
         return
     end
-    if dead_terminal ~= nil then
-        dead_terminal.callback({buf = dead_terminal.term.buf})
-        dead_terminal = nil
+    if #dead_terminals > 0 then
+        for _, dt in ipairs(dead_terminals) do
+            dt.callback({buf = dt.term.buf})
+        end
+        dead_terminals = {}
     end
     local crt = M.refresh_buf(ev.buf)
     if crt == nil then
@@ -280,12 +284,11 @@ M.open = function(buf, opts)
     local do_open = function()
         local cmd = (opts.remote_command == nil and {vim.o.shell}) or opts.remote_command
         if not is_started and opts.remote_command == nil then
-            local safe, _ = pcall(function()
+            local safe, err = xpcall(function()
                 vim.fn.termopen(cmd, _opts)
-            end)
+            end, debug.traceback)
             if not safe then
-                FILES.write_file(os.getenv('VESPER_RUN_DIR') .. '/' .. os.getenv('VESPER_SESSION') .. '-failed', '')
-                vim.api.nvim_command('quit!')
+                require('recovery').panic_handler(err, 'There seem to be an issue initializing the first terminal. Check your shell setting in your config.ini')
             end
         else
             vim.fn.termopen(cmd, _opts)
@@ -299,6 +302,7 @@ end
 
 local OnTermClose = function(ev)
     if is_suspended then
+        table.insert(closed_during_suspend, ev)
         return
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
@@ -556,7 +560,7 @@ cmd({'TabClosed'}, {
             return
         end
         vim.fn.jobstop(t.term_id)
-        dead_terminal = {callback = OnTermClose, term = t}
+        table.insert(dead_terminals, {callback = OnTermClose, term = t})
     end
 })
 
@@ -858,6 +862,10 @@ end
 
 M.resume = function()
     is_suspended = false
+    for _, ev in ipairs(closed_during_suspend) do
+        OnTermClose(ev)
+    end
+    closed_during_suspend = {}
 end
 
 M.resize = function(direction)
@@ -877,11 +885,6 @@ end
 --- Disconnects the current session.
 M.disconnect = function()
     vim.api.nvim_command('detach')
-    -- for _, ui in ipairs(vim.tbl_filter(function(x) return not x.stdout_tty and x.chan end, vim.api.nvim_list_uis())) do
-    --     vim.fn.timer_start(1, function()
-    --         vim.fn.chanclose(ui.chan)
-    --     end)
-    -- end
 end
 
 M.term_by_buf_id = function(id)
@@ -1158,14 +1161,16 @@ M.override_terminal = function(t, cmd, on_finish)
         cdw = vim.fn.getcwd(),
         on_exit = on_exit
     }
+    local result = nil
     local safe, err = pcall(function()
-        vim.fn.termopen(cmd, opts)
+        result = vim.fn.termopen(cmd, opts)
     end)
     if not safe then
         on_exit()
         EV.error("The EDITOR variable does not seem to be set properly. " .. vim.inspect(err))
     end
     M.resume()
+    return result
 end
 
 M.edit = function(t, file, on_finish)

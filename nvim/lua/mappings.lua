@@ -256,7 +256,6 @@ local has_child_sessions_in_passthrough = function()
     return content:gsub('[\n\r\t]', '') == 'true'
 end
 
-
 core.set_key_map('P', options.passthrough_escape, '', {
     callback = function()
         if has_child_sessions_in_passthrough() then
