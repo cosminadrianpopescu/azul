@@ -62,14 +62,6 @@ local quit_on_last = true
 
 local L = {}
 
-local current_win_has_no_pane = function()
-    local t = M.term_by_buf_id(vim.fn.bufnr('%'))
-    if t == nil then
-        return vim.b.terminal_job_id == nil
-    end
-    return vim.b.terminal_job_id == nil and funcs.remote_state(t) ~= 'disconnected'
-end
-
 local do_exit = function()
     M.suspend()
     local channels = vim.tbl_filter(function(c) return c.mode == 'terminal' end, vim.api.nvim_list_chans())
@@ -304,7 +296,7 @@ end
 
 local OnTermClose = function(ev)
     if is_suspended then
-        -- table.insert(closed_during_suspend, ev)
+        table.insert(closed_during_suspend, ev)
         return
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
@@ -336,6 +328,14 @@ local OnTermClose = function(ev)
         ev.buf = vim.fn.bufnr()
         OnEnter(ev)
     end)
+end
+
+local cleanup_terminals = function()
+    for _, t in pairs(terminals) do
+        if vim.api.nvim_get_chan_info(t.term_id).id == nil then
+            OnTermClose({buf = t.buf})
+        end
+    end
 end
 
 local anounce_passthrough = function()
@@ -385,17 +385,21 @@ end
 
 cmd({'UIEnter'}, {
     pattern = "*", callback = function()
-        if not vesper_started then
-            return
-        end
-        EV.trigger_event('VesperConnected')
+        ERRORS.try_execute(function()
+            if not vesper_started then
+                return
+            end
+            EV.trigger_event('VesperConnected')
+        end, cleanup_terminals)
     end
 })
 
 cmd({'TabNew', 'VimEnter'}, {
     pattern = "*", callback = function()
-        TABS.set_var(0, 'vesper_tab_id', tab_id)
-        tab_id = tab_id + 1
+        ERRORS.try_execute(function()
+            TABS.set_var(0, 'vesper_tab_id', tab_id)
+            tab_id = tab_id + 1
+        end, cleanup_terminals)
     end
 })
 
@@ -518,146 +522,167 @@ cmd({"VimLeave"},{
 
 cmd({'TabNew', 'TermClose', 'TabEnter'}, {
     pattern= '*', callback = function()
-        vim.fn.timer_start(1, function()
-            M.update_titles()
-        end)
+        ERRORS.try_execute(function()
+            vim.fn.timer_start(1, function()
+                M.update_titles()
+            end)
+        end, cleanup_terminals)
     end
 })
 
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
-        if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
-            return
-        end
-        local new_terminal = {
-            is_current = false,
-            buf = ev.buf,
-            win_id = vim.fn.win_getid(vim.fn.winnr()),
-            term_id = vim.b.terminal_job_id,
-            tab_id = TABS.get_var(0, 'vesper_tab_id'),
-            panel_id = panel_id,
-            vesper_win_id = vesper_win_id,
-        }
-        table.insert(terminals, new_terminal)
-        EV.trigger_event('TerminalAdded', {new_terminal})
-        OnEnter(ev)
-        local history = H.get_history()
-        if #history > 0 and history[#history].to == -1 then
-            history[#history].to = panel_id
-        else
-            local t = M.term_by_buf_id(ev.buf)
-            if t and not funcs.is_float(t) then
-                H.add_to_history(M.term_by_buf_id(ev.buf), "create", {}, t.tab_id)
+        ERRORS.try_execute(function()
+            if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
+                return
             end
-        end
-        panel_id = panel_id + 1
-        vesper_win_id = vesper_win_id + 1
+            local new_terminal = {
+                is_current = false,
+                buf = ev.buf,
+                win_id = vim.fn.win_getid(vim.fn.winnr()),
+                term_id = vim.b.terminal_job_id,
+                tab_id = TABS.get_var(0, 'vesper_tab_id'),
+                panel_id = panel_id,
+                vesper_win_id = vesper_win_id,
+            }
+            table.insert(terminals, new_terminal)
+            EV.trigger_event('TerminalAdded', {new_terminal})
+            OnEnter(ev)
+            local history = H.get_history()
+            if #history > 0 and history[#history].to == -1 then
+                history[#history].to = panel_id
+            else
+                local t = M.term_by_buf_id(ev.buf)
+                if t and not funcs.is_float(t) then
+                    H.add_to_history(M.term_by_buf_id(ev.buf), "create", {}, t.tab_id)
+                end
+            end
+            panel_id = panel_id + 1
+            vesper_win_id = vesper_win_id + 1
+        end, cleanup_terminals)
     end
 })
 
 cmd({'TabClosed'}, {
     pattern = '*', callback = function(ev)
-        local t = M.term_by_buf_id(ev.buf)
-        if t == nil then
-            return
-        end
-        vim.fn.jobstop(t.term_id)
-        table.insert(dead_terminals, {callback = OnTermClose, term = t})
+        ERRORS.try_execute(function()
+            local t = M.term_by_buf_id(ev.buf)
+            if t == nil then
+                return
+            end
+            vim.fn.jobstop(t.term_id)
+            table.insert(dead_terminals, {callback = OnTermClose, term = t})
+        end, cleanup_terminals)
     end
 })
 
 cmd('TermClose', {
     pattern = "*", callback = function(ev)
-        OnTermClose(ev)
+        ERRORS.try_execute(function()
+            OnTermClose(ev)
+        end, cleanup_terminals)
     end
 })
 
 cmd('TermEnter', {
-    pattern = "*", callback = OnEnter
+    pattern = "*", callback = function(ev)
+        ERRORS.try_execute(function()
+            OnEnter(ev)
+        end, cleanup_terminals)
+    end
 })
 
 cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function()
-        local was_user_editing = is_user_editing
-        is_user_editing = vim.o.filetype == 'vesper_prompt'
-        if is_user_editing and not was_user_editing then
-            EV.trigger_event('UserInputPrompt')
-        end
+        ERRORS.try_execute(function()
+            local was_user_editing = is_user_editing
+            is_user_editing = vim.o.filetype == 'vesper_prompt'
+            if is_user_editing and not was_user_editing then
+                EV.trigger_event('UserInputPrompt')
+            end
+        end, cleanup_terminals)
     end
 })
 
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
     pattern = "*", callback = function()
-        vim.fn.timer_start(1, function()
-            vim.o.cmdheight = 0
-        end)
+        ERRORS.try_execute(function()
+            vim.fn.timer_start(1, function()
+                vim.o.cmdheight = 0
+            end)
+        end, cleanup_terminals)
     end
 })
 
 cmd({'TabLeave'}, {
     pattern = "*", callback = function()
-        if is_suspended then
-            return
-        end
-        TABS.set_var(0, 'current_buffer', vim.fn.bufnr())
+        ERRORS.try_execute(function()
+            if is_suspended then
+                return
+            end
+            TABS.set_var(0, 'current_buffer', vim.fn.bufnr())
+        end, cleanup_terminals)
     end
 })
 
 cmd({'WinEnter'}, {
     pattern = "*", callback = function(ev)
-        if is_suspended or is_user_editing then
-            return
-        end
-        vim.fn.timer_start(1, function()
-            ev.buf = vim.fn.bufnr('%')
-            local buftype = vim.api.nvim_get_option_value('buftype', {buf = ev.buf})
-            local filetype = vim.api.nvim_get_option_value('filetype', {buf = ev.buf})
-            -- if current_win_has_no_pane() then
-            --     M.open()
-            -- end
-            if buftype == 'terminal' or filetype == 'VesperRemoteTerm' then
-                OnEnter(ev)
+        ERRORS.try_execute(function()
+            if is_suspended or is_user_editing then
+                return
             end
-        end)
+            vim.fn.timer_start(1, function()
+                ev.buf = vim.fn.bufnr('%')
+                local buftype = vim.api.nvim_get_option_value('buftype', {buf = ev.buf})
+                local filetype = vim.api.nvim_get_option_value('filetype', {buf = ev.buf})
+                if buftype == 'terminal' or filetype == 'VesperRemoteTerm' then
+                    OnEnter(ev)
+                end
+            end)
+        end, cleanup_terminals)
     end
 })
 
 cmd({'BufLeave', 'BufEnter'}, {
     pattern = {'*'}, callback = function(ev)
-        local t = M.term_by_buf_id(ev.buf)
-        if t == nil then
-            return
-        end
-        if funcs.remote_state(t) == 'disconnected' then
-            EV.trigger_event((ev.event == 'BufLeave' and 'LeaveDisconnectedPane') or 'EnterDisconnectedPane', {t})
-        end
+        ERRORS.try_execute(function()
+            local t = M.term_by_buf_id(ev.buf)
+            if t == nil then
+                return
+            end
+            if funcs.remote_state(t) == 'disconnected' then
+                EV.trigger_event((ev.event == 'BufLeave' and 'LeaveDisconnectedPane') or 'EnterDisconnectedPane', {t})
+            end
+        end, cleanup_terminals)
     end
 })
 
 cmd({'ModeChanged'}, {
     pattern = {'*'}, callback = function(ev)
-        if is_suspended then
-            return
-        end
-        local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
-        local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
-        if funcs.remote_state(M.get_current_terminal()) == 'disconnected' then
-            -- Block insert or visual mode for a disconnected buffer
-            if to == 'i' or to == 'v' then
-                vim.fn.timer_start(1, function()
-                    vim.api.nvim_command('stopinsert')
-                    -- M.feedkeys('<Esc>', to)
-                end)
-
+        ERRORS.try_execute(function()
+            if is_suspended then
                 return
             end
-        end
-        if to ~= from and mode ~= 'P' then
-            local t = M.get_current_terminal()
-            if not is_user_editing and (t == nil or funcs.remote_state(t) ~= 'disconnected') then
-                M.enter_mode(to)
+            local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
+            local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
+            if funcs.remote_state(M.get_current_terminal()) == 'disconnected' then
+                -- Block insert or visual mode for a disconnected buffer
+                if to == 'i' or to == 'v' then
+                    vim.fn.timer_start(1, function()
+                        vim.api.nvim_command('stopinsert')
+                        -- M.feedkeys('<Esc>', to)
+                    end)
+
+                    return
+                end
             end
-        end
+            if to ~= from and mode ~= 'P' then
+                local t = M.get_current_terminal()
+                if not is_user_editing and (t == nil or funcs.remote_state(t) ~= 'disconnected') then
+                    M.enter_mode(to)
+                end
+            end
+        end, cleanup_terminals)
     end
 })
 
@@ -1381,6 +1406,11 @@ end)
 
 EV.persistent_on('RemoteQuit', function(args)
     OnTermClose({buf = args[1].buf})
+end)
+
+EV.on_unhandled_error(function(err)
+    funcs.log(err)
+    cleanup_terminals()
 end)
 
 return M

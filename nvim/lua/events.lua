@@ -48,6 +48,8 @@ local events = {
 
 local persistent_events = {}
 
+local error_interceptors = {}
+
 for k in pairs(events) do
     persistent_events[k] = {}
 end
@@ -69,22 +71,36 @@ local add_event = function(ev, callback, where)
     return event_id
 end
 
-M.trigger_event = function(ev, args)
-    for _, l in ipairs(persistent_events[ev] or {}) do
-        if l.callback ~= nil then
-            l.callback(args)
-        end
+local handle_unexpected_errors = function(err)
+    for _, h in pairs(error_interceptors) do
+        h(err)
     end
+end
 
-    for _, l in ipairs(events[ev] or {}) do
+local run_events = function(ev, args, which)
+    for _, l in ipairs(which[ev] or {}) do
         if l.callback ~= nil then
-            l.callback(args)
+            local safe, err = xpcall(function()
+                l.callback(args)
+            end, debug.traceback)
+            if not safe then
+                handle_unexpected_errors(err)
+            end
         end
     end
 end
 
+M.trigger_event = function(ev, args)
+    run_events(ev, args, persistent_events)
+    run_events(ev, args, events)
+end
+
 M.on = function(ev, callback)
     return add_event(ev, callback, events)
+end
+
+M.on_unhandled_error = function(callback)
+    table.insert(error_interceptors, callback)
 end
 
 M.on_action = function(action, callback)

@@ -40,7 +40,4 @@ M.is_panicking = function()
     return is_panicking
 end
 
-M.error_handler = function(stacktrace, msg)
-end
-
 return M
