@@ -1,4 +1,6 @@
-local status, err = xpcall(function()
+local ERRORS = require('error_handling')
+
+ERRORS.try_execute(function()
     vim.cmd([[
       highlight Normal guibg=none
       highlight VesperInactiveWin guibg=#141c24 guifg=NvimLightGrey4
@@ -70,8 +72,4 @@ local status, err = xpcall(function()
     vim.fn.timer_start(1, function()
         require('session').start()
     end)
-end, debug.traceback)
-
-if not status then
-    require('recovery').panic_handler(err)
-end
+end, ERRORS.panic_handler, 'There seem to be an issue trying to start vesper. If --clean option fixes the problem, then check your config file')

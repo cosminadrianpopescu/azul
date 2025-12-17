@@ -1,5 +1,6 @@
 local cmd = vim.api.nvim_create_autocmd
 local funcs = require('functions')
+local ERRORS = require('error_handling')
 local FILES = require('files')
 local H = require('history')
 local TABS = require('tab_vars')
@@ -266,7 +267,11 @@ M.open = function(buf, opts)
     if not FILES.dir_exists(cwd) then
         cwd = ''
     end
-    vim.api.nvim_command("silent lcd " .. cwd)
+    ERRORS.try_execute(function()
+        vim.api.nvim_command("silent lcd " .. cwd)
+    end, function(_, _)
+        cwd = ''
+    end)
     local _opts = {
         cwd = cwd,
         env = environment,
@@ -284,12 +289,9 @@ M.open = function(buf, opts)
     local do_open = function()
         local cmd = (opts.remote_command == nil and {vim.o.shell}) or opts.remote_command
         if not is_started and opts.remote_command == nil then
-            local safe, err = xpcall(function()
+            ERRORS.try_execute(function()
                 vim.fn.termopen(cmd, _opts)
-            end, debug.traceback)
-            if not safe then
-                require('recovery').panic_handler(err, 'There seem to be an issue initializing the first terminal. Check your shell setting in your config.ini')
-            end
+            end, ERRORS.panic_handler, 'There seem to be an issue initializing the first terminal. Check your shell setting in your config.ini')
         else
             vim.fn.termopen(cmd, _opts)
         end
@@ -302,7 +304,7 @@ end
 
 local OnTermClose = function(ev)
     if is_suspended then
-        table.insert(closed_during_suspend, ev)
+        -- table.insert(closed_during_suspend, ev)
         return
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
@@ -888,7 +890,7 @@ M.disconnect = function()
 end
 
 M.term_by_buf_id = function(id)
-    return funcs.find(function(t) return funcs.get_real_buffer(t) == 1 * id end, terminals)
+    return funcs.find(function(t) return t.buf == 1 * id end, terminals)
 end
 
 L.terms_by_tab_id = function(id)

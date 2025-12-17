@@ -5,7 +5,7 @@ local funcs = require('functions')
 local M = {}
 
 M.add_to_history = function(t, operation, params, tab_id)
-    if t == nil or funcs.is_float(t) then
+    if funcs.is_float(t) then
         local el = {
             operation = operation,
             params = params,

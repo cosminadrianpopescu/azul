@@ -2,6 +2,7 @@ local core = require('core')
 local funcs = require('functions')
 local FILES = require('files')
 local F = require('floats')
+local ERRORS = require('error_handling')
 local H = require('history')
 local EV = require('events')
 local TABS = require('tab_vars')
@@ -408,7 +409,7 @@ end
 
 EV.persistent_on('ExitVesper', function()
     can_save_layout = false
-    if funcs.is_autosave() and session_exists() and #core.get_terminals() == 0 then
+    if funcs.is_autosave() and session_exists() and #core.get_terminals() == 0 and not ERRORS.is_panicking() then
         os.remove(session_save_name())
     end
 end)
