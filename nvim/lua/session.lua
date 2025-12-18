@@ -450,4 +450,8 @@ EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()
     end)
 end)
 
+EV.persistent_on({'LayoutPanic'}, function()
+    M.save_layout(session_save_name() .. '.bak')
+end)
+
 return M

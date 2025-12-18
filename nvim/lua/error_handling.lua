@@ -48,10 +48,7 @@ end
 
 M.defer = function(timeout, callback)
     return vim.fn.timer_start(timeout, function()
-        M.try_execute(callback, function(err)
-            EV.trigger_event('Error', {err})
-            error(err)
-        end)
+        M.try_execute(callback)
     end)
 end
 

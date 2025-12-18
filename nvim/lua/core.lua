@@ -131,7 +131,7 @@ M.refresh_buf = function(buf, with_win_id)
         return nil
     end
     if with_win_id == nil or with_win_id == true then
-        t.win_id = vim.fn.win_getid(vim.fn.winnr())
+        t.win_id = vim.fn.win_getid(vim.fn.bufwinnr(funcs.get_real_buffer(t)))
         M.refresh_win_config(t)
     end
     return t
@@ -331,8 +331,23 @@ local OnTermClose = function(ev)
 end
 
 local cleanup_terminals = function()
+    -- for _, t in pairs(terminals) do
+    --     if t.term_id ~= nil and t.remote_info == nil and vim.api.nvim_get_chan_info(t.term_id).id == nil then
+    --         M.do_remove_term_buf(t.buf)
+    --     end
+    -- end
+    -- local layout_panic = false
+    -- for _, t in pairs(terminals) do
+    --     if not vim.api.nvim_buf_is_valid(funcs.get_real_buffer(t)) or not vim.api.nvim_win_is_valid(t.win_id) then
+    --         layout_panic = true
+    --     end
+    -- end
+    -- if layout_panic then
+    --     EV.trigger_event('LayoutPanic')
+    -- end
     for _, t in pairs(terminals) do
         if t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id == nil then
+            M.refresh_buf(funcs.get_real_buffer(t), true)
             OnTermClose({buf = t.buf})
         end
     end

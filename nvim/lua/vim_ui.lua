@@ -64,14 +64,14 @@ local function wininput(opts, on_confirm, win_opts)
 
     vim.cmd("startinsert")
 
-    vim.fn.timer_start(1, function()
+    vim.fn.timer_start(100, function()
         if default_text ~= '' then
-            -- safe_put_text_to_buffer(buf, 0, 2, default_text, function()
-            --     vim.cmd("startinsert!") -- bang: go to end of line
-            -- end, safe_put_text_to_buffer)
-            funcs.safe_put_text_to_buffer(buf, 0, 2, default_text, function()
+            safe_put_text_to_buffer(buf, 0, 2, default_text, function()
                 vim.cmd("startinsert!") -- bang: go to end of line
-            end)
+            end, safe_put_text_to_buffer)
+            -- funcs.safe_put_text_to_buffer(buf, 0, 2, default_text, function()
+            --     vim.cmd("startinsert!") -- bang: go to end of line
+            -- end)
         end
     end)
 end

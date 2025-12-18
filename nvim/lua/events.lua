@@ -44,6 +44,7 @@ local events = {
     RemoteQuit = {},
     RemoteStartedScroll = {},
     RemoteEndedScroll = {},
+    LayoutPanic = {},
 }
 
 local persistent_events = {}

@@ -7,3 +7,20 @@
 
 * also test the scrolling and searching. 
 * test that the socket gets deleted every time.
+
+# Bug
+
+* open a local tab
+* open a remote tab
+
+* close the session
+* open the same session with --clean
+* select the remote tab
+* close again the session
+* open the session without --clean flag (the user input won't enter insert mode)
+
+# Bug
+
+* open a tab remote
+* kill the ssh process
+* from the remote tab with the ssh killed, try to open another remote tab (you won't be able to insert the //)
