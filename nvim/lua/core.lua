@@ -179,9 +179,6 @@ local OnEnter = function(ev)
         return
     end
 
-    -- if funcs.is_float(crt) == false then
-    --     M.hide_floats()
-    -- end
     crt.last_access = last_access
     last_access = last_access + 1
 
@@ -342,7 +339,7 @@ local try_recover_layout = function()
     local layout_panic = false
     for _, t in pairs(terminals) do
         local buf = funcs.get_real_buffer(t)
-        if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_win_is_valid(t.win_id) then
+        if not vim.api.nvim_buf_is_valid(buf) or (t.win_id ~= nil and not vim.api.nvim_win_is_valid(t.win_id)) then
             layout_panic = true
             break
         end
@@ -853,13 +850,11 @@ M.send_to_current = function(data, escape)
     M.send_to_buf(t.buf, data, escape)
 end
 
-M.split = function(dir, remote_command, cwd)
-    local t = M.get_current_terminal()
+M.create_split = function(t, dir)
     if funcs.is_float(t) then
         EV.error("You can only split an embeded pane", nil)
         return
     end
-    H.add_to_history(M.term_by_buf_id(vim.fn.bufnr("%")), "split", {dir}, t.tab_id)
     local cmd = 'new'
     if dir == 'left' or dir == 'right' then
         cmd = 'v' .. cmd
@@ -877,12 +872,19 @@ M.split = function(dir, remote_command, cwd)
     end
 
     vim.api.nvim_command(cmd)
+    vim.o.splitright = splitright
+    vim.o.splitbelow = splitbelow
+end
+
+M.split = function(dir, remote_command, cwd)
+    local t = M.get_current_terminal()
+    M.create_split(t, dir)
+    H.add_to_history(M.term_by_buf_id(vim.fn.bufnr("%")), "split", {dir}, t.tab_id)
+
     M.open(vim.fn.bufnr('%'), {remote_command = remote_command, cwd = cwd or vim.fn.getcwd()})
     ERRORS.defer(1, function()
         M.update_titles()
     end)
-    vim.o.splitright = splitright
-    vim.o.splitbelow = splitbelow
 end
 
 M.redraw = function()
@@ -912,7 +914,9 @@ end
 
 M.resize = function(direction)
     local t = M.get_current_terminal()
-    H.add_to_history(M.term_by_buf_id(vim.fn.bufnr('%')), "resize", {direction}, t.tab_id)
+    if not is_suspended then
+        H.add_to_history(M.term_by_buf_id(vim.fn.bufnr('%')), "resize", {direction}, t.tab_id)
+    end
     local args = {
         left = 'vert res -5',
         right = 'vert res +5',
@@ -1082,7 +1086,9 @@ end
 
 M.rotate_panel = function()
     local t = M.get_current_terminal()
-    H.add_to_history(M.term_by_buf_id(vim.fn.bufnr("%")), "rotate_panel", nil, t.tab_id)
+    if not is_suspended then
+        H.add_to_history(M.term_by_buf_id(vim.fn.bufnr("%")), "rotate_panel", nil, t.tab_id)
+    end
     vim.api.nvim_command('wincmd x')
 end
 

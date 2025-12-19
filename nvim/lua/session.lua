@@ -27,6 +27,7 @@ local get_custom_values = function()
     for _, t in ipairs(core.get_terminals()) do
         result[t.panel_id .. ""] = {
             vesper_win_id = t.vesper_win_id,
+            vesper_tab_id = TABS.get_var(t.tab_id, 'vesper_tab_id'),
             vesper_cmd = t.vesper_cmd or nil,
             remote_info = t.remote_info,
             cwd = t.cwd,
@@ -36,7 +37,7 @@ local get_custom_values = function()
     return result
 end
 
-local post_restored = function(t, customs, callback)
+local restore_values = function(t, customs)
     local c = customs[t.panel_id .. ""]
     if c == nil then
         return
@@ -48,6 +49,10 @@ local post_restored = function(t, customs, callback)
     if c.remote_info ~= nil then
         t.remote_info = c.remote_info
     end
+end
+
+local post_restored = function(t, customs, callback)
+    restore_values(t, customs)
 
     if callback ~= nil then
         callback(t, t.vesper_win_id)
@@ -276,6 +281,100 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     end
 end
 
+local is_still_valid = function(t)
+    return t ~= nil and (t.remote_info == nil or (t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id ~= nil))
+end
+
+L.rebuild_tab_history = function(histories, i, j)
+    if (i > #histories.history) then
+        L.restore_floats(histories, 1, nil, 0)
+        return
+    end
+
+    if (j > #histories.history[i]) then
+        L.rebuild_tab_history(histories, i + 1, 1)
+        return
+    end
+
+    local h = histories.history[i][j]
+
+    local set_buf = function(panel_id)
+        local t = funcs.term_by_panel_id(panel_id, core.get_terminals())
+        if t == nil or not is_still_valid(t) then
+            return
+        end
+        if j ~= 1 or i ~= 1 then
+            vim.api.nvim_command('$tabnew')
+        end
+        TABS.set_var(0, 'vesper_tab_id', histories.customs[panel_id .. ''].vesper_tab_id)
+        t.win_id = vim.fn.win_getid()
+        local c = vim.api.nvim_get_chan_info(t.term_id)
+        if t.remote_info == nil then
+            vim.api.nvim_win_set_buf(t.win_id, c.buffer)
+            t.buf = c.buffer
+        end
+        restore_values(t, histories.customs)
+    end
+
+    if h.operation == "create" then
+        core.set_global_panel_id(h.to)
+        core.set_global_tab_id(h.tab_id)
+        set_buf(h.to)
+        L.rebuild_tab_history(histories, i, j + 1)
+        return
+    end
+
+    if h.operation == "split" then
+        core.set_global_panel_id(h.to)
+        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
+        if t == nil then
+            EV.error("Error found rebuilding the layout file", h)
+            return
+        end
+        core.select_pane(t.buf)
+        core.create_split(t, h.params[1])
+        set_buf(h.to)
+        L.rebuild_tab_history(histories, i, j + 1)
+        return
+    end
+
+    if h.operation == "close" then
+        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
+        if t == nil then
+            EV.error("Error found rebuilding the layout file", h)
+            return
+        end
+        vim.fn.chanclose(t.term_id)
+        L.rebuild_tab_history(histories, i, j + 1)
+        return
+    end
+
+    if h.operation == "resize" then
+        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
+        if t == nil then
+            EV.error("Error found rebuilding the layout file", h)
+            return
+        end
+        core.select_pane(t.buf)
+        core.resize(h.params[1])
+        L.rebuild_tab_history(histories, i, j + 1)
+        return
+    end
+
+    if h.operation == "rotate_panel" then
+        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
+        if t == nil then
+            EV.error("Error found rebuilding the layout file", h)
+            return
+        end
+        core.select_pane(t.buf)
+        core.rotate_panel()
+        L.rebuild_tab_history(histories, i, j + 1)
+        return
+    end
+end
+
+
 --- Restores a saved layout
 ---
 --- @param where string The saved file location
@@ -329,9 +428,11 @@ EV.persistent_on('ExitVesper', function()
     can_save_layout = false
 end)
 
-local get_layout_table = function()
-    for _, t in ipairs(core.get_terminals()) do
-        core.refresh_tab_page(t)
+local get_layout_table = function(refresh)
+    if refresh == nil or refresh == true then
+        for _, t in ipairs(core.get_terminals()) do
+            core.refresh_tab_page(t)
+        end
     end
     local history_to_save = {}
     local placeholders = {}
@@ -364,6 +465,15 @@ local get_layout_table = function()
         }
     }
 end
+
+M.rebuild_layout = function(h)
+    core.stop_updating_titles()
+    TABS.del_var(0, 'vesper_placeholders')
+    H.reset_history()
+    funcs.log("H IS " .. vim.inspect(h))
+    -- L.rebuild_tab_history(h, 1, 1)
+end
+
 
 M.save_layout = function(where, auto)
     local bak = where .. '-bak'
@@ -457,78 +567,33 @@ end)
 --- Recovers from a layout panic by keeping channels alive and reassigning to new windows
 M.recover_from_panic = function()
     -- Save current layout to temporary location
-    local temp_layout = vim.fn.tempname() .. '.vesper'
-    M.save_layout(temp_layout, false)
+    local sess = session_save_name() .. '.bak'
+    M.save_layout(sess, false)
 
-    if not FILES.exists(temp_layout) then
-        EV.error("Could not save layout for recovery")
-        return
-    end
-
-    -- Map channel IDs to their buffers
-    local channel_to_buf = {}
-    for _, chan in ipairs(vim.api.nvim_list_chans()) do
-        if chan.mode == 'terminal' and chan.buffer ~= nil then
-            channel_to_buf[chan.id] = chan.buffer
-        end
-    end
+    F.hide_floats()
+    local h = get_layout_table(false)
 
     -- Store channel info for each panel
-    local panel_channels = {}
-    for _, t in ipairs(core.get_terminals()) do
-        if t.term_id ~= nil and t.remote_info == nil then
-            local buf = channel_to_buf[t.term_id]
-            if buf ~= nil and vim.api.nvim_buf_is_valid(buf) then
-                panel_channels[t.panel_id] = {term_id = t.term_id, buf = buf}
-            end
-        end
-    end
-
-    while #core.get_terminals() > 0 do
-        local t = core.get_terminals()[1]
-        core.do_remove_term_buf(t.buf)
-    end
+    local active_channels = vim.tbl_filter(function(c) return c.mode == 'terminal' and c.pty ~= '' and c.pty ~= nil end, vim.api.nvim_list_chans())
 
     -- Suspend vesper operations
     core.suspend()
+
+    -- while #core.get_terminals() > 0 do
+    --     local t = core.get_terminals()[1]
+    --     core.do_remove_term_buf(t.buf)
+    -- end
 
     -- Close all tabs
     vim.api.nvim_command('tabonly')
     -- Close all windows
     vim.api.nvim_command('only')
 
-    -- Restore layout with channel reassignment
-    local restore_callback = function(t, id)
-        local saved = panel_channels[t.panel_id]
-        if saved ~= nil then
-            -- Stop the newly created terminal
-            if t.term_id ~= nil then
-                pcall(vim.fn.jobstop, t.term_id)
-            end
-
-            -- Delete the newly created buffer
-            if vim.api.nvim_buf_is_valid(t.buf) then
-                pcall(vim.api.nvim_buf_delete, t.buf, {force = true})
-            end
-
-            -- Assign the saved channel's buffer to this window
-            t.term_id = saved.term_id
-            t.buf = saved.buf
-            if vim.api.nvim_win_is_valid(t.win_id) then
-                vim.api.nvim_win_set_buf(t.win_id, saved.buf)
-            end
-        elseif t.remote_info ~= nil then
-            EV.trigger_event('RemoteDisconnected', {t})
-        end
-    end
-
-    M.restore_layout(temp_layout, restore_callback)
+    funcs.log("WE GOT " .. vim.inspect(active_channels))
+    funcs.log("TERMINALS ARE " .. vim.inspect(core.get_terminals()))
+    M.rebuild_layout(h)
 
     core.resume()
-
-    -- if FILES.exists(temp_layout) then
-    --     os.remove(temp_layout)
-    -- end
 end
 
 return M
