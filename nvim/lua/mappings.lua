@@ -90,6 +90,10 @@ local generic_key_handler = function()
         is_editing = false
     end)
 
+    ERRORS.on_unhandled_error(function()
+        is_editing = false
+    end)
+
     local run_map = function(map)
         require('core').run_map(map)
         reset()
@@ -99,7 +103,7 @@ local generic_key_handler = function()
         local map = funcs.find(function(x) return funcs.compare_shortcuts(x.ls, c) end, collection)
         if map == nil then
             local t = core.get_current_terminal()
-            if t.term_id == nil then
+            if t == nil or t.term_id == nil then
                 core.feedkeys(c, 'n')
             else
                 core.send_to_current(c, true)

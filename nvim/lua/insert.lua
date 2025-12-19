@@ -75,6 +75,10 @@ EV.persistent_on({'UserInput', 'Error'}, function()
     is_editing = false
 end)
 
+ERRORS.on_unhandled_error(function()
+    is_editing = false
+end)
+
 M.is_editing = function()
     return is_editing
 end

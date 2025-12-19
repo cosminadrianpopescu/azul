@@ -330,26 +330,26 @@ local OnTermClose = function(ev)
     end)
 end
 
-local cleanup_terminals = function()
-    -- for _, t in pairs(terminals) do
-    --     if t.term_id ~= nil and t.remote_info == nil and vim.api.nvim_get_chan_info(t.term_id).id == nil then
-    --         M.do_remove_term_buf(t.buf)
-    --     end
-    -- end
-    -- local layout_panic = false
-    -- for _, t in pairs(terminals) do
-    --     if not vim.api.nvim_buf_is_valid(funcs.get_real_buffer(t)) or not vim.api.nvim_win_is_valid(t.win_id) then
-    --         layout_panic = true
-    --     end
-    -- end
-    -- if layout_panic then
-    --     EV.trigger_event('LayoutPanic')
-    -- end
+local try_recover_layout = function()
+    -- Step 1: Remove terminals without valid channels that are not remote
+    terminals = vim.tbl_filter(function(t)
+        local has_valid_channel = t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id ~= nil
+        local is_remote = t.remote_info ~= nil
+        return has_valid_channel or is_remote
+    end, terminals)
+    
+    -- Step 2: Check if any remaining terminals have invalid buffers or windows
+    local layout_panic = false
     for _, t in pairs(terminals) do
-        if t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id == nil then
-            M.refresh_buf(funcs.get_real_buffer(t), true)
-            OnTermClose({buf = t.buf})
+        local buf = funcs.get_real_buffer(t)
+        if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_win_is_valid(t.win_id) then
+            layout_panic = true
+            break
         end
+    end
+    
+    if layout_panic then
+        EV.trigger_event('LayoutPanic')
     end
 end
 
@@ -405,7 +405,7 @@ cmd({'UIEnter'}, {
                 return
             end
             EV.trigger_event('VesperConnected')
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -414,7 +414,7 @@ cmd({'TabNew', 'VimEnter'}, {
         ERRORS.try_execute(function()
             TABS.set_var(0, 'vesper_tab_id', tab_id)
             tab_id = tab_id + 1
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -541,7 +541,7 @@ cmd({'TabNew', 'TermClose', 'TabEnter'}, {
             ERRORS.defer(1, function()
                 M.update_titles()
             end)
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -574,7 +574,7 @@ cmd('TermOpen',{
             end
             panel_id = panel_id + 1
             vesper_win_id = vesper_win_id + 1
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -587,7 +587,7 @@ cmd({'TabClosed'}, {
             end
             vim.fn.jobstop(t.term_id)
             table.insert(dead_terminals, {callback = OnTermClose, term = t})
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -595,7 +595,7 @@ cmd('TermClose', {
     pattern = "*", callback = function(ev)
         ERRORS.try_execute(function()
             OnTermClose(ev)
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -603,7 +603,7 @@ cmd('TermEnter', {
     pattern = "*", callback = function(ev)
         ERRORS.try_execute(function()
             OnEnter(ev)
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -615,7 +615,7 @@ cmd({'FileType', 'BufEnter'}, {
             if is_user_editing and not was_user_editing then
                 EV.trigger_event('UserInputPrompt')
             end
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -625,7 +625,7 @@ cmd({'TabEnter', 'WinResized', 'VimResized'}, {
             ERRORS.defer(1, function()
                 vim.o.cmdheight = 0
             end)
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -636,7 +636,7 @@ cmd({'TabLeave'}, {
                 return
             end
             TABS.set_var(0, 'current_buffer', vim.fn.bufnr())
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -654,7 +654,7 @@ cmd({'WinEnter'}, {
                     OnEnter(ev)
                 end
             end)
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -668,7 +668,7 @@ cmd({'BufLeave', 'BufEnter'}, {
             if funcs.remote_state(t) == 'disconnected' then
                 EV.trigger_event((ev.event == 'BufLeave' and 'LeaveDisconnectedPane') or 'EnterDisconnectedPane', {t})
             end
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -697,7 +697,7 @@ cmd({'ModeChanged'}, {
                     M.enter_mode(to)
                 end
             end
-        end, cleanup_terminals)
+        end, try_recover_layout)
     end
 })
 
@@ -1381,6 +1381,9 @@ end
 
 M.cd = function(new_cwd, t)
     local _t = t or M.get_current_terminal()
+    if _t == nil then
+        return
+    end
     local when_done = function(dir)
         _t.cwd = dir
         M.update_titles(function()
@@ -1416,10 +1419,12 @@ local on_error = function()
     if is_suspended then
         M.resume()
     end
-    cleanup_terminals()
+    try_recover_layout()
 end
 
-EV.persistent_on('Error', on_error)
+ERRORS.on_unhandled_error(function(_)
+    on_error()
+end)
 
 EV.persistent_on('TerminalAdded', function(args)
     local t = args[1]
@@ -1434,13 +1439,7 @@ EV.persistent_on('ModeChanged', function(args)
     if is_user_editing or (args[2] ~= 't' and args[2] ~= 'i') then
         return
     end
-    cleanup_terminals()
-end)
-
-EV.on_unhandled_error(function(err)
-    funcs.log("Caught unexpected error:")
-    funcs.log(err)
-    on_error()
+    try_recover_layout()
 end)
 
 return M

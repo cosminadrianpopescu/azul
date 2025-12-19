@@ -1,14 +1,21 @@
 local split = require('split')
 local FILES = require('files')
-local EV = require('events')
+local funcs = require('functions')
 
 local M = {}
 
 local is_panicking = false
 local is_handling_error = false
+local unexpected_error_interceptors = {}
 
 local build_message = function(stacktrace, msg)
-    return (msg or '') .. '\n\n' .. stacktrace
+    return (msg or '') .. '\n' .. stacktrace
+end
+
+local handle_unexpected_errors = function(err)
+    for _, h in pairs(unexpected_error_interceptors) do
+        h(err)
+    end
 end
 
 M.try_execute = function(try_callback, catch_callback, error_message)
@@ -16,14 +23,21 @@ M.try_execute = function(try_callback, catch_callback, error_message)
     if safe then
         return result
     end
+    local msg = "*Caught unexpected error"
+    if is_handling_error then
+        msg = msg .. " in your error handler"
+    end
+    msg = msg .. "*:\n" .. build_message(result, error_message)
+    funcs.log(msg)
+    funcs.log("\n")
     if is_handling_error then
         return
     end
     is_handling_error = true
-    local msg = build_message(result, error_message)
-    EV.trigger_event('Error', msg)
     if catch_callback ~= nil then
         catch_callback(result, error_message)
+    else
+        handle_unexpected_errors(msg)
     end
     is_handling_error = false
 end
@@ -50,6 +64,10 @@ M.defer = function(timeout, callback)
     return vim.fn.timer_start(timeout, function()
         M.try_execute(callback)
     end)
+end
+
+M.on_unhandled_error = function(callback)
+    table.insert(unexpected_error_interceptors, callback)
 end
 
 return M

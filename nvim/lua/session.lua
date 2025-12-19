@@ -451,7 +451,84 @@ EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()
 end)
 
 EV.persistent_on({'LayoutPanic'}, function()
-    M.save_layout(session_save_name() .. '.bak')
+    M.recover_from_panic()
 end)
+
+--- Recovers from a layout panic by keeping channels alive and reassigning to new windows
+M.recover_from_panic = function()
+    -- Save current layout to temporary location
+    local temp_layout = vim.fn.tempname() .. '.vesper'
+    M.save_layout(temp_layout, false)
+
+    if not FILES.exists(temp_layout) then
+        EV.error("Could not save layout for recovery")
+        return
+    end
+
+    -- Map channel IDs to their buffers
+    local channel_to_buf = {}
+    for _, chan in ipairs(vim.api.nvim_list_chans()) do
+        if chan.mode == 'terminal' and chan.buffer ~= nil then
+            channel_to_buf[chan.id] = chan.buffer
+        end
+    end
+
+    -- Store channel info for each panel
+    local panel_channels = {}
+    for _, t in ipairs(core.get_terminals()) do
+        if t.term_id ~= nil and t.remote_info == nil then
+            local buf = channel_to_buf[t.term_id]
+            if buf ~= nil and vim.api.nvim_buf_is_valid(buf) then
+                panel_channels[t.panel_id] = {term_id = t.term_id, buf = buf}
+            end
+        end
+    end
+
+    while #core.get_terminals() > 0 do
+        local t = core.get_terminals()[1]
+        core.do_remove_term_buf(t.buf)
+    end
+
+    -- Suspend vesper operations
+    core.suspend()
+
+    -- Close all tabs
+    vim.api.nvim_command('tabonly')
+    -- Close all windows
+    vim.api.nvim_command('only')
+
+    -- Restore layout with channel reassignment
+    local restore_callback = function(t, id)
+        local saved = panel_channels[t.panel_id]
+        if saved ~= nil then
+            -- Stop the newly created terminal
+            if t.term_id ~= nil then
+                pcall(vim.fn.jobstop, t.term_id)
+            end
+
+            -- Delete the newly created buffer
+            if vim.api.nvim_buf_is_valid(t.buf) then
+                pcall(vim.api.nvim_buf_delete, t.buf, {force = true})
+            end
+
+            -- Assign the saved channel's buffer to this window
+            t.term_id = saved.term_id
+            t.buf = saved.buf
+            if vim.api.nvim_win_is_valid(t.win_id) then
+                vim.api.nvim_win_set_buf(t.win_id, saved.buf)
+            end
+        elseif t.remote_info ~= nil then
+            EV.trigger_event('RemoteDisconnected', {t})
+        end
+    end
+
+    M.restore_layout(temp_layout, restore_callback)
+
+    core.resume()
+
+    -- if FILES.exists(temp_layout) then
+    --     os.remove(temp_layout)
+    -- end
+end
 
 return M

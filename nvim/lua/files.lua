@@ -1,6 +1,5 @@
 local M = {}
 local split = require('split')
-local EV = require('events')
 
 M.init = function()
     M.config_dir = vim.env.VESPER_CONFIG_HOME or ((vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/vesper')
@@ -44,7 +43,7 @@ M.write_file = function(which, content, err)
     local f = io.open(which, "w")
     if f == nil then
         if err == true then
-            EV.error("File " .. which .. " is not writable")
+            error("File " .. which .. " is not writable")
         end
         return
     end

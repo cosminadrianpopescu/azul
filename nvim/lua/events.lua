@@ -1,6 +1,8 @@
 local funcs = require('functions')
+local ERRORS = require('error_handling')
 
 local M = {}
+local is_handling_error = false
 
 local events = {
     FloatHidden = {},
@@ -49,8 +51,6 @@ local events = {
 
 local persistent_events = {}
 
-local unexpected_error_interceptors = {}
-
 for k in pairs(events) do
     persistent_events[k] = {}
 end
@@ -72,21 +72,20 @@ local add_event = function(ev, callback, where)
     return event_id
 end
 
-local handle_unexpected_errors = function(err)
-    for _, h in pairs(unexpected_error_interceptors) do
-        h(err)
-    end
-end
-
 local run_events = function(ev, args, which)
     for _, l in ipairs(which[ev] or {}) do
         if l.callback ~= nil then
-            local safe, err = xpcall(function()
+            ERRORS.try_execute(function()
                 l.callback(args)
-            end, debug.traceback)
-            if not safe then
-                handle_unexpected_errors(err)
-            end
+            end)
+            -- local safe, err = xpcall(function()
+            --     l.callback(args)
+            -- end, debug.traceback)
+            -- if not safe and not is_handling_error then
+            --     is_handling_error = true
+            --     M.trigger_event('Error', {err})
+            --     is_handling_error = false
+            -- end
         end
     end
 end
@@ -98,10 +97,6 @@ end
 
 M.on = function(ev, callback)
     return add_event(ev, callback, events)
-end
-
-M.on_unhandled_error = function(callback)
-    table.insert(unexpected_error_interceptors, callback)
 end
 
 M.on_action = function(action, callback)
