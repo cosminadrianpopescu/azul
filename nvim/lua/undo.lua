@@ -81,7 +81,7 @@ local undo_split = function(rec)
     local t = funcs.term_by_panel_id(rec.create.from, core.get_terminals())
     if t == nil then
         finish()
-        EV.error("The terminal from which to split could not be found")
+        ERRORS.throw("The terminal from which to split could not be found")
     end
     EV.single_shot('PaneChanged', function(args)
         core.copy_terminal_properties(rec.term, args[1], true)
@@ -173,11 +173,11 @@ M.undo = function()
     end
 end
 
-EV.persistent_on('LayoutRestoringStarted', function()
+EV.persistent_on({'LayoutRestoringStarted', 'LayoutPanic'}, function()
     record_undo = false
 end)
 
-EV.persistent_on('LayoutRestored', function()
+EV.persistent_on({'LayoutRestored', 'LayoutRestored'}, function()
     record_undo = true
 end)
 

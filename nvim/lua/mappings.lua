@@ -86,7 +86,11 @@ local generic_key_handler = function()
         is_editing = true
     end)
 
-    EV.persistent_on({'UserInput', 'Error'}, function()
+    EV.persistent_on({'UserInput'}, function()
+        is_editing = false
+    end)
+
+    ERRORS.on_error(function()
         is_editing = false
     end)
 

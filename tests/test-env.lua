@@ -10,7 +10,18 @@ local sess = require('session')
 local EV = require('events')
 local ERRORS = require('error_handling')
 
-vim.g.vesper_errors_log = base_path .. "/runtime-errors"
+local warning_callbacks = {}
+
+local on_warning = function(callback)
+    table.insert(warning_callbacks, callback)
+end
+
+ERRORS.warning = function(msg)
+    for _, c in pairs(warning_callbacks) do
+        c(msg)
+    end
+end
+
 local TIMEOUT_BETWEEN_KEYS = 150
 
 local file_copy = function(src, dest)
@@ -280,4 +291,5 @@ return {
         sess.restore_layout(base_path .. "/" .. name)
     end,
     reversed_non_empty_lines = reversed_non_empty_lines,
+    on_warning = on_warning,
 }

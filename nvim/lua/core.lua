@@ -99,14 +99,6 @@ M.debug = function()
     -- print("HISTORY IS " .. vim.inspect(history))
 end
 
-M.refresh_tab_page = function(t)
-    if funcs.is_float(t) then
-        return
-    end
-    t.tab_page = vim.api.nvim_tabpage_get_number(vim.api.nvim_win_get_tabpage(t.win_id))
-    t.vim_tab_id = vim.api.nvim_list_tabpages()[t.tab_page]
-end
-
 M.refresh_win_config = function(t)
     local old_config = t.win_config
     t.win_config = vim.api.nvim_win_get_config(t.win_id)
@@ -293,7 +285,7 @@ end
 
 local OnTermClose = function(ev)
     if is_suspended then
-        -- table.insert(closed_during_suspend, ev)
+        table.insert(closed_during_suspend, ev)
         return
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)
@@ -325,6 +317,19 @@ local OnTermClose = function(ev)
         ev.buf = vim.fn.bufnr()
         OnEnter(ev)
     end)
+end
+
+M.refresh_tab_page = function(t)
+    if funcs.is_float(t) then
+        return
+    end
+    if not vim.api.nvim_win_is_valid(t.win_id) then
+        ERRORS.warning("There is an invalid window: " .. t.win_id)
+        OnTermClose({buf = t.buf})
+        return 
+    end
+    t.tab_page = vim.api.nvim_tabpage_get_number(vim.api.nvim_win_get_tabpage(t.win_id))
+    t.vim_tab_id = vim.api.nvim_list_tabpages()[t.tab_page]
 end
 
 local try_recover_layout = function()
@@ -851,10 +856,6 @@ M.send_to_current = function(data, escape)
 end
 
 M.create_split = function(t, dir)
-    if funcs.is_float(t) then
-        EV.error("You can only split an embeded pane", nil)
-        return
-    end
     local cmd = 'new'
     if dir == 'left' or dir == 'right' then
         cmd = 'v' .. cmd
@@ -878,9 +879,12 @@ end
 
 M.split = function(dir, remote_command, cwd)
     local t = M.get_current_terminal()
-    M.create_split(t, dir)
+    if funcs.is_float(t) then
+        ERRORS.warning("You can only split an embeded pane", nil)
+        return
+    end
     H.add_to_history(M.term_by_buf_id(vim.fn.bufnr("%")), "split", {dir}, t.tab_id)
-
+    M.create_split(t, dir)
     M.open(vim.fn.bufnr('%'), {remote_command = remote_command, cwd = cwd or vim.fn.getcwd()})
     ERRORS.defer(1, function()
         M.update_titles()
@@ -1187,7 +1191,7 @@ end
 
 M.override_terminal = function(t, cmd, on_finish)
     if t.overriding_buf ~= nil then
-        EV.error('The current terminal is already overriden')
+        ERRORS.throw('The current terminal is already overriden')
     end
     M.suspend()
     local buf = vim.api.nvim_create_buf(false, true)
@@ -1215,7 +1219,7 @@ M.override_terminal = function(t, cmd, on_finish)
     end)
     if not safe then
         on_exit()
-        EV.error("The EDITOR variable does not seem to be set properly. " .. vim.inspect(err))
+        ERRORS.throw("The EDITOR variable does not seem to be set properly. " .. vim.inspect(err))
     end
     M.resume()
     return result
@@ -1244,7 +1248,7 @@ end
 
 M.edit_scrollback_log = function(t)
     if not L.is_logging_started(t.buf) then
-        EV.error("The current buffer is not being logged", nil)
+        ERRORS.throw("The current buffer is not being logged", nil)
     end
     M.edit(t, loggers[t.buf .. ''].location)
 end
@@ -1313,7 +1317,7 @@ M.select_tab = function(n)
         vim.api.nvim_command('tabn ' .. n)
     end)
     if not safe then
-        EV.error(result)
+        ERRORS.throw(result)
         return
     end
     floats = vim.tbl_filter(function(t) return funcs.is_float(t) and t.group == funcs.current_float_group() end, terminals)

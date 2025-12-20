@@ -10,7 +10,6 @@ local events = {
     FloatsVisible = {},
     FloatOpened = {},
     PaneChanged = {},
-    Error = {},
     PaneClosed = {},
     LayoutSaved = {},
     LayoutRestored = {},
@@ -47,6 +46,7 @@ local events = {
     RemoteStartedScroll = {},
     RemoteEndedScroll = {},
     LayoutPanic = {},
+    LayoutRecovered = {},
 }
 
 local persistent_events = {}
@@ -63,7 +63,7 @@ local add_event = function(ev, callback, where)
     event_id = event_id + 1
     for _, e in ipairs(to_add) do
         if not vim.tbl_contains(vim.tbl_keys(events), e) then
-            M.error(e .. " event does not exists", nil)
+            ERRORS.throw(e .. " event does not exists", nil)
         end
 
         table.insert(where[e], {callback = callback, id = event_id})
@@ -122,7 +122,7 @@ end
 
 M.clear_event = function(ev, id)
     if not vim.tbl_contains(vim.tbl_keys(events), ev) then
-        M.error(ev .. " event does not exists", nil)
+        ERRORS.throw(ev .. " event does not exists", nil)
     end
 
     if id == nil then
@@ -131,20 +131,6 @@ M.clear_event = function(ev, id)
     end
 
     events[ev] = vim.tbl_filter(function(c) return c.id ~= id end, events[ev])
-end
-
-M.error = function(msg, h)
-    local _m = msg
-    if h ~= nil then
-        _m = _m .. " at " .. vim.inspect(h)
-    end
-    M.trigger_event("Error", {_m})
-    -- The test environment will disable the throwing of errors
-    if vim.g.vesper_errors_log ~= nil then
-        funcs.log(vim.inspect(_m), vim.g.vesper_errors_log)
-    else
-        error(_m)
-    end
 end
 
 vim.keymap.set({'n', 'i', 't'}, '<LeftRelease>', function()

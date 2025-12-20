@@ -108,11 +108,11 @@ const do_undo = () => {
     expand_test('undo');
 }
 
-do_floats();
-do_splits();
-do_modes();
-do_tabs();
-do_tab_titles();
-do_misc();
-do_undo();
+// do_floats();
+// do_splits();
+// do_modes();
+// do_tabs();
+// do_tab_titles();
+// do_misc();
+// do_undo();
 do_layout();

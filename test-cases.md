@@ -24,3 +24,11 @@
 * open a tab remote
 * kill the ssh process
 * from the remote tab with the ssh killed, try to open another remote tab (you won't be able to insert the //)
+
+# Create issue during session load
+
+* in a session file, replace a tab_id with a non existing tab_id
+
+# Layout panic and restore
+
+* lots of tests to stress it.

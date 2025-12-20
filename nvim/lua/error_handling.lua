@@ -7,6 +7,7 @@ local M = {}
 local is_panicking = false
 local is_handling_error = false
 local unexpected_error_interceptors = {}
+local error_handlers = {}
 
 local build_message = function(stacktrace, msg)
     return (msg or '') .. '\n' .. stacktrace
@@ -38,6 +39,7 @@ M.try_execute = function(try_callback, catch_callback, error_message)
         catch_callback(result, error_message)
     else
         handle_unexpected_errors(msg)
+        M.warning("\nThere has been an unexpected error. Check your logs for more details.\n")
     end
     is_handling_error = false
 end
@@ -66,8 +68,32 @@ M.defer = function(timeout, callback)
     end)
 end
 
+M.throw = function(msg, stack)
+    local _m = msg
+    if stack ~= nil then
+        _m = _m .. " at " .. vim.inspect(stack)
+    end
+    -- The test environment will disable the throwing of errors
+    for _, h in pairs(error_handlers) do
+        M.try_execute(function()
+            h(_m)
+        end, function()
+            funcs.log("You have an error in your error handler")
+        end)
+    end
+    error(_m)
+end
+
+M.on_error = function(callback)
+    table.insert(error_handlers, callback)
+end
+
 M.on_unhandled_error = function(callback)
     table.insert(unexpected_error_interceptors, callback)
+end
+
+M.warning = function(msg)
+    vim.notify(msg, 'info')
 end
 
 return M

@@ -183,7 +183,7 @@ M.position_current_float = function(where)
     local conf = vim.api.nvim_win_get_config(0)
     local t = core.get_current_terminal()
     if not funcs.is_float(t) then
-        EV.error("You can only position a floating window", nil)
+        ERRORS.throw("You can only position a floating window", nil)
     end
 
     if where == "top" then
@@ -205,7 +205,7 @@ M.rename_floating_pane = function(pane)
         return
     end
     if not funcs.is_float(pane) then
-        EV.error('You can only rename floating panes')
+        ERRORS.throw('You can only rename floating panes')
     end
     local def = funcs.get_float_title(pane)
     core.user_input({propmt = "Pane new name: ", default = def}, function(result)

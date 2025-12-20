@@ -24,9 +24,11 @@ end
 EV.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'VesperStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
-    'WinIdSet', 'ConfigReloaded', 'VesperConnected', 'Error', 'LayoutRestored',
+    'WinIdSet', 'ConfigReloaded', 'VesperConnected', 'LayoutRestored',
     'UndoFinished', 'FullscreenToggled', 'DirectoryChanged', 'RemoteStartedScroll'
 }, do_start_insert)
+
+ERRORS.on_error(do_start_insert)
 
 EV.persistent_on({'MouseClick', 'RemoteEndedScroll'}, function()
     start_insert(true)
@@ -71,7 +73,11 @@ EV.persistent_on('UserInputPrompt', function()
     is_editing = true
 end)
 
-EV.persistent_on({'UserInput', 'Error'}, function()
+EV.persistent_on({'UserInput'}, function()
+    is_editing = false
+end)
+
+ERRORS.on_error(function()
     is_editing = false
 end)
 

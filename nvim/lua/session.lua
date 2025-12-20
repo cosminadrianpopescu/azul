@@ -109,7 +109,7 @@ L.restore_remotes = function()
     core.enter_mode('t')
 end
 
-L.restore_ids = function(title_placeholders, title_overrides)
+local restore_ids = function(title_placeholders, title_overrides)
     core.set_global_panel_id(0)
     core.set_global_tab_id(0)
     core.set_global_vesper_win_id(0)
@@ -135,7 +135,10 @@ L.restore_ids = function(title_placeholders, title_overrides)
             TABS.set_var(vim.api.nvim_list_tabpages()[i], 'vesper_tab_title_overriden', o)
         end
     end
+end
 
+L.restore_ids = function(title_placeholders, title_overrides)
+    restore_ids(title_placeholders, title_overrides)
     ERRORS.defer(1, L.restore_remotes)
 end
 
@@ -151,7 +154,7 @@ end
 L.restore_floats = function(histories, idx, panel_id_wait, timeout)
     if timeout > 100 then
         core.stop_updating_titles()
-        EV.error("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
+        ERRORS.throw("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
         return
     end
 
@@ -182,7 +185,7 @@ end
 L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if timeout > 100 then
         core.stop_updating_titles()
-        EV.error("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
+        ERRORS.throw("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
         return
     end
 
@@ -228,7 +231,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
         core.set_global_panel_id(h.to)
         local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
-            EV.error("Error found loading the layout file", h)
+            ERRORS.throw("Error found loading the layout file", h)
             return
         end
         core.select_pane(t.buf)
@@ -242,7 +245,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "close" then
         local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
-            EV.error("Error found loading the layout file", h)
+            ERRORS.throw("Error found loading the layout file", h)
             return
         end
         vim.fn.chanclose(t.term_id)
@@ -255,7 +258,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "resize" then
         local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
-            EV.error("Error found loading the layout file", h)
+            ERRORS.throw("Error found loading the layout file", h)
             return
         end
         core.select_pane(t.buf)
@@ -269,7 +272,7 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
     if h.operation == "rotate_panel" then
         local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
-            EV.error("Error found loading the layout file", h)
+            ERRORS.throw("Error found loading the layout file", h)
             return
         end
         core.select_pane(t.buf)
@@ -282,12 +285,12 @@ L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
 end
 
 local is_still_valid = function(t)
-    return t ~= nil and (t.remote_info == nil or (t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id ~= nil))
+    return t ~= nil and (t.remote_info ~= nil or (t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id ~= nil))
 end
 
 L.rebuild_tab_history = function(histories, i, j)
     if (i > #histories.history) then
-        L.restore_floats(histories, 1, nil, 0)
+        restore_ids(histories.vesper_placeholders or histories.vesper_title_placeholders, histories.title_overrides)
         return
     end
 
@@ -298,15 +301,16 @@ L.rebuild_tab_history = function(histories, i, j)
 
     local h = histories.history[i][j]
 
-    local set_buf = function(panel_id)
+    local set_buf = function(panel_id, operation)
         local t = funcs.term_by_panel_id(panel_id, core.get_terminals())
         if t == nil or not is_still_valid(t) then
             return
         end
-        if j ~= 1 or i ~= 1 then
+        if (j ~= 1 or i ~= 1) and operation == 'create' then
             vim.api.nvim_command('$tabnew')
         end
-        TABS.set_var(0, 'vesper_tab_id', histories.customs[panel_id .. ''].vesper_tab_id)
+        t.tab_id = vim.api.nvim_list_tabpages()[vim.fn.tabpagenr()]
+        TABS.set_var(0, 'vesper_tab_id', t.tab_id)
         t.win_id = vim.fn.win_getid()
         local c = vim.api.nvim_get_chan_info(t.term_id)
         if t.remote_info == nil then
@@ -314,12 +318,14 @@ L.rebuild_tab_history = function(histories, i, j)
             t.buf = c.buffer
         end
         restore_values(t, histories.customs)
+        return t
     end
 
     if h.operation == "create" then
         core.set_global_panel_id(h.to)
         core.set_global_tab_id(h.tab_id)
-        set_buf(h.to)
+        local t = set_buf(h.to, h.operation)
+        H.add_to_history(t, 'create', {}, t.tab_id)
         L.rebuild_tab_history(histories, i, j + 1)
         return
     end
@@ -328,12 +334,13 @@ L.rebuild_tab_history = function(histories, i, j)
         core.set_global_panel_id(h.to)
         local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
-            EV.error("Error found rebuilding the layout file", h)
+            ERRORS.throw("Error found rebuilding the layout file", h)
             return
         end
         core.select_pane(t.buf)
         core.create_split(t, h.params[1])
-        set_buf(h.to)
+        H.add_to_history(t, 'split', {h.params[1]}, t.tab_id)
+        t = set_buf(h.to, h.operation)
         L.rebuild_tab_history(histories, i, j + 1)
         return
     end
@@ -341,10 +348,11 @@ L.rebuild_tab_history = function(histories, i, j)
     if h.operation == "close" then
         local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
-            EV.error("Error found rebuilding the layout file", h)
+            ERRORS.throw("Error found rebuilding the layout file", h)
             return
         end
         vim.fn.chanclose(t.term_id)
+        H.add_to_history(t, "close", nil, t.tab_id)
         L.rebuild_tab_history(histories, i, j + 1)
         return
     end
@@ -352,11 +360,12 @@ L.rebuild_tab_history = function(histories, i, j)
     if h.operation == "resize" then
         local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
-            EV.error("Error found rebuilding the layout file", h)
+            ERRORS.throw("Error found rebuilding the layout file", h)
             return
         end
         core.select_pane(t.buf)
         core.resize(h.params[1])
+        H.add_to_history(t, "resize", {h.params[1]}, t.tab_id)
         L.rebuild_tab_history(histories, i, j + 1)
         return
     end
@@ -364,11 +373,12 @@ L.rebuild_tab_history = function(histories, i, j)
     if h.operation == "rotate_panel" then
         local t = funcs.term_by_panel_id(h.from, core.get_terminals())
         if t == nil then
-            EV.error("Error found rebuilding the layout file", h)
+            ERRORS.throw("Error found rebuilding the layout file", h)
             return
         end
         core.select_pane(t.buf)
         core.rotate_panel()
+        H.add_to_history(t, "rotate_panel", nil, t.tab_id)
         L.rebuild_tab_history(histories, i, j + 1)
         return
     end
@@ -382,11 +392,11 @@ end
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
     if #core.get_terminals() > 1 then
-        EV.error("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
+        ERRORS.throw("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
         return
     end
     if not FILES.exists(where) then
-        EV.error("Could not open " .. where, nil)
+        ERRORS.throw("Could not open " .. where, nil)
         return
     end
     local content = FILES.read_file(where)
@@ -394,7 +404,7 @@ M.restore_layout = function(where, callback)
     if vim.fn.match(content, "^return") == -1 then
         local f = io.open(where, "r")
         if f == nil then
-            EV.error("Could not open " .. where, nil)
+            ERRORS.throw("Could not open " .. where, nil)
             return
         end
         h = funcs.deserialize(f:read("*a"))
@@ -468,10 +478,9 @@ end
 
 M.rebuild_layout = function(h)
     core.stop_updating_titles()
-    TABS.del_var(0, 'vesper_placeholders')
     H.reset_history()
-    funcs.log("H IS " .. vim.inspect(h))
-    -- L.rebuild_tab_history(h, 1, 1)
+    L.rebuild_tab_history(h, 1, 1)
+    core.start_updating_titles()
 end
 
 
@@ -589,11 +598,13 @@ M.recover_from_panic = function()
     -- Close all windows
     vim.api.nvim_command('only')
 
-    funcs.log("WE GOT " .. vim.inspect(active_channels))
-    funcs.log("TERMINALS ARE " .. vim.inspect(core.get_terminals()))
     M.rebuild_layout(h)
-
     core.resume()
+    for _, t in pairs(vim.tbl_filter(function(t2) return t2.remote_info ~= nil end, core.get_terminals())) do
+        EV.trigger_event('RemoteDisconnected', {t})
+    end
+    EV.trigger_event('LayoutRecovered', {})
+    ERRORS.warning('There has been an issue with your layout.\nYour session has been emergency saved at ' .. sess .. '.\nIf your layout is still broken, try to recover from the saved session.\nWe are sorry for the inconvenience')
 end
 
 return M

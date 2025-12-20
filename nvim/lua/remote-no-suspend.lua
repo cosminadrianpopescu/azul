@@ -2,6 +2,7 @@ local cmd = vim.api.nvim_create_autocmd
 local funcs = require('functions')
 local core = require('core')
 local EV = require('events')
+local ERRORS = require('error_handling')
 local F = require('floats')
 local MAP = require('mappings')
 local options = require('options')
@@ -168,7 +169,7 @@ M.get_remote_command = function(info)
     end
 
     if provider.cmd_template == nil then
-        EV.error('The providers ' .. info.proto .. 'does not contain a command template')
+        ERRORS.throw('The providers ' .. info.proto .. 'does not contain a command template')
         return nil
     end
 
@@ -326,7 +327,7 @@ end
 
 M.remote_reconnect = function(t)
     if t.remote_info == nil then
-        EV.error("The terminal " .. t.term_id .. " is not a remote terminal", nil)
+        ERRORS.throw("The terminal " .. t.term_id .. " is not a remote terminal", nil)
         return
     end
     local old_buf = t.buf
