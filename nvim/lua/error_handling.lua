@@ -39,7 +39,7 @@ M.try_execute = function(try_callback, catch_callback, error_message)
         catch_callback(result, error_message)
     else
         handle_unexpected_errors(msg)
-        M.warning("\nThere has been an unexpected error. Check your logs for more details.\n")
+        M.warning("There has been an unexpected error. Check your logs for more details.")
     end
     is_handling_error = false
 end
@@ -93,7 +93,7 @@ M.on_unhandled_error = function(callback)
 end
 
 M.warning = function(msg)
-    vim.notify(msg, 'info')
+    vim.notify("\n" .. (msg or '') .. "\n", 'info')
 end
 
 return M

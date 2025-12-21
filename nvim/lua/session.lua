@@ -288,6 +288,15 @@ local is_still_valid = function(t)
     return t ~= nil and (t.remote_info ~= nil or (t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id ~= nil))
 end
 
+local retrieve_channel = function(t)
+    local c = funcs.find(function(c2) return c2.buffer == t.buf end, vim.api.nvim_list_chans())
+    if c ~= nil then
+        return c.id
+    end
+
+    return nil
+end
+
 L.rebuild_tab_history = function(histories, i, j)
     if (i > #histories.history) then
         return
@@ -324,12 +333,14 @@ L.rebuild_tab_history = function(histories, i, j)
                 t.buf = vim.fn.bufnr('%')
             end
         else
-            t.buf = vim.api.nvim_create_buf(true, true)
+            t.buf = vim.api.nvim_create_buf(false, true)
             if t.win_id ~= nil then
                 vim.api.nvim_win_set_buf(t.win_id, t.buf)
             end
+            t.win_config = vim.api.nvim_win_get_config(t.win_id)
             if t.remote_info == nil then
-                core.open(t.buf)
+                core.open(t.buf, {cwd = t.cwd})
+                t.term_id = retrieve_channel(t)
             end
         end
         return t
@@ -400,6 +411,38 @@ L.rebuild_tab_history = function(histories, i, j)
     end
 end
 
+local restore_layout = function(h, with_floats, with_post_restored)
+    -- Suspend vesper operations
+    core.suspend()
+
+    -- while #core.get_terminals() > 0 do
+    --     local t = core.get_terminals()[1]
+    --     core.do_remove_term_buf(t.buf)
+    -- end
+
+    -- Close all tabs
+    if #vim.api.nvim_list_tabpages() > 1 then
+        vim.api.nvim_command('tabonly')
+    end
+    -- Close all windows
+    if #vim.api.nvim_list_wins() > 1 then
+        vim.api.nvim_command('only')
+    end
+
+    M.rebuild_layout(h, with_floats)
+    for _, t in pairs(core.get_terminals()) do
+        if (t.win_id ~= nil and not vim.api.nvim_win_is_valid(t.win_id)) or (t.buf ~= nil and not vim.api.nvim_buf_is_valid(t.buf)) then
+            core.do_remove_term_buf(t.buf)
+        end
+        if with_post_restored == true then
+            post_restored(t, h.customs, h.callback)
+        end
+    end
+    core.resume()
+    for _, t in pairs(vim.tbl_filter(function(t2) return t2.remote_info ~= nil end, core.get_terminals())) do
+        EV.trigger_event('RemoteDisconnected', {t})
+    end
+end
 
 --- Restores a saved layout
 ---
@@ -447,7 +490,33 @@ M.restore_layout = function(where, callback)
     end
     EV.trigger_event('LayoutRestoringStarted')
     current_in_saved_layout = h.current
-    L.restore_tab_history(h, 1, 1, nil, 0)
+
+    restore_layout(h, true, true)
+    EV.trigger_event("LayoutRestored")
+    core.start_updating_titles()
+    core.update_titles()
+    can_save_layout = true
+    for _, t in pairs(core.get_terminals()) do
+        t.is_current = false
+        t.current_selected_pane = false
+    end
+    if h.current then
+        if h.current.tab_page ~= nil then
+            core.select_tab(h.current.tab_page)
+        end
+        local t = term_by_vesper_win_id(h.current.vesper_win_id)
+        t.is_current = true
+        t.current_selected_pane = true
+        if not funcs.is_float(t) then
+            F.hide_floats()
+        end
+        ERRORS.defer(1, function()
+            core.select_pane(t.buf)
+        end)
+    end
+    core.enter_mode('t')
+
+    -- L.restore_tab_history(h, 1, 1, nil, 0)
 end
 
 EV.persistent_on('ExitVesper', function()
@@ -501,6 +570,18 @@ L.rebuild_floats_history = function(histories, idx)
 
     core.set_global_panel_id(f.panel_id)
     F.open_float({group = f.group, win_config = f.win_config, cwd = get_cwd(f.panel_id, histories)})
+    local t = {}
+    t.panel_id = f.panel_id
+    t.cwd = f.cwd
+    t.tab_id = vim.api.nvim_list_tabpages()[vim.fn.tabpagenr()]
+    t.win_id = vim.fn.win_getid()
+    restore_values(t, histories.customs)
+    t.buf = vim.fn.bufnr('%')
+    t.term_id = retrieve_channel(t)
+    t.win_config = f.win_config
+    t.last_access = f.last_access
+    t.group = f.group
+    table.insert(core.get_terminals(), t)
 
     L.rebuild_floats_history(histories, idx + 1)
 end
@@ -613,30 +694,9 @@ M.recover_from_panic = function()
     M.save_layout(sess, false)
 
     F.hide_floats()
-    local h = get_layout_table(false)
 
-    -- Store channel info for each panel
-    local active_channels = vim.tbl_filter(function(c) return c.mode == 'terminal' and c.pty ~= '' and c.pty ~= nil end, vim.api.nvim_list_chans())
+    restore_layout(get_layout_table(false))
 
-    -- Suspend vesper operations
-    core.suspend()
-
-    -- while #core.get_terminals() > 0 do
-    --     local t = core.get_terminals()[1]
-    --     core.do_remove_term_buf(t.buf)
-    -- end
-
-    -- Close all tabs
-    vim.api.nvim_command('tabonly')
-    -- Close all windows
-    vim.api.nvim_command('only')
-
-    M.rebuild_layout(h)
-    core.resume()
-    -- core.cleanup_terminals_with_bad_layout()
-    -- for _, t in pairs(vim.tbl_filter(function(t2) return t2.remote_info ~= nil end, core.get_terminals())) do
-    --     EV.trigger_event('RemoteDisconnected', {t})
-    -- end
     EV.trigger_event('LayoutRecovered', {})
     ERRORS.warning('There has been an issue with your layout.\nYour session has been emergency saved at ' .. sess .. '.\nIf your layout is still broken, try to recover from the saved session.\nWe are sorry for the inconvenience')
 end

@@ -11,7 +11,7 @@ local M = {}
 
 local is_suspended = false
 local is_user_editing = false
-local is_started = false
+local is_vesper_started = false
 
 local updating_titles = true
 local vesper_started = false
@@ -187,10 +187,6 @@ local OnEnter = function(ev)
             M.start_logging(os.tmpname())
         end
     end
-    if not vesper_started then
-        vesper_started = true
-        EV.trigger_event('VesperStarted')
-    end
 end
 
 local on_chan_input = function(callback, which, chan_id, data)
@@ -269,7 +265,7 @@ M.open = function(buf, opts)
 
     local do_open = function()
         local cmd = (opts.remote_command == nil and {vim.o.shell}) or opts.remote_command
-        if not is_started and opts.remote_command == nil then
+        if not is_vesper_started and opts.remote_command == nil then
             ERRORS.try_execute(function()
                 vim.fn.termopen(cmd, _opts)
             end, ERRORS.panic_handler, 'There seem to be an issue initializing the first terminal. Check your shell setting in your config.ini')
@@ -334,6 +330,9 @@ M.refresh_tab_page = function(t)
 end
 
 local try_recover_layout = function()
+    if is_suspended then
+        return
+    end
     -- Step 1: Remove terminals without valid channels that are not remote
     terminals = vim.tbl_filter(function(t)
         local has_valid_channel = t.term_id ~= nil and vim.api.nvim_get_chan_info(t.term_id).id ~= nil
@@ -404,7 +403,7 @@ end
 cmd({'UIEnter'}, {
     pattern = "*", callback = function()
         ERRORS.try_execute(function()
-            if not vesper_started then
+            if not is_vesper_started then
                 return
             end
             EV.trigger_event('VesperConnected')
@@ -516,7 +515,7 @@ local update_title_for_floats = function(i, floats, when_finished, me)
 end
 
 M.update_titles = function(callback)
-    if updating_titles or not vesper_started then
+    if updating_titles or not is_vesper_started then
         return
     end
 
@@ -551,6 +550,9 @@ cmd({'TabNew', 'TermClose', 'TabEnter'}, {
 cmd('TermOpen',{
     pattern = "*", callback = function(ev)
         ERRORS.try_execute(function()
+            if not is_vesper_started then
+                EV.trigger_event('VesperStarted')
+            end
             if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
                 return
             end
@@ -1412,12 +1414,8 @@ M.find_key_map = function(m, ls)
     return funcs.find(function(_m) return _m.m == m and funcs.compare_shortcuts(_m.ls, ls) end, mode_mappings)
 end
 
-M.cleanup_terminals_with_bad_layout = function()
-    terminals = vim.tbl_filter(function(t) return t.buf == nil or t.win_id == nil or (vim.api.nvim_buf_is_valid(t.buf) and vim.api.nvim_win_is_valid(t.win_id)) end, terminals)
-end
-
 EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()
-    is_started = true
+    is_vesper_started = true
 end)
 
 EV.persistent_on('PaneChanged', function(args)
