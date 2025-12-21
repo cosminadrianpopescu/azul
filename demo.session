@@ -1,0 +1,186 @@
+return {
+-- Table: {1}
+{
+   ["vesper_placeholders"]={2},
+   ["customs"]={3},
+   ["title_overrides"]={4},
+   ["geometry"]={5},
+   ["current"]={6},
+   ["floats"]={7},
+   ["history"]={8},
+},
+-- Table: {2}
+{
+   {9},
+   {10},
+},
+-- Table: {3}
+{
+   ["1"]={11},
+   ["2"]={12},
+   ["3"]={13},
+   ["0"]={14},
+},
+-- Table: {4}
+{
+   "",
+   "",
+},
+-- Table: {5}
+{
+   ["columns"]=173,
+   ["lines"]=47,
+},
+-- Table: {6}
+{
+   ["pane_id"]=1,
+   ["tab_page"]=2,
+   ["tab_id"]=3,
+   ["vesper_win_id"]=1,
+},
+-- Table: {7}
+{
+   {15},
+},
+-- Table: {8}
+{
+   {16},
+   {17},
+},
+-- Table: {9}
+{
+   ["tab_n"]=1,
+   ["tab_name"]="LOCAL",
+   ["is_current"]="",
+},
+-- Table: {10}
+{
+   ["tab_n"]=2,
+   ["tab_name"]="REMOTE",
+   ["is_current"]="*",
+},
+-- Table: {11}
+{
+   ["cwd"]="/home/lixa/programs/my/azul",
+   ["remote_info"]={18},
+   ["vesper_win_id"]=1,
+},
+-- Table: {12}
+{
+   ["cwd"]="/home/lixa/programs/my/azul",
+   ["vesper_win_id"]=2,
+},
+-- Table: {13}
+{
+   ["cwd"]="/home/lixa",
+   ["vesper_tab_id"]=3,
+   ["vesper_win_id"]=3,
+},
+-- Table: {14}
+{
+   ["cwd"]="/home/lixa/programs/my/azul",
+   ["vesper_tab_id"]=3,
+   ["vesper_win_id"]=0,
+},
+-- Table: {15}
+{
+   ["term_id"]=6,
+   ["win_config"]={19},
+   ["last_access"]=13,
+   ["cwd"]="/home/lixa/programs/my/azul",
+   ["vesper_placeholders"]={20},
+   ["tab_id"]=3,
+   ["vesper_win_id"]=2,
+   ["group"]="default",
+   ["buf"]=4,
+   ["panel_id"]=2,
+},
+-- Table: {16}
+{
+   {21},
+   {22},
+},
+-- Table: {17}
+{
+   {23},
+},
+-- Table: {18}
+{
+   ["proto"]="vesper",
+   ["bin"]="vesper",
+   ["host"]="lixa@localhost",
+   ["uid"]="e5491488-16b2-4865-98a2-1440a8fdcddd",
+},
+-- Table: {19}
+{
+   ["height"]=21,
+   ["width"]=84,
+   ["col"]=87,
+   ["row"]=0,
+   ["border"]={24},
+   ["title"]={25},
+   ["relative"]="editor",
+   ["title_pos"]="left",
+   ["zindex"]=1,
+   ["anchor"]="NW",
+},
+-- Table: {20}
+{
+   ["cwd"]="/home/lixa/programs/my/azul",
+   ["vesper_cmd_or_win_id"]=2,
+},
+-- Table: {21}
+{
+   ["to"]=0,
+   ["tab_id"]=2,
+   ["operation"]="create",
+   ["params"]={26},
+   ["buf"]=1,
+},
+-- Table: {22}
+{
+   ["to"]=3,
+   ["tab_id"]=2,
+   ["from"]=0,
+   ["operation"]="split",
+   ["params"]={27},
+   ["buf"]=1,
+},
+-- Table: {23}
+{
+   ["to"]=1,
+   ["tab_id"]=3,
+   ["operation"]="create",
+   ["params"]={28},
+   ["buf"]=3,
+},
+-- Table: {24}
+{
+   "╭",
+   "─",
+   "╮",
+   "│",
+   "╯",
+   "─",
+   "╰",
+   "│",
+},
+-- Table: {25}
+{
+   {29},
+},
+-- Table: {26}
+{
+},
+-- Table: {27}
+{
+   "right",
+},
+-- Table: {28}
+{
+},
+-- Table: {29}
+{
+   "/home/lixa/programs/my/azul [2]",
+},
+}

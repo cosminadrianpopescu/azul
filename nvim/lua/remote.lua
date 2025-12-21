@@ -221,6 +221,10 @@ cmd({'TabEnter', 'WinResized', 'VimResized'}, {
 })
 
 local remote_disconnected = function(t)
+    if not vim.api.nvim_win_is_valid(t.win_id) then
+        ERRORS.warning("There is a remote tab without no tabs")
+        return
+    end
     if t.overriding_term_id ~= nil then
         vim.fn.jobstop(t.overriding_term_id)
     end

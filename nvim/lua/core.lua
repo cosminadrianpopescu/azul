@@ -285,6 +285,7 @@ end
 
 local OnTermClose = function(ev)
     if is_suspended then
+        -- BUGFIX
         -- table.insert(closed_during_suspend, ev)
         return
     end
@@ -326,7 +327,7 @@ M.refresh_tab_page = function(t)
     if not vim.api.nvim_win_is_valid(t.win_id) then
         ERRORS.warning("There is an invalid window: " .. t.win_id)
         OnTermClose({buf = t.buf})
-        return 
+        return
     end
     t.tab_page = vim.api.nvim_tabpage_get_number(vim.api.nvim_win_get_tabpage(t.win_id))
     t.vim_tab_id = vim.api.nvim_list_tabpages()[t.tab_page]
@@ -339,7 +340,7 @@ local try_recover_layout = function()
         local is_remote = t.remote_info ~= nil
         return has_valid_channel or is_remote
     end, terminals)
-    
+
     -- Step 2: Check if any remaining terminals have invalid buffers or windows
     local layout_panic = false
     for _, t in pairs(terminals) do
@@ -349,7 +350,7 @@ local try_recover_layout = function()
             break
         end
     end
-    
+
     if layout_panic then
         EV.trigger_event('LayoutPanic')
     end
@@ -1409,6 +1410,10 @@ end
 
 M.find_key_map = function(m, ls)
     return funcs.find(function(_m) return _m.m == m and funcs.compare_shortcuts(_m.ls, ls) end, mode_mappings)
+end
+
+M.cleanup_terminals_with_bad_layout = function()
+    terminals = vim.tbl_filter(function(t) return t.buf == nil or t.win_id == nil or (vim.api.nvim_buf_is_valid(t.buf) and vim.api.nvim_win_is_valid(t.win_id)) end, terminals)
 end
 
 EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()

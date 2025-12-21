@@ -320,6 +320,8 @@ L.rebuild_tab_history = function(histories, i, j)
             if t.remote_info == nil then
                 vim.api.nvim_win_set_buf(t.win_id, c.buffer)
                 t.buf = c.buffer
+            else
+                t.buf = vim.fn.bufnr('%')
             end
         else
             t.buf = vim.api.nvim_create_buf(true, true)
@@ -631,9 +633,10 @@ M.recover_from_panic = function()
 
     M.rebuild_layout(h)
     core.resume()
-    for _, t in pairs(vim.tbl_filter(function(t2) return t2.remote_info ~= nil end, core.get_terminals())) do
-        EV.trigger_event('RemoteDisconnected', {t})
-    end
+    -- core.cleanup_terminals_with_bad_layout()
+    -- for _, t in pairs(vim.tbl_filter(function(t2) return t2.remote_info ~= nil end, core.get_terminals())) do
+    --     EV.trigger_event('RemoteDisconnected', {t})
+    -- end
     EV.trigger_event('LayoutRecovered', {})
     ERRORS.warning('There has been an issue with your layout.\nYour session has been emergency saved at ' .. sess .. '.\nIf your layout is still broken, try to recover from the saved session.\nWe are sorry for the inconvenience')
 end
