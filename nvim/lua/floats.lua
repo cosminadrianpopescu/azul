@@ -87,7 +87,7 @@ M.open_float = function(options)
         options = {}
     end
     current_group = options.group or funcs.current_float_group()
-    if #funcs.get_all_floats(options.group, core.get_terminals()) > 0 and funcs.are_floats_hidden(options.group, core.get_terminals()) then
+    if not is_suspended and #funcs.get_all_floats(options.group, core.get_terminals()) > 0 and funcs.are_floats_hidden(options.group, core.get_terminals()) then
         M.show_floats(options.group)
     end
     local buf = vim.api.nvim_create_buf(true, false)
@@ -105,15 +105,17 @@ M.open_float = function(options)
     end
     vim.api.nvim_open_win(buf, true, _opts)
     core.open(buf, options)
-    ERRORS.defer(1, function()
-        local opened = core.term_by_buf_id(buf)
-        EV.trigger_event('FloatOpened', {opened})
-        if options.to_restore ~= nil then
-            opened.vesper_placeholders = options.to_restore.vesper_placeholders or {}
-            opened.overriden_title = options.to_restore.overriden_title
-        end
-        core.update_titles()
-    end)
+    if not suspended then
+        ERRORS.defer(1, function()
+            local opened = core.term_by_buf_id(buf)
+            EV.trigger_event('FloatOpened', {opened})
+            if options.to_restore ~= nil then
+                opened.vesper_placeholders = options.to_restore.vesper_placeholders or {}
+                opened.overriden_title = options.to_restore.overriden_title
+            end
+            core.update_titles()
+        end)
+    end
 end
 
 --- Hides all the floats

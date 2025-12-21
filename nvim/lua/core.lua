@@ -285,7 +285,7 @@ end
 
 local OnTermClose = function(ev)
     if is_suspended then
-        table.insert(closed_during_suspend, ev)
+        -- table.insert(closed_during_suspend, ev)
         return
     end
     local t = funcs.find(function(t) return t.buf == ev.buf end, terminals)

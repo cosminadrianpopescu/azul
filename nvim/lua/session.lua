@@ -290,7 +290,6 @@ end
 
 L.rebuild_tab_history = function(histories, i, j)
     if (i > #histories.history) then
-        restore_ids(histories.vesper_placeholders or histories.vesper_title_placeholders, histories.title_overrides)
         return
     end
 
@@ -304,7 +303,10 @@ L.rebuild_tab_history = function(histories, i, j)
     local set_buf = function(panel_id, operation)
         local t = funcs.term_by_panel_id(panel_id, core.get_terminals())
         if t == nil or not is_still_valid(t) then
-            return
+            t = {}
+            t.panel_id = panel_id
+            t.cwd = get_cwd(panel_id, histories)
+            table.insert(core.get_terminals(), t)
         end
         if (j ~= 1 or i ~= 1) and operation == 'create' then
             vim.api.nvim_command('$tabnew')
@@ -312,12 +314,22 @@ L.rebuild_tab_history = function(histories, i, j)
         t.tab_id = vim.api.nvim_list_tabpages()[vim.fn.tabpagenr()]
         TABS.set_var(0, 'vesper_tab_id', t.tab_id)
         t.win_id = vim.fn.win_getid()
-        local c = vim.api.nvim_get_chan_info(t.term_id)
-        if t.remote_info == nil then
-            vim.api.nvim_win_set_buf(t.win_id, c.buffer)
-            t.buf = c.buffer
-        end
         restore_values(t, histories.customs)
+        if t.term_id ~= nil then
+            local c = vim.api.nvim_get_chan_info(t.term_id)
+            if t.remote_info == nil then
+                vim.api.nvim_win_set_buf(t.win_id, c.buffer)
+                t.buf = c.buffer
+            end
+        else
+            t.buf = vim.api.nvim_create_buf(true, true)
+            if t.win_id ~= nil then
+                vim.api.nvim_win_set_buf(t.win_id, t.buf)
+            end
+            if t.remote_info == nil then
+                core.open(t.buf)
+            end
+        end
         return t
     end
 
@@ -340,6 +352,8 @@ L.rebuild_tab_history = function(histories, i, j)
         core.select_pane(t.buf)
         core.create_split(t, h.params[1])
         H.add_to_history(t, 'split', {h.params[1]}, t.tab_id)
+        local history = H.get_history()
+        history[#history].to = h.to
         t = set_buf(h.to, h.operation)
         L.rebuild_tab_history(histories, i, j + 1)
         return
@@ -476,10 +490,27 @@ local get_layout_table = function(refresh)
     }
 end
 
-M.rebuild_layout = function(h)
+L.rebuild_floats_history = function(histories, idx)
+    if idx > #histories.floats then
+        return
+    end
+
+    local f = histories.floats[idx]
+
+    core.set_global_panel_id(f.panel_id)
+    F.open_float({group = f.group, win_config = f.win_config, cwd = get_cwd(f.panel_id, histories)})
+
+    L.rebuild_floats_history(histories, idx + 1)
+end
+
+M.rebuild_layout = function(h, with_floats)
     core.stop_updating_titles()
     H.reset_history()
     L.rebuild_tab_history(h, 1, 1)
+    if with_floats == true then
+        L.rebuild_floats_history(h, 1)
+    end
+    restore_ids(h.vesper_placeholders or h.vesper_title_placeholders, h.title_overrides)
     core.start_updating_titles()
 end
 
