@@ -14,7 +14,6 @@ local is_user_editing = false
 local is_vesper_started = false
 
 local updating_titles = true
-local vesper_started = false
 local last_access = 0
 local dead_terminals = {}
 local closed_during_suspend = {}
@@ -551,6 +550,7 @@ cmd('TermOpen',{
     pattern = "*", callback = function(ev)
         ERRORS.try_execute(function()
             if not is_vesper_started then
+                is_vesper_started = true
                 EV.trigger_event('VesperStarted')
             end
             if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
@@ -1413,10 +1413,6 @@ end
 M.find_key_map = function(m, ls)
     return funcs.find(function(_m) return _m.m == m and funcs.compare_shortcuts(_m.ls, ls) end, mode_mappings)
 end
-
-EV.persistent_on({'VesperStarted', 'LayoutRestored'}, function()
-    is_vesper_started = true
-end)
 
 EV.persistent_on('PaneChanged', function(args)
     local t = args[1]

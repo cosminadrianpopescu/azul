@@ -5,6 +5,7 @@ local vesper = require('vesper')
 local funcs = require('functions')
 local options = require('options')
 local ERRORS = require('error_handling')
+local EV = require('events')
 
 local test_bug1 = function()
     local file = base_path .. '/splits.log'
@@ -17,7 +18,15 @@ local test_bug1 = function()
     end)
 end
 
-local main_t = vesper.get_current_terminal()
+local main_t
+
+EV.persistent_on('TerminalAdded', function()
+    if main_t ~= nil then
+        return
+    end
+    main_t = vesper.get_current_terminal()
+end)
+
 local x = t.action_shortcut('split_down', 's') .. ' '
 local s = t.action_shortcut('enter_mode', nil, 's') .. ' ' .. t.action_shortcut('split_right', 's') .. ' ' .. x .. x .. x .. '<cr>'
 t.wait_events({TabTitleChanged = 1}, function()

@@ -1,9 +1,11 @@
-import { writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { test } from "./test";
 
 const DEFAULT_OPTIONS = {show_welcome_message: false}
 
 const get_options = (opts: Object) => Object.assign({}, DEFAULT_OPTIONS, (opts || {}))
+
+const get_config_path = (base_path: string) => `${base_path}/config/config.ini`;
 
 const build_config = (base_path: string, options: {[key: string]: any}) => {
         let config = `
@@ -23,7 +25,7 @@ ${Object.keys(ss).map(k => `${k} = ${ss[k]}`).join("\n")}
 `
         }
         console.log(config)
-        writeFileSync(`${base_path}/config/config.ini`, config);
+        writeFileSync(get_config_path(base_path), config);
 }
 
 function test_factory(test_case: string, options: {[key: string]: any} = {}, which = test) {
@@ -108,6 +110,15 @@ const do_undo = () => {
     expand_test('undo');
 }
 
+const do_panic_test = (callback: (content: string) => string, options: {[key: string]: any}) => {
+    test('panic-handler', (base_path: string) => {
+        build_config(base_path, options);
+        const content = callback(readFileSync(get_config_path(base_path)).toString());
+        writeFileSync(get_config_path(base_path), content);
+        return {};
+    });
+}
+
 // do_floats();
 // do_splits();
 // do_modes();
@@ -115,4 +126,5 @@ const do_undo = () => {
 // do_tab_titles();
 // do_misc();
 // do_undo();
-do_layout();
+do_panic_test(content => content, {shell: 'abc'});
+// do_layout();

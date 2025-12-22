@@ -6,7 +6,6 @@ local ERRORS = require('error_handling')
 
 local win_id = nil
 local win_buffer = nil
-local ns_id = nil
 local mode_win_id = nil
 local position_timer = nil
 
@@ -23,25 +22,17 @@ local close_window = function()
         position_timer = nil
     end
     if win_id ~= nil then
-        if not funcs.safe_close_window(win_id) then
+        if vim.api.nvim_win_is_valid(win_id) and not funcs.safe_close_window(win_id) then
             print("There was an error closing the window with id " .. win_id .. ". You'll probably need to close it manually.")
         end
     end
     win_id = nil
     if win_buffer ~= nil then
-        if not funcs.safe_buf_delete(win_buffer) then
+        if vim.api.nvim_buf_is_valid(win_buffer) and not funcs.safe_buf_delete(win_buffer) then
             print("There was an error removing the buffer " .. vim.inspect(win_buffer) .. ". You'll probably need to remove it manually.")
         end
     end
     win_buffer = nil
-
-    if ns_id ~= nil then
-        local safe, _ = pcall(function() vim.on_key(nil, ns_id) end)
-        if not safe then
-            print("There was an error closing the cheatsheet window")
-        end
-    end
-    ns_id = nil
 end
 
 local close_mode_window = function()

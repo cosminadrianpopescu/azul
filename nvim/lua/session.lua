@@ -11,7 +11,6 @@ local options = require('options')
 
 local M = {}
 local L = {}
-local current_in_saved_layout = nil
 local can_save_layout = true
 
 local term_by_vesper_win_id = function(id)
@@ -84,31 +83,6 @@ local session_exists = function()
     return FILES.exists(session_save_name())
 end
 
-L.restore_remotes = function()
-    local remotes = vim.tbl_filter(function(t) return t.remote_info ~= nil end, core.get_terminals())
-    for _, r in ipairs(remotes) do
-        vim.fn.jobstop(r.term_id)
-    end
-    core.stop_updating_titles()
-    core.update_titles()
-    can_save_layout = true
-    EV.trigger_event("LayoutRestored")
-    if current_in_saved_layout then
-        if current_in_saved_layout.tab_page ~= nil then
-            core.select_tab(current_in_saved_layout.tab_page)
-        end
-        local t = term_by_vesper_win_id(current_in_saved_layout.vesper_win_id)
-        if not funcs.is_float(t) then
-            F.hide_floats()
-        end
-        ERRORS.defer(1, function()
-            core.select_pane(t.buf)
-            current_in_saved_layout = nil
-        end)
-    end
-    core.enter_mode('t')
-end
-
 local restore_ids = function(title_placeholders, title_overrides)
     core.set_global_panel_id(0)
     core.set_global_tab_id(0)
@@ -137,11 +111,6 @@ local restore_ids = function(title_placeholders, title_overrides)
     end
 end
 
-L.restore_ids = function(title_placeholders, title_overrides)
-    restore_ids(title_placeholders, title_overrides)
-    ERRORS.defer(1, L.restore_remotes)
-end
-
 local get_cwd = function(panel_id, histories)
     local c = histories.customs[panel_id .. ""]
     if c == nil then
@@ -149,139 +118,6 @@ local get_cwd = function(panel_id, histories)
     end
 
     return c.cwd
-end
-
-L.restore_floats = function(histories, idx, panel_id_wait, timeout)
-    if timeout > 100 then
-        core.stop_updating_titles()
-        ERRORS.throw("Trying to restore a session. Waiting for " .. panel_id_wait, nil)
-        return
-    end
-
-    if panel_id_wait ~= nil then
-        local t = funcs.term_by_panel_id(panel_id_wait, core.get_terminals())
-        if t == nil then
-            ERRORS.defer(10, function()
-                L.restore_floats(histories, idx, panel_id_wait, timeout + 1)
-            end)
-            return
-        end
-        post_restored(t, histories.customs, histories.callback)
-    end
-
-    if idx > #histories.floats then
-        L.restore_ids(histories.vesper_placeholders or histories.vesper_title_placeholders, histories.title_overrides)
-        return
-    end
-
-    local f = histories.floats[idx]
-
-    core.set_global_panel_id(f.panel_id)
-    F.open_float({group = f.group, win_config = f.win_config, to_restore = f, cwd = get_cwd(f.panel_id, histories)})
-
-    L.restore_floats(histories, idx + 1, f.panel_id, 0)
-end
-
-L.restore_tab_history = function(histories, i, j, panel_id_wait, timeout)
-    if timeout > 100 then
-        core.stop_updating_titles()
-        ERRORS.throw("Timeout trying to restore the session. Waiting for " .. panel_id_wait, i .. ", " .. j)
-        return
-    end
-
-    if panel_id_wait ~= nil then
-        local t = funcs.term_by_panel_id(panel_id_wait, core.get_terminals())
-        if t == nil then
-            ERRORS.defer(10, function()
-                L.restore_tab_history(histories, i, j, panel_id_wait, timeout + 1)
-            end)
-            return
-        end
-        post_restored(t, histories.customs, histories.callback)
-    end
-
-    if (i > #histories.history) then
-        L.restore_floats(histories, 1, nil, 0)
-        return
-    end
-
-    if (j > #histories.history[i]) then
-        L.restore_tab_history(histories, i + 1, 1, nil, 0)
-        return
-    end
-
-    local h = histories.history[i][j]
-
-    if h.operation == "create" then
-        core.set_global_panel_id(h.to)
-        core.set_global_tab_id(h.tab_id)
-        local buf = nil
-        if j == 1 and i == 1 then
-            buf = vim.fn.bufnr('%')
-            TABS.set_var(0, 'vesper_tab_id', core.get_global_tab_id())
-        end
-        core.open(buf, {cwd = get_cwd(h.to, histories)})
-        ERRORS.defer(10, function()
-            L.restore_tab_history(histories, i, j + 1, h.to, 0)
-        end)
-        return
-    end
-
-    if h.operation == "split" then
-        core.set_global_panel_id(h.to)
-        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
-        if t == nil then
-            ERRORS.throw("Error found loading the layout file", h)
-            return
-        end
-        core.select_pane(t.buf)
-        core.split(h.params[1], nil, get_cwd(h.to, histories))
-        ERRORS.defer(10, function()
-            L.restore_tab_history(histories, i, j + 1, h.to, 0)
-        end)
-        return
-    end
-
-    if h.operation == "close" then
-        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
-        if t == nil then
-            ERRORS.throw("Error found loading the layout file", h)
-            return
-        end
-        vim.fn.chanclose(t.term_id)
-        ERRORS.defer(10, function()
-            L.restore_tab_history(histories, i, j + 1, nil, 0)
-        end)
-        return
-    end
-
-    if h.operation == "resize" then
-        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
-        if t == nil then
-            ERRORS.throw("Error found loading the layout file", h)
-            return
-        end
-        core.select_pane(t.buf)
-        core.resize(h.params[1])
-        ERRORS.defer(10, function()
-            L.restore_tab_history(histories, i, j + 1, nil, 0)
-        end)
-        return
-    end
-
-    if h.operation == "rotate_panel" then
-        local t = funcs.term_by_panel_id(h.from, core.get_terminals())
-        if t == nil then
-            ERRORS.throw("Error found loading the layout file", h)
-            return
-        end
-        core.select_pane(t.buf)
-        core.rotate_panel()
-        ERRORS.defer(10, function()
-            L.restore_tab_history(histories, i, j + 1, nil, 0)
-        end)
-        return
-    end
 end
 
 local is_still_valid = function(t)
@@ -451,7 +287,7 @@ end
 ---                             The t is the just opened terminal
 M.restore_layout = function(where, callback)
     if #core.get_terminals() > 1 then
-        ERRORS.throw("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
+        ERRORS.warning("You have already several windows opened. You can only call this function when you have no floats and only one tab opened", nil)
         return
     end
     if not FILES.exists(where) then
@@ -489,7 +325,6 @@ M.restore_layout = function(where, callback)
         vim.o.lines = h.geometry.lines
     end
     EV.trigger_event('LayoutRestoringStarted')
-    current_in_saved_layout = h.current
 
     restore_layout(h, true, true)
     EV.trigger_event("LayoutRestored")
@@ -515,8 +350,6 @@ M.restore_layout = function(where, callback)
         end)
     end
     core.enter_mode('t')
-
-    -- L.restore_tab_history(h, 1, 1, nil, 0)
 end
 
 EV.persistent_on('ExitVesper', function()

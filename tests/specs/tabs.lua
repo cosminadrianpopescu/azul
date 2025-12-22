@@ -3,6 +3,7 @@ local vesper = require('vesper')
 local funcs = require('functions')
 local options = require('options')
 local ERRORS = require('error_handling')
+local EV = require('events')
 
 -- This test case has some timeouts of 100 ms, because we need to give
 -- time to bash to adjust. If this test fails and it should not, try to 
@@ -25,7 +26,9 @@ local first_tab_shortcut = function()
     return pref .. ' ' .. t.action_shortcut('tab_select' .. ((options.workflow == 'zellij' and '_previous') or ''), (options.workflow == 'zellij' and 'T') or nil, (options.workflow ~= 'zellij' and '1') or nil)
 end
 
-t.assert(#vesper.get_terminals() == 1, "Initially, there should be one tab created")
+EV.single_shot('TerminalAdded', function()
+    t.assert(#vesper.get_terminals() == 1, "Initially, there should be one tab created")
+end)
 t.wait_events({TabTitleChanged = 1}, function()
     vesper.feedkeys('ls<cr>', 't')
     ERRORS.defer(TIMEOUT, function()

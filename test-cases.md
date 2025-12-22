@@ -32,3 +32,10 @@
 # Layout panic and restore
 
 * lots of tests to stress it.
+
+# Session error loading
+
+* create a session with an invalid shell
+* create a session with an invalid syntax
+* create a session with an invalid shortcut action or mode
+* they should all result in a panic and vesper closing

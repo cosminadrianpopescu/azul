@@ -8,16 +8,24 @@ local L = {}
 local TIMEOUT = 150
 
 L.close_all_panes = function(when_done)
-    if #vesper.get_terminals() == 1 then
-        when_done()
-        return
+    vesper.suspend()
+    -- Close all tabs
+    if #vim.api.nvim_list_tabpages() > 1 then
+        vim.api.nvim_command('tabonly')
+    end
+    -- Close all windows
+    if #vim.api.nvim_list_wins() > 1 then
+        vim.api.nvim_command('only')
     end
 
-    local term = vesper.get_current_terminal()
-    t.single_shot('PaneChanged', function()
-        L.close_all_panes(when_done)
-    end)
-    vim.fn.jobstop(term.term_id)
+    for i, t in pairs(vesper.get_terminals()) do
+        if i ~= #vesper.get_terminals() then
+            vim.fn.jobstop(t.term_id)
+        end
+    end
+
+    vesper.resume()
+    when_done()
 end
 
 local file = "test.layout"
