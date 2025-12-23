@@ -1,5 +1,6 @@
 local core = require('core')
 local ERRORS = require('error_handling')
+local funcs = require('functions')
 
 local safe_put_text_to_buffer = function(buf, row, col, txt, after, me)
     local safe, _ = pcall(function()
@@ -24,8 +25,12 @@ local function wininput(opts, on_confirm, win_opts)
 
     local prompt = opts.prompt or ""
     local default_text = opts.default or ""
+    local timer
 
     local deferred_callback = function(input)
+        if timer ~= nil then
+            vim.fn.timer_stop(timer)
+        end
         if win_id ~= nil then
             vim.api.nvim_win_close(win_id, true)
         end
@@ -33,6 +38,12 @@ local function wininput(opts, on_confirm, win_opts)
             on_confirm(input)
         end)
     end
+
+    timer = vim.fn.timer_start(100, function()
+        if win_id ~= nil and vim.api.nvim_win_is_valid(win_id) then
+            deferred_callback(nil)
+        end
+    end)
 
     vim.fn.prompt_setprompt(buf, '> ')
     vim.fn.prompt_setcallback(buf, deferred_callback)

@@ -20,6 +20,9 @@ M.set_var = function(id, key, value)
 end
 
 M.get_var = function(id, key)
+    if id == nil then
+        return nil
+    end
     local real_id = get_real_id(id)
     if tab_vars[real_id] == nil then
         return nil
