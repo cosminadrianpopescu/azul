@@ -402,6 +402,9 @@ L.rebuild_floats_history = function(histories, idx)
     local f = histories.floats[idx]
 
     core.set_global_panel_id(f.panel_id)
+    if f.win_config.zindex < 10 then
+        f.win_config.zindex = f.win_config.zindex + 10
+    end
     F.open_float({group = f.group, win_config = f.win_config, cwd = get_cwd(f.panel_id, histories)})
     local t = {}
     t.panel_id = f.panel_id

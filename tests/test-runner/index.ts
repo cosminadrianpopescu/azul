@@ -48,7 +48,7 @@ async function run_vesper(vesper_env = {}) {
         rmSync(sess_file);
     }
     const [code, result, err] = await wait_proc(`${base_path}/bin/vesper`, ['-a', UUID, '-c', `${base_path}/config`], {env: final_env});
-    console.log(`VESPER RAN ${code}, ${result}, ${err}`)
+    // console.log(`VESPER RAN ${code}, ${result}, ${err}`)
 }
 
 function init_test_env() {

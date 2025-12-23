@@ -25,7 +25,7 @@ local rebuild_zindex_floats = function()
     local floats = funcs.get_visible_floatings(core.get_terminals())
     table.sort(floats, function(a, b) return a.last_access < b.last_access end)
     for i, f in ipairs(floats) do
-        f.win_config.zindex = i
+        f.win_config.zindex = i + 10
         if f.win_id ~= nil and vim.api.nvim_win_is_valid(f.win_id) then
             vim.api.nvim_win_set_config(f.win_id, f.win_config)
         end
@@ -98,7 +98,7 @@ M.open_float = function(options)
     local y = (vim.o.lines - h) / 2
     local _opts = {
         width = math.floor(w), height = math.floor(h), col = math.floor(x), row = math.floor(y),
-        focusable = true, zindex = 1, border = 'rounded', title = '...', relative = 'editor', style = 'minimal'
+        focusable = true, zindex = 10, border = 'rounded', title = '...', relative = 'editor', style = 'minimal'
     }
     for k, v in pairs(options.win_config or {}) do
         _opts[k] = v
@@ -247,9 +247,9 @@ M.toggle_fullscreen = function(t)
     EV.trigger_event('FullscreenToggled')
 end
 
-EV.on({'PaneClosed', 'PaneChanged'}, rebuild_zindex_floats)
+EV.persistent_on({'PaneClosed', 'PaneChanged', 'FloatOpened'}, rebuild_zindex_floats)
 
-EV.on('TerminalAdded', function(args)
+EV.persistent_on('TerminalAdded', function(args)
     args[1].group = current_group
     local added = core.refresh_buf(args[1].buf)
     local crt = core.get_current_terminal()

@@ -119,12 +119,12 @@ const do_panic_test = (callback: (content: string) => string, options: {[key: st
     });
 }
 
-// do_floats();
-// do_splits();
-// do_modes();
-// do_tabs();
-// do_tab_titles();
-// do_misc();
-// do_undo();
-do_panic_test(content => content, {shell: 'abc'});
-// do_layout();
+do_floats();
+do_splits();
+do_modes();
+do_tabs();
+do_tab_titles();
+do_misc();
+do_undo();
+// do_panic_test(content => content, {shell: 'abc'});
+do_layout();

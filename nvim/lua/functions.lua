@@ -219,7 +219,7 @@ local is_autosave = function()
 end
 
 local is_float = function(t)
-    return t and t.win_config and t.win_config['zindex'] ~= nil
+    return t and t.win_config and t.win_config['zindex'] ~= nil and t.win_config.zindex >= 10
 end
 
 local reverse = function(_list)
