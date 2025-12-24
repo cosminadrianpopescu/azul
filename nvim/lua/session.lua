@@ -369,6 +369,7 @@ M.restore_layout = function(where, callback)
     end, function(err)
         ERRORS.warning('There was an error trying to restore the session ' .. where .. ". Started with a clean session. The autosave has been disabled")
         options.autosave = 'never'
+        options.show_welcome_message = false
         close_everything(true)
         core.open(vim.fn.bufnr('%'))
         core.start_updating_titles()

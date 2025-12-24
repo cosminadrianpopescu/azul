@@ -73,7 +73,6 @@ M.throw = function(msg, stack)
     if stack ~= nil then
         _m = _m .. " at " .. vim.inspect(stack)
     end
-    -- The test environment will disable the throwing of errors
     for _, h in pairs(error_handlers) do
         M.try_execute(function()
             h(_m)

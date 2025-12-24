@@ -120,7 +120,7 @@ end)
 
 cmd({'TabEnter', 'WinResized', 'VimResized'}, {
     pattern = "*", callback = function()
-        if win_id == nil then
+        if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
             return
         end
 
