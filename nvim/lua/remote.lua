@@ -221,7 +221,6 @@ cmd({'TabEnter', 'WinResized', 'VimResized'}, {
 })
 
 local remote_disconnected = function(t)
-    -- BUGFIX
     if t.win_id ~= nil and not vim.api.nvim_win_is_valid(t.win_id) then
         ERRORS.warning("The buffer with the connection id " .. t.remote_info.uid .. " has been closed due to an error in vesper layout system.")
         core.do_remove_term_buf(t.buf)

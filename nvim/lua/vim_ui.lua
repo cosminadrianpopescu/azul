@@ -31,7 +31,7 @@ local function wininput(opts, on_confirm, win_opts)
         if timer ~= nil then
             vim.fn.timer_stop(timer)
         end
-        if win_id ~= nil then
+        if win_id ~= nil and vim.api.nvim_win_is_valid(win_id) then
             vim.api.nvim_win_close(win_id, true)
         end
         ERRORS.defer(1, function()
@@ -40,10 +40,10 @@ local function wininput(opts, on_confirm, win_opts)
     end
 
     timer = vim.fn.timer_start(100, function()
-        if win_id ~= nil and vim.api.nvim_win_is_valid(win_id) then
+        if win_id ~= nil and not vim.api.nvim_win_is_valid(win_id) then
             deferred_callback(nil)
         end
-    end)
+    end, {['repeat'] = -1})
 
     vim.fn.prompt_setprompt(buf, '> ')
     vim.fn.prompt_setcallback(buf, deferred_callback)

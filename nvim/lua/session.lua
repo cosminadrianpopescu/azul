@@ -21,6 +21,33 @@ local histories_by_tab_id = function(tab_id, history)
     return vim.tbl_filter(function(h) return h.tab_id == tab_id end, history)
 end
 
+local close_everything = function(include_jobs)
+    core.suspend()
+    -- Close all tabs
+    if #vim.api.nvim_list_tabpages() > 1 then
+        vim.api.nvim_command('tabonly')
+    end
+    local wins = vim.api.nvim_tabpage_list_wins(vim.api.nvim_list_tabpages()[1])
+    -- Close all windows
+    if #vim.api.nvim_list_wins() > 1 then
+        vim.api.nvim_set_current_win(wins[1])
+        vim.api.nvim_command('only')
+    end
+
+    if include_jobs == true then
+        for _, c in pairs(vim.tbl_filter(function(c2) return c2.mode == 'terminal' end, vim.api.nvim_list_chans())) do
+            vim.fn.jobstop(c.id)
+        end
+        while #core.get_terminals() > 0 do
+            local t = core.get_terminals()[1]
+            core.do_remove_term_buf(t.buf)
+        end
+    end
+    local buf = vim.api.nvim_create_buf(true, true)
+    vim.api.nvim_win_set_buf(wins[1], buf)
+    core.resume()
+end
+
 local get_custom_values = function()
     local result = {}
     for _, t in ipairs(core.get_terminals()) do
@@ -248,22 +275,10 @@ L.rebuild_tab_history = function(histories, i, j)
 end
 
 local restore_layout = function(h, with_floats, with_post_restored)
+    close_everything()
+
     -- Suspend vesper operations
     core.suspend()
-
-    -- while #core.get_terminals() > 0 do
-    --     local t = core.get_terminals()[1]
-    --     core.do_remove_term_buf(t.buf)
-    -- end
-
-    -- Close all tabs
-    if #vim.api.nvim_list_tabpages() > 1 then
-        vim.api.nvim_command('tabonly')
-    end
-    -- Close all windows
-    if #vim.api.nvim_list_wins() > 1 then
-        vim.api.nvim_command('only')
-    end
 
     M.rebuild_layout(h, with_floats)
     for _, t in pairs(core.get_terminals()) do
@@ -307,49 +322,58 @@ M.restore_layout = function(where, callback)
     else
         h = table.load(where)
     end
-    h.callback = callback
-    core.stop_updating_titles()
-    TABS.del_var(0, 'vesper_placeholders')
-    local t = core.get_current_terminal()
-    if t ~= nil then
-        local old_buf = t.buf
-        t.buf = vim.api.nvim_create_buf(true, false)
-        vim.api.nvim_win_set_buf(t.win_id, t.buf)
-        vim.fn.jobstop(t.term_id)
-        vim.api.nvim_buf_delete(old_buf, {force = true})
-        core.do_remove_term_buf(t.buf)
-    end
-    H.reset_history()
-    if h.geometry ~= nil then
-        vim.o.columns = h.geometry.columns
-        vim.o.lines = h.geometry.lines
-    end
-    EV.trigger_event('LayoutRestoringStarted')
+    ERRORS.try_execute(function()
+        h.callback = callback
+        core.stop_updating_titles()
+        TABS.del_var(0, 'vesper_placeholders')
+        local t = core.get_current_terminal()
+        if t ~= nil then
+            local old_buf = t.buf
+            t.buf = vim.api.nvim_create_buf(true, false)
+            vim.api.nvim_win_set_buf(t.win_id, t.buf)
+            vim.fn.jobstop(t.term_id)
+            vim.api.nvim_buf_delete(old_buf, {force = true})
+            core.do_remove_term_buf(t.buf)
+        end
+        H.reset_history()
+        if h.geometry ~= nil then
+            vim.o.columns = h.geometry.columns
+            vim.o.lines = h.geometry.lines
+        end
+        EV.trigger_event('LayoutRestoringStarted')
 
-    restore_layout(h, true, true)
-    EV.trigger_event("LayoutRestored")
-    core.start_updating_titles()
-    core.update_titles()
-    can_save_layout = true
-    for _, t in pairs(core.get_terminals()) do
-        t.is_current = false
-        t.current_selected_pane = false
-    end
-    if h.current then
-        if h.current.tab_page ~= nil then
-            core.select_tab(h.current.tab_page)
+        restore_layout(h, true, true)
+        EV.trigger_event("LayoutRestored")
+        core.start_updating_titles()
+        core.update_titles()
+        can_save_layout = true
+        for _, t in pairs(core.get_terminals()) do
+            t.is_current = false
+            t.current_selected_pane = false
         end
-        local t = term_by_vesper_win_id(h.current.vesper_win_id)
-        t.is_current = true
-        t.current_selected_pane = true
-        if not funcs.is_float(t) then
-            F.hide_floats()
+        if h.current then
+            if h.current.tab_page ~= nil then
+                core.select_tab(h.current.tab_page)
+            end
+            local t = term_by_vesper_win_id(h.current.vesper_win_id)
+            t.is_current = true
+            t.current_selected_pane = true
+            if not funcs.is_float(t) then
+                F.hide_floats()
+            end
+            ERRORS.defer(1, function()
+                core.select_pane(t.buf)
+            end)
         end
-        ERRORS.defer(1, function()
-            core.select_pane(t.buf)
-        end)
-    end
-    core.enter_mode('t')
+        core.enter_mode('t')
+    end, function(err)
+        ERRORS.warning('There was an error trying to restore the session ' .. where .. ". Started with a clean session. The autosave has been disabled")
+        options.autosave = 'never'
+        close_everything(true)
+        core.open(vim.fn.bufnr('%'))
+        core.start_updating_titles()
+        core.update_titles()
+    end)
 end
 
 EV.persistent_on('ExitVesper', function()
