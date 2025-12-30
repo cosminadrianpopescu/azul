@@ -9,13 +9,20 @@ local options = require('options')
 
 local M = {}
 
+--- @type boolean Whether vesper operations are suspended
 local is_suspended = false
+--- @type boolean Whether user is currently editing input
 local is_user_editing = false
+--- @type boolean Whether vesper has been started
 local is_vesper_started = false
 
+--- @type boolean Whether title updates are enabled
 local updating_titles = true
+--- @type number Counter for terminal access order
 local last_access = 0
+--- @type table[] Terminals that closed but need processing
 local dead_terminals = {}
+--- @type table[] Terminals closed during suspension
 local closed_during_suspend = {}
 
 --- @class remote_info
@@ -43,24 +50,38 @@ local closed_during_suspend = {}
 --- @field remote_info remote_info The terminal's info about the remote connection
 --- @field group string The float current group, if the terminal is a float
 --- @field is_scroll boolean Set to true if a remote pane is in scroll mode
+
+--- @type terminals[] List of all active terminals
 local terminals = {}
+--- @type number Global tab ID counter
 local tab_id = 0
+--- @type number Global vesper window ID counter
 local vesper_win_id = 0
+--- @type table<number, {out: string, err: string}> Channel output buffers
 local chan_buffers = {}
+--- @type number Global panel ID counter
 local panel_id = 0
 
+--- @type table<string, {location: string, buffer: number, lines: string[], autocmd: number}> Active logging sessions
 local loggers = {}
 
+--- @type string|nil Current vesper mode
 local mode = nil
-local mode_mappings = {
-}
+--- @type table[] Key mappings configuration
+local mode_mappings = {}
+--- @type string Current workflow type
 local workflow = 'vesper'
+--- @type string|nil Modifier key
 local mod = nil
+--- @type number|nil Saved laststatus value
 local global_last_status = nil
+--- @type boolean Whether to quit when last terminal closes
 local quit_on_last = true
 
+--- @type table Local utility functions
 local L = {}
 
+--- Exits vesper by stopping all terminal channels
 local do_exit = function()
     M.suspend()
     local channels = vim.tbl_filter(function(c) return c.mode == 'terminal' end, vim.api.nvim_list_chans())
@@ -70,10 +91,14 @@ local do_exit = function()
     EV.trigger_event('ExitVesper')
 end
 
+--- Removes a terminal from the terminals list by buffer ID
+--- @param buf number Buffer ID to remove
 M.do_remove_term_buf = function(buf)
     terminals = vim.tbl_filter(function(t) return t.buf ~= buf end, terminals)
 end
 
+--- Removes a terminal buffer and quits if it's the last one
+--- @param buf number Buffer ID to remove
 local remove_term_buf = function(buf)
     M.do_remove_term_buf(buf)
     if quit_on_last and (#terminals == 0 or #vim.tbl_filter(function(t) return funcs.is_float(t) == false end, terminals) == 0) then
@@ -82,6 +107,7 @@ local remove_term_buf = function(buf)
     end
 end
 
+--- Debug function to inspect internal state
 M.debug = function()
     -- print(vim.inspect(vim.tbl_filter(function(t) return funcs.is_float(t) end, M.get_terminals())))
     -- print(vim.inspect(vim.tbl_map(function(m) return m.ls end, vim.tbl_filter(function(x) return x.m == ev end, mode_mappings))))
@@ -98,6 +124,8 @@ M.debug = function()
     -- print("HISTORY IS " .. vim.inspect(history))
 end
 
+--- Refreshes window configuration for a terminal
+--- @param t terminals Terminal to refresh
 M.refresh_win_config = function(t)
     local old_config = t.win_config
     t.win_config = vim.api.nvim_win_get_config(t.win_id)
@@ -116,6 +144,10 @@ M.refresh_win_config = function(t)
     end
 end
 
+--- Refreshes buffer information and optionally window ID
+--- @param buf number Buffer number
+--- @param with_win_id boolean|nil Whether to refresh window ID (default true)
+--- @return terminals|nil Terminal object or nil if not found
 M.refresh_buf = function(buf, with_win_id)
     local t = funcs.find(function(t) return funcs.get_real_buffer(t) == buf end, terminals)
     if t == nil then
@@ -128,6 +160,8 @@ M.refresh_buf = function(buf, with_win_id)
     return t
 end
 
+--- Selects the current pane in a tab
+--- @param tab_id number The tab ID
 M.select_current_pane = function(tab_id)
     local t = funcs.find(function(t) return t.current_selected_pane end, L.terms_by_tab_id(tab_id))
     if t == nil then
@@ -136,6 +170,8 @@ M.select_current_pane = function(tab_id)
     vim.api.nvim_command(vim.fn.bufwinnr(t.buf) .. "wincmd w")
 end
 
+--- Sets the current selected panel for a tab
+--- @param tab_id number The tab ID
 local set_current_panel = function(tab_id)
     for _, t in ipairs(L.terms_by_tab_id(tab_id)) do
         t.current_selected_pane = false
@@ -314,6 +350,8 @@ local OnTermClose = function(ev)
     end)
 end
 
+--- Refreshes tab page information for a terminal
+--- @param t terminals Terminal to refresh
 M.refresh_tab_page = function(t)
     if funcs.is_float(t) then
         return
@@ -705,6 +743,9 @@ cmd({'ModeChanged'}, {
     end
 })
 
+--- Feeds keys to neovim
+--- @param what string The keys to feed
+--- @param mode string The mode in which to feed the keys
 M.feedkeys = function(what, mode)
     local codes = vim.api.nvim_replace_termcodes(what, true, false, true)
     vim.api.nvim_feedkeys(codes, mode, false)
@@ -737,18 +778,20 @@ local do_set_key_map = function(map_mode, ls, rs, options)
     end
 end
 
+--- Removes a key mapping
+--- @param m string The mode
+--- @param ls string The left side of the mapping
 M.remove_key_map = function(m, ls)
     mode_mappings = vim.tbl_filter(function(_m) return _m.m ~= m or not funcs.compare_shortcuts(_m.ls, ls) end, mode_mappings)
 end
 
 --- Sets a new keymap
----
----@param mode string|table The mode for which to set the shortcut
----@param ls string The left side of the mapping
----@param rs string the right side of the mapping
----@param options table the options of the mapping
----
----@see vim.api.nvim_set_keymap
+--- Sets a new keymap
+--- @param mode string|table The mode for which to set the shortcut
+--- @param ls string The left side of the mapping
+--- @param rs string the right side of the mapping
+--- @param options table the options of the mapping
+--- @see vim.api.nvim_set_keymap
 M.set_key_map = function(mode, ls, rs, options)
     local modes = mode
     if type(mode) == "string" then
@@ -766,6 +809,8 @@ M.get_terminals = function()
     return terminals
 end
 
+--- Selects a pane by buffer ID
+--- @param buf number Buffer ID to select
 M.select_pane = function(buf)
     vim.api.nvim_command(vim.fn.bufwinnr(buf) .. "wincmd w")
 end
@@ -782,6 +827,9 @@ local get_row_or_col = function(t, check)
     return result
 end
 
+--- Selects the next pane in the given direction
+--- @param dir string Direction (left, right, up, down)
+--- @param group string|nil Float group
 M.select_next_pane = function(dir, group)
     if funcs.are_floats_hidden(group, terminals) then
         local which = (dir == "left" and 'h') or (dir == 'right' and 'l') or (dir == 'up' and 'k') or (dir == 'down' and 'j') or ''
@@ -831,6 +879,8 @@ M.select_next_pane = function(dir, group)
     end)
 end
 
+--- Returns the current mode
+--- @return string Current mode
 M.current_mode = function()
     local t = M.get_current_terminal()
     if t ~= nil and (mode == 'i' or mode == 'n' or mode == 'a') and funcs.remote_state(t) == 'disconnected' then
@@ -839,6 +889,10 @@ M.current_mode = function()
     return mode
 end
 
+--- Sends data to a buffer's terminal
+--- @param buf number Buffer ID
+--- @param data string Data to send
+--- @param escape boolean Whether to escape the data
 M.send_to_buf = function(buf, data, escape)
     local t = funcs.find(function(t) return t.buf == buf end, terminals)
     if t == nil then
@@ -852,11 +906,17 @@ M.send_to_buf = function(buf, data, escape)
     vim.api.nvim_chan_send(t.term_id, _data)
 end
 
+--- Sends data to the current terminal
+--- @param data string Data to send
+--- @param escape boolean Whether to escape the data
 M.send_to_current = function(data, escape)
     local t = M.get_current_terminal()
     M.send_to_buf(t.buf, data, escape)
 end
 
+--- Creates a split window
+--- @param t terminals Terminal context
+--- @param dir string Direction (left, right, up, down)
 M.create_split = function(t, dir)
     local cmd = 'new'
     if dir == 'left' or dir == 'right' then
@@ -879,6 +939,10 @@ M.create_split = function(t, dir)
     vim.o.splitbelow = splitbelow
 end
 
+--- Splits the current pane in the given direction
+--- @param dir string Direction (left, right, up, down)
+--- @param remote_command string|nil Remote command to execute
+--- @param cwd string|nil Current working directory
 M.split = function(dir, remote_command, cwd)
     local t = M.get_current_terminal()
     if funcs.is_float(t) then
@@ -893,6 +957,7 @@ M.split = function(dir, remote_command, cwd)
     end)
 end
 
+--- Redraws the terminal
 M.redraw = function()
     local lines = vim.o.lines
     vim.api.nvim_command('set lines=' .. (lines - 1))
@@ -901,15 +966,20 @@ M.redraw = function()
     end)
 end
 
+--- Sets the workflow and modifier
+--- @param w string Workflow type
+--- @param m string|nil Modifier key
 M.set_workflow = function(w, m)
     mod = m or '<C-s>'
     workflow = w
 end
 
+--- Suspends vesper operations
 M.suspend = function()
     is_suspended = true
 end
 
+--- Resumes vesper operations
 M.resume = function()
     is_suspended = false
     for _, ev in ipairs(closed_during_suspend) do
@@ -918,6 +988,8 @@ M.resume = function()
     closed_during_suspend = {}
 end
 
+--- Resizes a pane in the given direction
+--- @param direction string Direction to resize (left, right, up, down)
 M.resize = function(direction)
     local t = M.get_current_terminal()
     if not is_suspended then
@@ -939,6 +1011,9 @@ M.disconnect = function()
     vim.api.nvim_command('detach')
 end
 
+--- Returns a terminal by buffer ID
+--- @param id number Buffer ID
+--- @return terminals|nil
 M.term_by_buf_id = function(id)
     return funcs.find(function(t) return t.buf == 1 * id end, terminals)
 end
@@ -947,6 +1022,8 @@ L.terms_by_tab_id = function(id)
     return vim.tbl_filter(function(x) return x.tab_id == id end, M.get_terminals())
 end
 
+--- Sets a custom window ID for the current terminal
+--- @param id string The window ID to set
 M.set_win_id = function(id)
     local t = M.term_by_buf_id(vim.fn.bufnr('%'))
     t.vesper_win_id = id
@@ -954,10 +1031,15 @@ M.set_win_id = function(id)
     EV.trigger_event('WinIdSet', {id})
 end
 
+--- Sets a tab variable
+--- @param key string Variable key
+--- @param value any Variable value
 M.set_tab_variable = function(key, value)
     vim.t[key] = value
 end
 
+--- Sets a command for the current terminal
+--- @param cmd string The command to set
 M.set_cmd = function(cmd)
     local t = M.term_by_buf_id(vim.fn.bufnr('%'))
     t.vesper_cmd = cmd
@@ -965,10 +1047,13 @@ M.set_cmd = function(cmd)
     EV.trigger_event('CommandSet', {cmd})
 end
 
+--- Returns the current workflow
+--- @return string Current workflow
 M.get_current_workflow = function()
     return workflow
 end
 
+--- Pastes from clipboard to current terminal
 M.paste_from_clipboard = function()
     M.send_to_current(vim.fn.getreg("+"))
 end
@@ -1051,6 +1136,8 @@ local append_log = function(buf)
 
 end
 
+--- Starts logging the current terminal scrollback buffer
+--- @param where string File path to log to
 M.start_logging = function(where)
     local t = M.get_current_terminal()
     if t == nil then
@@ -1069,6 +1156,7 @@ M.start_logging = function(where)
     }
 end
 
+--- Stops logging the current terminal
 M.stop_logging = function()
     local t = M.get_current_terminal()
     if t == nil or not L.is_logging_started(t.buf) then
@@ -1079,6 +1167,8 @@ M.stop_logging = function()
     loggers[t.buf .. ''] = nil
 end
 
+--- Toggles passthrough mode
+--- @param escape string|nil Escape sequence
 M.toggle_passthrough = function(escape)
     if M.current_mode() ~= 'P' then
         if escape ~= nil then
@@ -1090,6 +1180,7 @@ M.toggle_passthrough = function(escape)
     end
 end
 
+--- Rotates the current panel
 M.rotate_panel = function()
     local t = M.get_current_terminal()
     if not is_suspended then
@@ -1098,6 +1189,8 @@ M.rotate_panel = function()
     vim.api.nvim_command('wincmd x')
 end
 
+--- Returns all mode mappings
+--- @return table[] Mode mappings
 M.get_mode_mappings = function()
     if is_suspended then
         return {}
@@ -1105,6 +1198,10 @@ M.get_mode_mappings = function()
     return mode_mappings
 end
 
+--- Prompts user for input
+--- @param opts table Input options
+--- @param callback function Callback function
+--- @param force boolean|nil Force callback even if input is empty
 M.user_input = function(opts, callback, force)
     if not options.use_dressing then
         ERRORS.defer(1, function()
@@ -1119,6 +1216,8 @@ M.user_input = function(opts, callback, force)
     end)
 end
 
+--- Prompts user to select a file
+--- @param callback function Callback function with selected file
 M.get_file = function(callback)
     M.user_input({prompt = "Select a file:" .. ((options.use_dressing and '') or ' '), completion = "file"}, callback);
 end
@@ -1154,6 +1253,11 @@ local replace_placeholder = function(placeholders, which, where)
     return where:gsub(':' .. which .. ':', placeholders[which])
 end
 
+--- Parses custom title with placeholders
+--- @param title string Title template
+--- @param placeholders table Placeholder values
+--- @param prompt_ctx string Context for prompts
+--- @param callback function Callback with parsed title
 M.parse_custom_title = function(title, placeholders, prompt_ctx, callback)
     local result = title or ''
     local p = ':([a-z_%-A-Z]+):'
@@ -1173,6 +1277,8 @@ M.parse_custom_title = function(title, placeholders, prompt_ctx, callback)
     end)
 end
 
+--- Renames a tab
+--- @param tab number Tab number to rename
 M.rename_tab = function(tab)
     local tab_id = vim.api.nvim_list_tabpages()[tab]
     local def = get_tab_title(tab)
@@ -1187,10 +1293,16 @@ M.rename_tab = function(tab)
     end, true)
 end
 
+--- Renames the current tab
 M.rename_current_tab = function()
     M.rename_tab(vim.fn.tabpagenr())
 end
 
+--- Overrides a terminal with a custom command
+--- @param t terminals Terminal to override
+--- @param cmd string|table Command to execute
+--- @param on_finish function|nil Callback when finished
+--- @return number Job ID
 M.override_terminal = function(t, cmd, on_finish)
     if t.overriding_buf ~= nil then
         ERRORS.throw('The current terminal is already overriden')
@@ -1227,11 +1339,18 @@ M.override_terminal = function(t, cmd, on_finish)
     return result
 end
 
+--- Edits a file in the current terminal
+--- @param t terminals Terminal to use
+--- @param file string File path to edit
+--- @param on_finish function|nil Callback when finished
 M.edit = function(t, file, on_finish)
     M.override_terminal(t, {options.editor or os.getenv('EDITOR'), file}, on_finish)
     EV.trigger_event('Edit', {t, file})
 end
 
+--- Fetches scrollback content from a terminal
+--- @param t terminals|nil Terminal to fetch from (defaults to current)
+--- @return string Scrollback content
 M.fetch_scrollback = function(t)
     if t == nil then
         t = M.get_current_terminal()
@@ -1240,6 +1359,8 @@ M.fetch_scrollback = function(t)
     return table.concat(vim.api.nvim_buf_get_lines(t.buf, 0, -1, false), "\n")
 end
 
+--- Edits scrollback content in editor
+--- @param t terminals Terminal to edit
 M.edit_scrollback = function(t)
     local file = os.tmpname()
     FILES.write_file(file, M.fetch_scrollback(t))
@@ -1248,6 +1369,8 @@ M.edit_scrollback = function(t)
     end)
 end
 
+--- Edits scrollback log in editor
+--- @param t terminals Terminal to edit
 M.edit_scrollback_log = function(t)
     if not L.is_logging_started(t.buf) then
         ERRORS.throw("The current buffer is not being logged", nil)
@@ -1255,6 +1378,10 @@ M.edit_scrollback_log = function(t)
     M.edit(t, loggers[t.buf .. ''].location)
 end
 
+--- Edits current terminal's scrollback
+--- Edits current terminal's scrollback
+--- Edits current terminal's scrollback
+--- Edits current terminal's scrollback
 M.edit_current_scrollback = function()
     M.edit_scrollback(M.get_current_terminal())
 end
