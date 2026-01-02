@@ -1,6 +1,11 @@
 -- local from_entry = require "telescope.from_entry"
 local core = require('core')
 local ERRORS = require('error_handling')
+local CMDS = require('commands')
+local split = require('split')
+local funcs = require('functions')
+local F = require('floats')
+
 local safe, _ = pcall(function()
     require('telescope')
 end)
@@ -13,16 +18,25 @@ local pickers = require "telescope.pickers"
 local finders = require "telescope.finders"
 local previewers = require('telescope.previewers')
 local conf = require("telescope.config").values
-local funcs = require('functions')
-local F = require('floats')
--- local sorters = require "telescope.sorters"
 
 local _sessions = {}
+local commands_mru = {}
 
-local act_close = actions.close
-actions.close = function(bufnr)
-    act_close(bufnr)
-    core.resume()
+local get_command_args = function(command, idx, args_list, callback, me)
+    local desc = CMDS.param_desc(command, idx)
+    if desc == nil or desc == '' then
+        callback(args_list)
+        return
+    end
+
+    core.user_input({prompt = command .. " [" .. idx .. "/" .. CMDS.command_params_length(command) .. "]", title = desc, completion = "file"}, function(value)
+        if value == nil then
+            callback(nil)
+            return
+        end
+        table.insert(args_list, value)
+        me(command, idx + 1, args_list, callback, me)
+    end, true)
 end
 
 sets.select = function(bufnr)
@@ -43,41 +57,55 @@ sets.select = function(bufnr)
     elseif entry.terminal then
         if funcs.is_float(entry.terminal) then
             F.show_floats(entry.terminal.group or nil)
-        else
-            local tab = vim.api.nvim_win_get_tabpage(entry.terminal.win_id)
-            vim.api.nvim_command('tabn ' .. tab)
         end
+        core.select_pane(entry.terminal.buf)
+    elseif entry.command then
+        if #vim.tbl_filter(function(c) return c == entry.command.name end, commands_mru) > 0 then
+            for i, _ in pairs(commands_mru) do
+                if commands_mru[i] == entry.command.name then
+                    table.remove(commands_mru, i)
+                    break
+                end
+            end
+        end
+
+        table.insert(commands_mru, 1, entry.command.name)
+        get_command_args(entry.command.name, 1, {}, function(args)
+            if args == nil then
+                return
+            end
+            vim.api.nvim_command(entry.command.name .. ' ' .. table.concat(args, ' '))
+        end, get_command_args)
     end
 end
 
 require('telescope').setup{
-    defaults = {
-        mappings = {
-            i = {
-                ["<C-n>"] = require('telescope.actions').cycle_history_next,
-                ["<C-p>"] = require('telescope.actions').cycle_history_prev,
-                ["<C-b>"] = require('telescope.actions').results_scrolling_up,
-                ["<C-f>"] = require('telescope.actions').results_scrolling_down,
-                ["<C-k>"] = require('telescope.actions').move_selection_previous,
-                ["<C-j>"] = require('telescope.actions').move_selection_next,
-                ["<C-c>"] = require('telescope.actions').close,
-            },
-            n = {
-                ["<C-b>"] = require('telescope.actions').results_scrolling_up,
-                ["<C-f>"] = require('telescope.actions').results_scrolling_down,
-                ["p"] = require('telescope.actions.layout').toggle_preview,
-                ["<C-c>"] = require('telescope.actions').close,
-                ["<C-n>"] = require('telescope.actions').cycle_history_next,
-                ["<C-p>"] = require('telescope.actions').cycle_history_prev,
-            }
-        },
-    },
+    -- defaults = {
+    --     mappings = {
+    --         i = {
+    --             ["<C-n>"] = require('telescope.actions').cycle_history_next,
+    --             ["<C-p>"] = require('telescope.actions').cycle_history_prev,
+    --             ["<C-b>"] = require('telescope.actions').results_scrolling_up,
+    --             ["<C-f>"] = require('telescope.actions').results_scrolling_down,
+    --             ["<C-k>"] = require('telescope.actions').move_selection_previous,
+    --             ["<C-j>"] = require('telescope.actions').move_selection_next,
+    --             ["<C-c>"] = require('telescope.actions').close,
+    --         },
+    --         n = {
+    --             ["<C-b>"] = require('telescope.actions').results_scrolling_up,
+    --             ["<C-f>"] = require('telescope.actions').results_scrolling_down,
+    --             ["p"] = require('telescope.actions.layout').toggle_preview,
+    --             ["<C-c>"] = require('telescope.actions').close,
+    --             ["<C-n>"] = require('telescope.actions').cycle_history_next,
+    --             ["<C-p>"] = require('telescope.actions').cycle_history_prev,
+    --         }
+    --     },
+    -- },
 }
 local sessions_list = function(opts)
     if os.getenv("VESPER_SESSION") == nil then
         return
     end
-    core.suspend()
     local sessions = funcs.run_process_list(os.getenv("VESPER_PREFIX") .. "/bin/vesper -l")
     pickers.new(opts, {
         prompt_title = "Sessions",
@@ -113,7 +141,6 @@ local sessions_list = function(opts)
 end
 
 local term_select = function(opts)
-    core.suspend()
     opts = opts or {}
 
     pickers.new(opts, {
@@ -144,7 +171,53 @@ local term_select = function(opts)
         default_selection_index = 1,
     }):find()
 end
+
+local select_command = function(opts)
+    opts = opts or {}
+
+    local cmds = vim.tbl_deep_extend("force", {}, CMDS.list())
+    local is_mru = function(c)
+        return vim.tbl_contains(commands_mru, c.name)
+    end
+    table.sort(cmds, function(a, b)
+        if not is_mru(a) and not is_mru(b) then
+            return a.name < b.name
+        end
+        if is_mru(a) and is_mru(b) then
+            return funcs.index_of(commands_mru, a.name) < funcs.index_of(commands_mru, b.name)
+        end
+        return vim.tbl_contains(commands_mru, a.name)
+    end)
+
+    pickers.new(opts, {
+        results_title = "Vesper commands",
+        cache_picker = false,
+        finder = finders.new_table {
+            results = cmds,
+            entry_maker = function(c)
+                local name = string.gsub(c.name, '^Vesper', '')
+                return {
+                    value = name, valid = true,
+                    ordinal = name, display = name, command = c,
+                }
+            end
+        },
+        sorter = conf.generic_sorter({}),
+        previewer = previewers.new_buffer_previewer {
+            title = "Documentation",
+            keep_last_buf = true,
+            define_preview = function(self, entry, _)
+                local content = split.split(entry.command.definition, '\n')
+                vim.api.nvim_buf_set_lines(self.state.bufnr, 0, #content, false, content)
+                vim.api.nvim_set_option_value('filetype', 'markdown', {buf = self.state.bufnr})
+            end,
+        },
+        default_selection_index = 1,
+    }):find()
+end
+
 return {
     sessions_list = sessions_list,
     term_select = term_select,
+    select_command = select_command,
 }

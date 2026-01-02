@@ -24,6 +24,7 @@ local function wininput(opts, on_confirm, win_opts)
     vim.bo[buf].filetype = "vesper_prompt"
 
     local prompt = opts.prompt or ""
+    local title = opts.title or ''
     local default_text = opts.default or ""
     local timer
 
@@ -45,7 +46,7 @@ local function wininput(opts, on_confirm, win_opts)
         end
     end, {['repeat'] = -1})
 
-    vim.fn.prompt_setprompt(buf, '> ')
+    vim.fn.prompt_setprompt(buf, prompt .. '> ')
     vim.fn.prompt_setcallback(buf, deferred_callback)
     vim.fn.prompt_setinterrupt(buf, deferred_callback)
 
@@ -63,9 +64,9 @@ local function wininput(opts, on_confirm, win_opts)
         focusable = true,
         style = "minimal",
         border = "rounded",
-        title = prompt,
+        title = title,
         title_pos = "center",
-        zindex = 1001
+        zindex = 99
     }
 
     win_opts = vim.tbl_deep_extend("force", default_win_opts, win_opts)

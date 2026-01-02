@@ -278,6 +278,15 @@ local remote_state = function(t)
     return (t.term_id == nil and 'disconnected') or 'connected'
 end
 
+local index_of = function(t, value)
+    for i, v in pairs(t) do
+        if v == value then
+            return i
+        end
+    end
+    return -1
+end
+
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
@@ -309,4 +318,5 @@ return {
     get_float_title = get_float_title,
     get_all_floats = get_all_floats,
     remote_state = remote_state,
+    index_of = index_of,
 }

@@ -210,7 +210,7 @@ M.rename_floating_pane = function(pane)
         ERRORS.throw('You can only rename floating panes')
     end
     local def = funcs.get_float_title(pane)
-    core.user_input({propmt = "Pane new name: ", default = def}, function(result)
+    core.user_input({title = "Pane new name: ", default = def}, function(result)
         if result == '' then
             pane.overriden_title = nil
             TABS.del_var(core.get_global_tab_id(), 'vesper_tab_title_overriden')

@@ -563,7 +563,9 @@ this id
 
 Toggles the passthrough mode.
 
-**Parameters**: the escape sequence
+**Parameters**:
+
+* The escape sequence
 
 #### VesperRenameCurrentTab
 
@@ -596,13 +598,13 @@ an embedded pane, it will throw an error.
 
 #### VesperSelectTab
 
-**Parameters**:
-
-* The tab to select
-
 Select the tab indicated by the number in parameter. If the tab does not
 exists (for example you are trying to select the 5th tab, but only have 4
 tabs) it will throw an error.
+
+**Parameters**:
+
+* The tab to select
 
 #### VesperReloadConfig
 
@@ -612,6 +614,12 @@ Reloads the current configuration
 
 Edits the current configuration in the currently selected pane (embedded or
 floating)
+
+#### VesperQuit
+
+Exists vesper closing all the current panes and saving the session if autosave
+is set. This is the recommended way to quit vesper, if you want your session
+to be preserver for the next time you open it.
 
 #### VesperUndo
 
@@ -629,6 +637,11 @@ Changed the directory of the current pane to the indicated new directory
 **Parameters**:
 
 * the new directory
+
+#### VesperDumpScrollback
+
+Dumps the content of the scrollback buffer of the current terminal in the
+indicated file
 
 ## Configuration
 

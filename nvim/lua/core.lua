@@ -1219,7 +1219,7 @@ end
 --- Prompts user to select a file
 --- @param callback function Callback function with selected file
 M.get_file = function(callback)
-    M.user_input({prompt = "Select a file:" .. ((options.use_dressing and '') or ' '), completion = "file"}, callback);
+    M.user_input({title = "Select a file:" .. ((options.use_dressing and '') or ' '), completion = "file"}, callback);
 end
 
 L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, prompt_ctx, when_finished)
@@ -1237,7 +1237,7 @@ L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, prompt
         resulted_placeholders[which] = placeholders[which]
         advance()
     else
-        M.user_input({prompt = 'Value for ' .. which .. ' (' .. prompt_ctx .. ')'}, function(response)
+        M.user_input({title = 'Value for ' .. which .. ' (' .. prompt_ctx .. ')'}, function(response)
             resulted_placeholders[which] = (response == nil and '_') or response
             advance()
         end, true)
@@ -1282,7 +1282,7 @@ end
 M.rename_tab = function(tab)
     local tab_id = vim.api.nvim_list_tabpages()[tab]
     local def = get_tab_title(tab)
-    M.user_input({prompt = "Tab new name: ", default = def}, function(result)
+    M.user_input({title = "Tab new name: ", default = def}, function(result)
         if result == '' then
             TABS.del_var(tab_id, 'vesper_tab_title_overriden')
         elseif result ~= nil then

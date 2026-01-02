@@ -46,7 +46,7 @@ local actions = {
     'copy', 'paste', 'rotate_panel',
     'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
     'show_mode_cheatsheet', 'remote_scroll', 'undo', 'toggle_fullscreen',
-    'start_search',
+    'start_search', 'select_command',
 }
 
 local modes = {
@@ -64,6 +64,7 @@ M.default_config = {
                 paste = '<C-v>',
             },
             modifier = {
+                select_command = ':',
                 select_terminal = 'St',
                 select_session = 'Ss',
                 passthrough = 'N',
@@ -152,6 +153,7 @@ M.default_config = {
                 paste = '<C-v>',
             },
             modifier = {
+                select_command = ':',
                 select_terminal = 'St',
                 select_session = 'Ss',
                 passthrough = 'N',
@@ -239,6 +241,7 @@ M.default_config = {
         },
         zellij = {
             terminal = {
+                select_command = '<C-:>',
                 paste = '<C-v>',
                 enter_mode = {
                     p = '<C-p>',
@@ -374,6 +377,7 @@ M.default_config = {
                 undo = '<C-z>',
                 toggle_fullscreen = '<F11>',
                 start_search = '<C-S-/>',
+                select_command = '<C-:>'
             },
         }
     }
@@ -401,6 +405,8 @@ local set_shortcut = function(action, shortcut, mode, arg)
     if action == 'select_terminal' or action == 'select_session' then
         local callback = (action == 'select_terminal' and require('select').term_select) or require('select').sessions_list
         t(shortcut, callback, action:gsub('select_', ''))
+    elseif action == 'select_command' then
+        t(shortcut, require('select').select_command, action:gsub('select_', ''))
     elseif action == 'create_tab' then
         map(mode, shortcut, '', {
             callback = function()

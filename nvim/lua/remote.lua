@@ -263,7 +263,7 @@ local parse_remote_connection = function(force, callback)
         callback(remote_info)
     end
     if force == true or not funcs.is_handling_remote() then
-        core.user_input({prompt = "Please enter a remote connection or a profile name:"}, function(result)
+        core.user_input({title = "Please enter a remote connection or a profile name:"}, function(result)
             if result == nil or result == '' then
                 return
             end
