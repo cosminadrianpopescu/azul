@@ -1325,7 +1325,8 @@ M.override_terminal = function(t, cmd, on_finish)
     end
     local opts = {
         cdw = vim.fn.getcwd(),
-        on_exit = on_exit
+        on_exit = on_exit,
+        env = require('environment').get_environment(),
     }
     local result = nil
     local safe, err = pcall(function()

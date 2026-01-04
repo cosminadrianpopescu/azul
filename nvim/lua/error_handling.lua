@@ -93,9 +93,9 @@ end
 
 M.warning = function(msg)
     vim.notify("\n" .. (msg or '') .. "\n", 'info')
-    vim.fn.timer_start(1000, function()
-        vim.api.nvim_command('messages')
-    end)
+    -- vim.fn.timer_start(1000, function()
+    --     vim.api.nvim_command('messages')
+    -- end)
 end
 
 return M

@@ -6,8 +6,9 @@ ERRORS.try_execute(function()
       highlight VesperInactiveWin guibg=#141c24 guifg=NvimLightGrey4
     ]])
 
-    vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
-    vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
+    -- vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
+    -- vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
+
     local files = require('files')
     files.init()
 

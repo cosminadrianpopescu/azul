@@ -14,7 +14,12 @@ local set_environment = function(env)
 end
 
 local get_environment = function()
-    return vim.tbl_deep_extend('force', {}, _env)
+    local result = vim.tbl_deep_extend('force', {}, _env)
+    -- vim.env.XDG_CONFIG_HOME = vim.env.NVIM_XDG_CONFIG_HOME
+    -- vim.env.XDG_DATA_HOME = vim.env.NVIM_XDG_DATA_HOME
+    result['XDG_CONFIG_HOME'] = vim.env.NVIM_XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')
+    result['XDG_DATA_HOME'] = vim.env.NVIM_XDG_DATA_HOME or (os.getenv('HOME') .. '/.local/share')
+    return result
 end
 
 local load_from_lua = function()

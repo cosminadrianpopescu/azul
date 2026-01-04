@@ -2,7 +2,7 @@ local M = {}
 local split = require('split')
 
 M.init = function()
-    M.config_dir = vim.env.VESPER_CONFIG_HOME or ((vim.env.XDG_CONFIG_HOME or (os.getenv('HOME') .. '/.config')) .. '/vesper')
+    M.config_dir = vim.env.VESPER_CONFIG_HOME or (((os.getenv('HOME') .. '/.config') or vim.env.XDG_CONFIG_HOME) .. '/vesper')
     vim.o.runtimepath = vim.o.runtimepath .. ',' .. M.config_dir .. '/pack/start/*,' .. M.config_dir .. '/pack/opt/*,' .. M.config_dir
 end
 
@@ -104,6 +104,27 @@ M.read_ini = function(which)
     --     print(vim.inspect(k))
     -- end
     return result
+end
+
+M.ensure_dir = function(path)
+    local uv = vim.uv
+    local stat = uv.fs_stat(path)
+    if stat and stat.type == "directory" then
+        return true
+    end
+    -- Recursively create parent
+    local parent = vim.fn.fnamemodify(path, ":h")
+    if parent ~= path then
+        M.ensure_dir(parent)
+    end
+    local ok, err = uv.fs_mkdir(path, 493) -- 493 = 0755
+    if not ok and err then
+        -- If already exists concurrently, consider success
+        if not (err:match("EEXIST") or err:match("already exists")) then
+            return nil, err
+        end
+    end
+    return true
 end
 
 M.load_as_module = function(which, path)

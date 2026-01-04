@@ -2,6 +2,7 @@
 local core = require('core')
 local ERRORS = require('error_handling')
 local CMDS = require('commands')
+local EV = require('events')
 local split = require('split')
 local funcs = require('functions')
 local F = require('floats')
@@ -18,9 +19,31 @@ local pickers = require "telescope.pickers"
 local finders = require "telescope.finders"
 local previewers = require('telescope.previewers')
 local conf = require("telescope.config").values
+local maps = require('telescope.mappings').default_mappings
+
+maps['i']['<C-x>'] = nil
+maps['n']['<C-x>'] = nil
 
 local _sessions = {}
 local commands_mru = {}
+
+local act_close = actions.close
+actions.close = function(bufnr)
+    act_close(bufnr)
+    EV.trigger_event("CommandPaletteClosed", {})
+end
+
+actions.fill_prompt = function(bufnr)
+    local action_state = require "telescope.actions.state"
+    local current_picker = action_state.get_current_picker(bufnr)
+    local sel = action_state.get_selected_entry()
+
+    current_picker:set_prompt(sel.display)
+end
+
+actions.complete = function(_)
+    core.feedkeys('<C-x><C-o>', 'i')
+end
 
 local get_command_args = function(command, idx, args_list, callback, me)
     local desc = CMDS.param_desc(command, idx)
@@ -34,14 +57,33 @@ local get_command_args = function(command, idx, args_list, callback, me)
             callback(nil)
             return
         end
+        if not CMDS.validate_arg(command, idx, value) then
+            me(command, idx, args_list, callback, me)
+            return
+        end
         table.insert(args_list, value)
         me(command, idx + 1, args_list, callback, me)
     end, true)
 end
 
+local run_command = function(cmd)
+    cmd = vim.fn.substitute(cmd, '\\v([^ ])[ ]+$', '\\1', 'g')
+    ERRORS.try_execute(function()
+        core.feedkeys(':' .. cmd .. '<cr>', 'n')
+        vim.fn.histadd('cmd', cmd)
+    end)
+end
+
 sets.select = function(bufnr)
     local entry = require('telescope.actions.state').get_selected_entry()
+    local prompt = require('telescope.actions.state').get_current_line()
     actions.close(bufnr)
+    if entry == nil then
+        if prompt ~= nil then
+            run_command(prompt)
+        end
+        return
+    end
     if entry.session ~= nil then
         local f = io.open("/tmp/vesper/" .. os.getenv("VESPER_SESSION") .. "-session", "w")
         f:write(entry.value)
@@ -74,33 +116,35 @@ sets.select = function(bufnr)
             if args == nil then
                 return
             end
-            vim.api.nvim_command(entry.command.name .. ' ' .. table.concat(args, ' '))
+            run_command(entry.command.name .. ' ' .. table.concat(args, ' '))
         end, get_command_args)
     end
 end
 
 require('telescope').setup{
-    -- defaults = {
-    --     mappings = {
-    --         i = {
-    --             ["<C-n>"] = require('telescope.actions').cycle_history_next,
-    --             ["<C-p>"] = require('telescope.actions').cycle_history_prev,
-    --             ["<C-b>"] = require('telescope.actions').results_scrolling_up,
-    --             ["<C-f>"] = require('telescope.actions').results_scrolling_down,
-    --             ["<C-k>"] = require('telescope.actions').move_selection_previous,
-    --             ["<C-j>"] = require('telescope.actions').move_selection_next,
-    --             ["<C-c>"] = require('telescope.actions').close,
-    --         },
-    --         n = {
-    --             ["<C-b>"] = require('telescope.actions').results_scrolling_up,
-    --             ["<C-f>"] = require('telescope.actions').results_scrolling_down,
-    --             ["p"] = require('telescope.actions.layout').toggle_preview,
-    --             ["<C-c>"] = require('telescope.actions').close,
-    --             ["<C-n>"] = require('telescope.actions').cycle_history_next,
-    --             ["<C-p>"] = require('telescope.actions').cycle_history_prev,
-    --         }
-    --     },
-    -- },
+    defaults = {
+        mappings = {
+            i = {
+                ["<C-n>"] = require('telescope.actions').cycle_history_next,
+                ["<C-p>"] = require('telescope.actions').cycle_history_prev,
+                ["<C-b>"] = require('telescope.actions').results_scrolling_up,
+                ["<C-f>"] = require('telescope.actions').results_scrolling_down,
+                ["<C-k>"] = require('telescope.actions').move_selection_previous,
+                ["<C-j>"] = require('telescope.actions').move_selection_next,
+                ["<C-c>"] = require('telescope.actions').close,
+                ["<C-space>"] = require('telescope.actions').fill_prompt,
+                ["<tab>"] = require('telescope.actions').complete,
+            },
+            n = {
+                ["<C-b>"] = require('telescope.actions').results_scrolling_up,
+                ["<C-f>"] = require('telescope.actions').results_scrolling_down,
+                ["p"] = require('telescope.actions.layout').toggle_preview,
+                ["<C-c>"] = require('telescope.actions').close,
+                ["<C-n>"] = require('telescope.actions').cycle_history_next,
+                ["<C-p>"] = require('telescope.actions').cycle_history_prev,
+            }
+        },
+    },
 }
 local sessions_list = function(opts)
     if os.getenv("VESPER_SESSION") == nil then
@@ -172,7 +216,24 @@ local term_select = function(opts)
     }):find()
 end
 
+local real_substr_matcher = require('telescope.sorters').get_substr_matcher()
+real_substr_matcher.scoring_function = function(_, prompt, _, entry)
+    if #prompt == 0 then
+        return 1
+    end
+
+    if string.sub(entry.ordinal, 1, #prompt) == prompt then
+        return entry.index
+    else
+        return -1
+    end
+end
+
 local select_command = function(opts)
+    EV.trigger_event("CommandPaletteOpen", {})
+    ERRORS.defer(1, function()
+        vim.api.nvim_command('set omnifunc=v:lua.vim.lua_omnifunc')
+    end)
     opts = opts or {}
 
     local cmds = vim.tbl_deep_extend("force", {}, CMDS.list())
@@ -189,6 +250,20 @@ local select_command = function(opts)
         return vim.tbl_contains(commands_mru, a.name)
     end)
 
+    local histories = {}
+    local history_string = vim.fn.execute('history cmd')
+    local history = vim.split(history_string, "\n")
+    for i = #history, 3, -1 do
+        local h = vim.fn.substitute(history[i], '\\v^[\\> 0-9]+', '', 'g')
+        if funcs.index_of(histories, h) == -1 then
+            table.insert(histories, h)
+        end
+    end
+
+    for _, h in pairs(histories) do
+        table.insert(cmds, {name = h, definition = 'Command from history'})
+    end
+
     pickers.new(opts, {
         results_title = "Vesper commands",
         cache_picker = false,
@@ -202,10 +277,10 @@ local select_command = function(opts)
                 }
             end
         },
-        sorter = conf.generic_sorter({}),
+        sorter = real_substr_matcher,
         previewer = previewers.new_buffer_previewer {
             title = "Documentation",
-            keep_last_buf = true,
+            keep_last_buf = false,
             define_preview = function(self, entry, _)
                 local content = split.split(entry.command.definition, '\n')
                 vim.api.nvim_buf_set_lines(self.state.bufnr, 0, #content, false, content)

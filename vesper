@@ -233,7 +233,8 @@ then
         then
             rm $VESPER_RUN_DIR/$VESPER_SESSION
         fi
-        setsid $VESPER_NVIM_EXE --listen $VESPER_RUN_DIR/$VESPER_SESSION --headless >/dev/null 2>&1 0< /dev/null &!
+        # setsid $VESPER_NVIM_EXE --listen $VESPER_RUN_DIR/$VESPER_SESSION --headless >/dev/null 2>&1 0< /dev/null &!
+        $VESPER_NVIM_EXE --listen $VESPER_RUN_DIR/$VESPER_SESSION --headless & disown
 
     fi
     if [ "$VESPER_SKIP_CONNECT" == "1" ]

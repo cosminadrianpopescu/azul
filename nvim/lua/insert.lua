@@ -25,7 +25,8 @@ EV.persistent_on({
     'UserInputPrompt', 'UserInput', 'RemoteDisconnected', 'PaneClosed', 'Edit',
     'VesperStarted', 'FloatOpened', 'RemoteReconnected', 'TabCreated', 'CommandSet',
     'WinIdSet', 'ConfigReloaded', 'VesperConnected', 'LayoutRestored',
-    'UndoFinished', 'FullscreenToggled', 'DirectoryChanged', 'RemoteStartedScroll'
+    'UndoFinished', 'FullscreenToggled', 'DirectoryChanged', 'RemoteStartedScroll',
+    'CommandPaletteClosed',
 }, do_start_insert)
 
 ERRORS.on_error(do_start_insert)

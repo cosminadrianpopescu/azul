@@ -2,6 +2,7 @@ local core = require('core')
 local session = require('session')
 local funcs = require('functions')
 local EV = require('events')
+local ERRORS = require('error_handling')
 local U = require('undo')
 local F = require('floats')
 local R = require('remote')
@@ -87,5 +88,6 @@ M.find_key_map = core.find_key_map
 M.add_key_parser = MAP.add_key_parser
 M.remote_exit_scroll_mode = R.remote_exit_scroll_mode
 M.register_remote_profile = R.register_remote_profile
+M.warning = ERRORS.warning
 
 return M

@@ -47,6 +47,8 @@ local events = {
     RemoteEndedScroll = {},
     LayoutPanic = {},
     LayoutRecovered = {},
+    CommandPaletteOpen = {},
+    CommandPaletteClosed = {},
 }
 
 local persistent_events = {}

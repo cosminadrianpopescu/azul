@@ -1,43 +1,86 @@
 local funcs = require('functions')
 local ERRORS = require('error_handling')
 
+local validate_value = function(list, value, msg)
+    if funcs.index_of(list, value) ~= -1 then
+        return nil
+    end
+    return msg
+end
+
+local validate_numeric = function(value, which)
+    if vim.fn.match(value, '\\v^[0-9]+$') == -1 then
+        return which .. ' has to be a numerical positive value'
+    end
+    return nil
+end
+
+local validate_not_null = function(value, which)
+    if value == '' or value == nil then
+        return which .. ' has to have a value'
+    end
+    return nil
+end
+
 local params_map = {
     VesperEnterMode = {
-        '*the mode',
+        list = {'*the mode (p|r|s|m|T|n|t|v|P|M|a)',},
+        validator = function(arg, _)
+            return validate_value({'p','r','s','m','T','n','t','v','P','M','a'}, arg, 'The mode has to be one of p,r,s,m,T,n,t,v,P,M,a')
+        end
     },
     VesperMoveCurrentFloat = {
-        '*direction (left, right, up or down)',
-        'increment',
+        list = {'*direction (left, right, up or down)', 'increment',},
+        validator = function(arg, idx)
+            if idx == 1 then
+                return validate_value({'left', 'right', 'up', 'down'}, arg, 'The direction has to be left, right, up or down')
+            end
+            if idx == 2 then
+                return validate_numeric(arg, 'The increment')
+            end
+        end,
     },
     VesperSelectPane = {
-        '*direction (left, right, up or down)',
+        list = {'*direction (left, right, up or down)',},
     },
     VesperTogglePassthrough = {
-        '*the escape sequence',
+        list = {'the escape sequence',},
     },
     VesperPositionCurrentFloat = {
-        '*region (top, bottom, start or end)',
+        list = {'*region (top, bottom, start or end)',},
+        validator = function(arg, _)
+            return validate_value({'top', 'bottom', 'start', 'down'}, arg, 'The direction has to be top, bottom, start or down')
+        end
     },
     VesperSaveLayout = {
-        'the location',
+        list = {'the location',},
     },
     VesperRestoreLayout = {
-        'the location',
+        list = {'the location',},
     },
     VesperSetWinId = {
-        '*the id of the pane',
+        list = {'*the id of the pane',},
+        validator = function(arg, _)
+            return validate_not_null(arg, 'The id')
+        end
     },
     VesperSetCmd = {
-        '*the command to be launched uppon a restore',
+        list = {'*the command to be launched uppon a restore',},
+        validator = function(arg, _)
+            return validate_not_null(arg, 'The command')
+        end
     },
     VesperStartLogging = {
-        '*the file location'
+        list = {'*the file location'},
     },
     VesperEdit = {
-        'the file in to edit (optional)'
+        list = {'the file in to edit (optional)'},
     },
     VesperSelectTab = {
-        '*the tab to select'
+        list = {'*the tab to select'},
+        validator = function(arg, _)
+            return validate_numeric(arg, 'The tab')
+        end
     }
 }
 
@@ -213,14 +256,29 @@ return {
         end, {desc = 'Dumps the content of the scrollback buffer of the current terminal in the\nindicated file', complete = "file", nargs = 1})
     end,
     param_desc = function(command, idx)
-        if params_map[command] == nil or idx < 1 or idx > #params_map[command] then
+        if params_map[command] == nil or params_map[command].list == nil or idx < 1 or idx > #params_map[command].list then
             return ''
         end
 
-        return params_map[command][idx]
+        return params_map[command].list[idx]
     end,
     command_params_length = function(command)
-        return #params_map[command]
+        if params_map[command] == nil or params_map[command].list == nil then
+            return 0
+        end
+        return #params_map[command].list
+    end,
+    validate_arg = function(cmd, idx, value)
+        local result = nil
+        if params_map[cmd] ~= nil and params_map[cmd].validator ~= nil then
+            result = params_map[cmd].validator(value, idx)
+        end
+
+        if result == nil then
+            return true
+        end
+        ERRORS.warning(result)
+        return false
     end,
     list = function()
         return vim.tbl_filter(function(c) return vim.fn.match(c.name, "\\v^Vesper") ~= -1 end, vim.api.nvim_get_commands({}))
