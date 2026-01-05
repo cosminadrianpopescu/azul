@@ -114,7 +114,7 @@ then
 fi
 
 install_from_github "nvim-lualine" "lualine.nvim" "b431d228b7bbcdaea818bdc3e25b8cdbe861f056"
-install_from_github "nvim-lua" "plenary.nvim" "2d9b06177a975543726ce5c73fca176cedbffe9d"
-install_from_github "nvim-telescope" "telescope.nvim" "eae0d8fbde590b0eaa2f9481948cd6fd7dd21656"
+install_from_github "nvim-lua" "plenary.nvim" "b9fd5226c2f76c951fc8ed5923d85e4de065e509"
+install_from_github "nvim-telescope" "telescope.nvim" "3333a52ff548ba0a68af6d8da1e54f9cd96e9179"
 
 echo "Installation done in $VESPER_PREFIX. Run vesper"

@@ -48,11 +48,11 @@ else {
     if (-not (Test-Path "$prefix\.config\vesper\pack\start\plenary.nvim")) {
         git clone https://github.com/nvim-lua/plenary.nvim $prefix\.config\vesper\pack\start\plenary.nvim
         cd $prefix\.config\vesper\pack\start\plenary.nvim
-        git checkout 2d9b06177a975543726ce5c73fca176cedbffe9d
+        git checkout b9fd5226c2f76c951fc8ed5923d85e4de065e509
     }
     if (-not (Test-Path "$prefix\.config\vesper\pack\start\telescope.nvim")) {
         git clone https://github.com/nvim-telescope/telescope.nvim $prefix\.config\vesper\pack\start\telescope.nvim
         cd $prefix\.config\vesper\pack\start\telescope.nvim
-        git checkout eae0d8fbde590b0eaa2f9481948cd6fd7dd21656 
+        git checkout 3333a52ff548ba0a68af6d8da1e54f9cd96e9179 
     }
 }
