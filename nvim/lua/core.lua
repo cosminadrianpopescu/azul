@@ -588,7 +588,9 @@ cmd('TermOpen',{
         ERRORS.try_execute(function()
             if not is_vesper_started then
                 is_vesper_started = true
-                EV.trigger_event('VesperStarted')
+                ERRORS.defer(1, function()
+                    EV.trigger_event('VesperStarted')
+                end)
             end
             if is_suspended or #vim.tbl_filter(function(x) return x.term_id == vim.b.terminal_job_id end, terminals) > 0 then
                 return
@@ -1203,11 +1205,6 @@ end
 --- @param callback function Callback function
 --- @param force boolean|nil Force callback even if input is empty
 M.user_input = function(opts, callback, force)
-    if not options.use_dressing then
-        ERRORS.defer(1, function()
-            EV.trigger_event('UserInputPrompt')
-        end)
-    end
     vim.ui.input(opts, function(input)
         if (input ~= nil and input ~= '') or force then
             callback(input)
@@ -1219,7 +1216,7 @@ end
 --- Prompts user to select a file
 --- @param callback function Callback function with selected file
 M.get_file = function(callback)
-    M.user_input({title = "Select a file:" .. ((options.use_dressing and '') or ' '), completion = "file"}, callback);
+    M.user_input({title = "Select a file:", completion = "file"}, callback);
 end
 
 L.get_all_vars = function(vars, idx, placeholders, resulted_placeholders, prompt_ctx, when_finished)

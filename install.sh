@@ -55,9 +55,11 @@ then
     mkdir -p $VESPER_PREFIX/share/vesper/provider-configs
 fi
 
+VESPER_CONFIG_HOME=$HOME/.config
+
 if [ "$VESPER_CONFIG" == "" ]
 then
-    export VESPER_CONFIG="${XDG_CONFIG_HOME:-$HOME}/.config/vesper"
+    export VESPER_CONFIG="${XDG_CONFIG_HOME:-$VESPER_CONFIG_HOME}/vesper"
 fi
 
 printf "#!/bin/bash\n\nexport VESPER_PREFIX=$VESPER_PREFIX\nexport VESPER_ABDUCO_EXE=$VESPER_ABDUCO_EXE\nexport VESPER_NVIM_EXE=$VESPER_NVIM_EXE\n\n" > $VESPER_PREFIX/bin/vesper

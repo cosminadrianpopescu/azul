@@ -8,6 +8,7 @@ local win_id = nil
 local win_buffer = nil
 local mode_win_id = nil
 local position_timer = nil
+local commands_palette = false
 
 vim.api.nvim_command('highlight VesperCheatsheetArrow guifg=#565f89')
 
@@ -250,8 +251,17 @@ EV.on_action('show_mode_cheatsheet', function()
     mode_win_id = create_window(mappings, false)
 end)
 
+EV.persistent_on('CommandPaletteOpen', function()
+    close_window()
+    commands_palette = true
+end)
+
+EV.persistent_on('CommandPaletteClosed', function()
+    commands_palette = false
+end)
+
 EV.persistent_on('ModeChanged', function(args)
-    if not options.use_cheatsheet then
+    if not options.use_cheatsheet or commands_palette then
         return
     end
     local new_mode = args[2]

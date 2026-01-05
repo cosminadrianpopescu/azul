@@ -19,10 +19,7 @@ t.wait_events({UserInputPrompt = 1}, function()
 end)
 t.wait_events({TabTitleChanged = 1}, function()
     t.assert(get_title(1) == '1 test_1*', 'The first tab now should be named 1 test_1*')
-    local _events = {UserInput = 1}
-    if options.use_dressing then
-        _events.ModeChanged = 1
-    end
+    local _events = {ModeChanged = 1}
     t.wait_events(_events, function()
         local s = t.action_shortcut('create_tab')
         local events = {ModeChanged = (options.workflow == 'zellij' and 2) or 1, UserInputPrompt = 1}
@@ -54,9 +51,6 @@ t.wait_events({TabTitleChanged = 1}, function()
                                         end
                                         t.simulate_keys(rename_tab_keys(), events, function()
                                             s = '<esc> 0 e Da abc <cr>'
-                                            if not options.use_dressing then
-                                                s = '<C-w> <C-w> <C-w> <C-w> <C-w> <C-w> <C-w> <C-w> abc <cr>'
-                                            end
                                             t.simulate_keys(s, {TabTitleChanged = 1}, function()
                                                 t.assert(get_title(1) == '1 test_1', 'Third time, the first tab now should be named 1 test_1')
                                                 t.assert(get_title(2) == 'abc', 'Third time, the second tab now should be named abc')

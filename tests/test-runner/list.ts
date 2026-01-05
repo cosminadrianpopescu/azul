@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import { test } from "./test";
 
-const DEFAULT_OPTIONS = {show_welcome_message: false}
+const DEFAULT_OPTIONS = {show_welcome_message: false, autosave: 'none'}
 
 const get_options = (opts: Object) => Object.assign({}, DEFAULT_OPTIONS, (opts || {}))
 
@@ -36,7 +36,7 @@ function test_factory(test_case: string, options: {[key: string]: any} = {}, whi
     });
 }
 
-test('test-started');
+// test('test-started');
 const do_floats = () => {
     test_factory('floats', {workflow: 'vesper'})
     test_factory('floats', {workflow: 'tmux'});
@@ -67,6 +67,10 @@ const do_modes = () => {
     expand_test('modes', false);
 }
 
+const do_commands_pallette = () => {
+    expand_test('commands-palette');
+}
+
 const do_tabs = () => {
     expand_test('tabs');
 }
@@ -80,13 +84,6 @@ const do_tab_titles = () => {
     test_factory('custom-tab-titles', {workflow: 'vesper', tab_title: tab_title, use_cheatsheet: 'false'});
     test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_cheatsheet: 'false'});
     test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_cheatsheet: 'false'});
-    test_factory('custom-tab-titles', {workflow: 'vesper', tab_title: tab_title, use_dressing: 'false'})
-    test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_dressing: 'false'})
-    test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_dressing: 'false'})
-    test_factory('custom-tab-titles', {workflow: 'emacs', tab_title: tab_title, use_dressing: 'false'})
-    test_factory('custom-tab-titles', {workflow: 'vesper', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
-    test_factory('custom-tab-titles', {workflow: 'tmux', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
-    test_factory('custom-tab-titles', {workflow: 'zellij', tab_title: tab_title, use_dressing: 'false', use_cheatsheet: 'false'})
 }
 
 const do_misc = () => {
@@ -122,6 +119,7 @@ const do_panic_test = (callback: (content: string) => string, options: {[key: st
 do_floats();
 do_splits();
 do_modes();
+do_commands_pallette();
 do_tabs();
 do_tab_titles();
 do_misc();

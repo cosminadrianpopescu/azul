@@ -706,9 +706,6 @@ or the action directly, for the `emacs` workflow. For more info see the
   be finished (default 500)
 * **opacity** The opacity of the floating windows, from 0 - non transparent to
   100 - fully transparent (default 0)
-* **use_dressing** If true, use the a nice prompt dialog for getting user
-  input instead of the default one provided by nvim plugin for user input, for
-  example, for file locations when saving and restoring layouts (default true)
 * **tab_title** The default tab title. See the [placeholders](#placeholders)
   section (default `Tab :tab_n:`)
 * **float_pane_title** The default float pane title. See the

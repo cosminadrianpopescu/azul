@@ -114,7 +114,7 @@ end
 
 EV.persistent_on('HistoryChanged', function(args)
     local el = args[1]
-    if el.operation ~= 'close' or not record_undo or #core.get_terminals() <= 1 then
+    if el.operation ~= 'close' or not record_undo or #core.get_terminals() < 1 then
         return
     end
     local t = core.term_by_buf_id(el.buf)
@@ -161,7 +161,7 @@ end
 M.undo = function()
     local rec = table.remove(undo_list, #undo_list)
     if rec == nil then
-        print("Nothing to undo")
+        ERRORS.warning("Nothing to undo")
         return
     end
     rec.term.remote_info = rec.term._remote_info

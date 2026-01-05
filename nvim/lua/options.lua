@@ -17,7 +17,6 @@ local M = {
     use_cheatsheet = true,
     float_pane_title = ':term_title:',
     tab_title = 'Tab :tab_n:',
-    use_dressing = true,
     opacity = 0,
     use_lualine = true,
     show_welcome_message = true,

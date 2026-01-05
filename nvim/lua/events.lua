@@ -2,7 +2,8 @@ local funcs = require('functions')
 local ERRORS = require('error_handling')
 
 local M = {}
-local is_handling_error = false
+local is_started = false
+local events_buffer = {}
 
 local events = {
     FloatHidden = {},
@@ -80,19 +81,15 @@ local run_events = function(ev, args, which)
             ERRORS.try_execute(function()
                 l.callback(args)
             end)
-            -- local safe, err = xpcall(function()
-            --     l.callback(args)
-            -- end, debug.traceback)
-            -- if not safe and not is_handling_error then
-            --     is_handling_error = true
-            --     M.trigger_event('Error', {err})
-            --     is_handling_error = false
-            -- end
         end
     end
 end
 
 M.trigger_event = function(ev, args)
+    if not is_started and ev ~= 'VesperStarted' then
+        table.insert(events_buffer, {ev = ev, args = args})
+        return
+    end
     run_events(ev, args, persistent_events)
     run_events(ev, args, events)
 end
@@ -113,6 +110,16 @@ end
 M.persistent_on = function(ev, callback)
     return add_event(ev, callback, persistent_events)
 end
+
+M.persistent_on('VesperStarted', function()
+    is_started = true
+    ERRORS.defer(1, function()
+        for _, ev in pairs(events_buffer) do
+            M.trigger_event(ev.ev, ev.args)
+        end
+        events_buffer = {}
+    end)
+end)
 
 M.single_shot = function(ev, callback)
     local id

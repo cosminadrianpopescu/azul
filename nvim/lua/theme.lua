@@ -5,9 +5,7 @@ local EV = require('events')
 local TABS = require('tab_vars')
 local funcs = require('functions')
 
-if options.use_dressing then
-    require('vim_ui')
-end
+require('vim_ui')
 
 if not options.use_lualine then
     return
