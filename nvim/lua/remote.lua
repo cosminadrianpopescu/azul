@@ -68,7 +68,7 @@ local providers = {
     vesper = {
         cmd_template = '#bin# -a #session_id# -m',
         get_scrollback = function(t, callback)
-            local local_cmd = t.remote_info.bin .. ' -v ' .. '"VesperDumpScrollback /tmp/' .. t.remote_info.uid .. '" -a ' .. t.remote_info.uid .. ' && cat /tmp/' .. t.remote_info.uid
+            local local_cmd = t.remote_info.bin .. ' -r ' .. '"VesperDumpScrollback /tmp/' .. t.remote_info.uid .. '" -a ' .. t.remote_info.uid .. ' && cat /tmp/' .. t.remote_info.uid
             get_scrollback(t, local_cmd, callback)
         end,
     },

@@ -77,7 +77,7 @@ local send_to_provider = function(t, cmd, opts)
 end
 
 local send_to_vesper = function(t, vim_cmd, opts)
-    send_to_provider(t, t.remote_info.bin .. ' -v ' .. vim_cmd .. ' -a ' .. t.remote_info.uid, opts)
+    send_to_provider(t, t.remote_info.bin .. ' -r ' .. vim_cmd .. ' -a ' .. t.remote_info.uid, opts)
 end
 
 local send_to_tmux = function(t, cmd, opts)

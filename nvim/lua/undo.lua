@@ -114,7 +114,7 @@ end
 
 EV.persistent_on('HistoryChanged', function(args)
     local el = args[1]
-    if el.operation ~= 'close' or not record_undo or #core.get_terminals() < 1 then
+    if el.operation ~= 'close' or not record_undo or #core.get_terminals() <= 1 then
         return
     end
     local t = core.term_by_buf_id(el.buf)
