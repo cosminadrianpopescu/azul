@@ -313,8 +313,8 @@ EV.persistent_on('ModeChanged', function(args)
     if current_mode == 'c' or current_terminal == nil or current_terminal.remote_info == nil or funcs.remote_state(current_terminal) == 'disconnected' then
         return
     end
-    local enter_scroll = (options.workflow == 'tmux' and args[1] == 'M' and args[2] == 'n')
-        or ((options.workflow == 'vesper' or options.workflow == 'zellij') and args[1] == 'a' and args[2] == 'n')
+    local enter_scroll = (options.workflow == 'vesper' and options.auto_scroll == true and args[1] == 'M' and args[2] == 'n')
+        or (((options.workflow == 'vesper' and options.auto_scroll == false) or options.workflow == 'zellij') and args[1] == 'a' and args[2] == 'n')
 
 
     if enter_scroll then

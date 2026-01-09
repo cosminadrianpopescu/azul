@@ -818,7 +818,7 @@ M.run_init_lua = function()
 end
 
 M.reload_config = function()
-    if options.workflow == 'tmux' or options.workflow == 'vesper' then
+    if options.workflow == 'vesper' then
         local cmd = 'tunmap ' .. options.modifier
         pcall(function() vim.api.nvim_command(cmd) end)
     end

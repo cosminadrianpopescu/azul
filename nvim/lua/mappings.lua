@@ -128,7 +128,7 @@ local generic_key_handler = function()
             core.send_to_current(options.modifier, true)
             return ''
         end
-        if options.workflow == 'tmux' and core.current_mode() ~= 'n' and core.current_mode() ~= 'a' then
+        if options.workflow == 'vesper' and options.auto_scroll == true and core.current_mode() ~= 'n' and core.current_mode() ~= 'a' then
             vim.api.nvim_command('stopinsert')
             ERRORS.defer(1, function()
                 core.enter_mode('M')
@@ -164,7 +164,7 @@ local generic_key_handler = function()
         end
         if funcs.compare_shortcuts(trans, options.modifier)
             and core.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
-            and (options.workflow == 'tmux' or options.workflow == 'vesper')
+            and options.workflow == 'vesper'
         then
             return process_modifier()
         end

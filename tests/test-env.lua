@@ -159,7 +159,7 @@ local default_shortcut_mode = function(action)
         return 't'
     end
 
-    if options.workflow == 'tmux' or options.workflow == 'vesper' then
+    if options.workflow == 'vesper' then
         return 'M'
     end
 
@@ -193,7 +193,7 @@ L.action_shortcut = function(action, mode, arg, with_modifier)
         return map.shortcut
     end
 
-    if (options.workflow == 'tmux' or options.workflow == 'vesper') and (mode == default_mode or mode == nil) then
+    if (options.workflow == 'vesper') and (mode == default_mode or mode == nil) then
         return options.modifier .. ' ' .. map.shortcut
     end
 

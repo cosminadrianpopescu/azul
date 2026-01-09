@@ -54,7 +54,7 @@ end)
 
 EV.persistent_on('EnterDisconnectedPane', function()
     mode_before_disconnected = core.current_mode()
-    if mode_before_disconnected == 'n' or mode_before_disconnected == 'a' or options.workflow == 'tmux' or mode_before_disconnected == 'M' then
+    if mode_before_disconnected == 'n' or mode_before_disconnected == 'a' or (options.workflow == 'vesper' and options.auto_scroll) or mode_before_disconnected == 'M' then
         return
     end
     ERRORS.defer(1, function()

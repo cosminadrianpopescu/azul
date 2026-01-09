@@ -28,6 +28,7 @@ local M = {
     undo_restore_cmd = 'cat',
 
     strict_scroll = false,
+    auto_scroll = false,
 }
 
 M.set_option = function(key, value)

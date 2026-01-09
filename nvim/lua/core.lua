@@ -758,7 +758,7 @@ L.is_vim_mode = function(m)
 end
 
 L.get_real_mode = function(m)
-    return (L.is_vim_mode(m) and m) or (workflow == 'tmux' and 'n') or 't'
+    return (L.is_vim_mode(m) and m) or (workflow == 'vesper' and options.auto_scroll == true and 'n') or 't'
 end
 
 local do_set_key_map = function(map_mode, ls, rs, options)
@@ -1409,11 +1409,11 @@ M.run_map = function(m)
 end
 
 M.is_modifier_mode = function(m)
-    if workflow ~= 'tmux' and workflow ~= 'vesper' then
+    if workflow ~= 'vesper' then
         return false
     end
 
-    return (workflow == 'tmux' and (m == 'n' or m == 'a')) or (workflow == 'vesper' and m == 't')
+    return (options.auto_scroll == true and (m == 'n' or m == 'a')) or (options.auto_scroll == false and m == 't')
 end
 
 local just_close_windows = function(floats)

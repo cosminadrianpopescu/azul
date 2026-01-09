@@ -43,7 +43,7 @@ t.wait_events({TabTitleChanged = 1}, function()
                 local term = vesper.get_current_terminal()
                 t.single_shot('PaneChanged', function()
                     assert_ls(false)
-                    if options.workflow == 'tmux' and (vesper.current_mode() == 'n' or vesper.current_mode() == 'a') then
+                    if options.workflow == 'vesper' and options.auto_scroll == true and (vesper.current_mode() == 'n' or vesper.current_mode() == 'a') then
                         vesper.feedkeys('i', 'n')
                     end
                     s = t.action_shortcut('create_tab')
