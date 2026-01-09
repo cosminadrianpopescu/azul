@@ -413,6 +413,14 @@ M.enter_mode = function(new_mode)
     if is_suspended then
         return
     end
+    local accepted_mode = new_mode == 'n' or new_mode == 'a' or new_mode == 't' or new_mode == 'i' or new_mode == 'c'
+    if workflow == 'tmux' then
+        accepted_mode = accepted_mode or new_mode == 'M'
+    end
+    if (workflow == 'tmux' or workflow == 'emacs') and not accepted_mode then
+        ERRORS.warning('Modes are not available for ' .. workflow .. ' workflow')
+        return
+    end
     local old_mode = mode
     if mode == 'P' then
         if options.hide_in_passthrough then

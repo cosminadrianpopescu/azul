@@ -54,7 +54,7 @@ local s = t.action_shortcut('enter_mode', nil, 's') .. ' '
 t.wait_events({TabTitleChanged = 1}, function()
     t.simulate_keys(s, {PaneChanged = 5}, function()
         local events = {ModeChanged = 1}
-        if options.workflow == 'emacs' then
+        if options.workflow == 'emacs' or options.workflow == 'tmux' then
             events = nil
         end
         t.simulate_keys("<cr>", events, function()

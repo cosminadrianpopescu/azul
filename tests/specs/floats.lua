@@ -31,7 +31,7 @@ t.wait_events({TabTitleChanged = 1}, function()
                 assert_terminals_for_floating(1, false)
                 local s = t.action_shortcut('enter_mode', nil, 'm') .. ' ' .. t.action_shortcut('move_end', 'm') .. ' ' .. t.action_shortcut('move_top', 'm')
                 t.simulate_keys(s, {ModeChanged = 1, WinConfigChanged = 2}, function()
-                    if options.workflow ~= 'emacs' then
+                    if options.workflow ~= 'emacs' and options.workflow ~= 'tmux' then
                         assert(vesper.current_mode() == 'm', 'The current mode should be m, not ' .. vesper.current_mode())
                     end
                     local term = vesper.get_current_terminal()

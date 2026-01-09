@@ -164,7 +164,7 @@ local generic_key_handler = function()
         end
         if funcs.compare_shortcuts(trans, options.modifier)
             and core.current_mode() == 't' and buffer == '' and not timer_set and timer == nil
-            and options.workflow == 'vesper'
+            and (options.workflow == 'vesper' or options.workflow == 'tmux')
         then
             return process_modifier()
         end
