@@ -14,7 +14,7 @@ local TIMEOUT = 150
 local assert_ls = function(state)
     for _, line in ipairs(t.get_current_term_lines()) do
         local result = line:match("ls$")
-        t.assert((state and result ~= nil) or result == nil, "There should be " .. ((state and "one") or "none") .. " ls commands in this terminal")
+        assert((state and result ~= nil) or result == nil, "There should be " .. ((state and "one") or "none") .. " ls commands in this terminal")
     end
 end
 
@@ -27,7 +27,7 @@ local first_tab_shortcut = function()
 end
 
 EV.single_shot('TerminalAdded', function()
-    t.assert(#vesper.get_terminals() == 1, "Initially, there should be one tab created")
+    assert(#vesper.get_terminals() == 1, "Initially, there should be one tab created")
 end)
 t.wait_events({TabTitleChanged = 1}, function()
     vesper.feedkeys('ls<cr>', 't')
@@ -36,7 +36,7 @@ t.wait_events({TabTitleChanged = 1}, function()
         local s = t.action_shortcut('create_tab')
         t.simulate_keys(s, {PaneChanged = 1}, function()
             local lines = t.get_current_term_lines()
-            t.assert(#lines > 0, "There should be at least one line of text in this terminal")
+            assert(#lines > 0, "There should be at least one line of text in this terminal")
             assert_ls(false)
             t.simulate_keys(first_tab_shortcut(), {PaneChanged = 1}, function()
                 assert_ls(true)

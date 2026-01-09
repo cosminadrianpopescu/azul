@@ -4,7 +4,7 @@ local files = require('files')
 
 local assert = function(n)
     local terms = vesper.get_terminals()
-    t.assert(#terms == n, "There should be " .. n .. " opened tabs")
+    assert(#terms == n, "There should be " .. n .. " opened tabs")
 end
 
 t.wait_events({TabTitleChanged = 1}, function()
