@@ -202,14 +202,6 @@ local safe_buf_delete = function(buf_id)
     return safe
 end
 
-local session_child_file = function(for_parent)
-    local name = os.getenv((for_parent and 'VESPER_PARENT_SESSION') or 'VESPER_SESSION')
-    if name == nil then
-        name = ''
-    end
-    return os.getenv('VESPER_RUN_DIR') .. '/' .. name .. '-child'
-end
-
 local deserialize = function(var)
     return loadstring("return " .. string.gsub(var, "\\n", "\n"))()
 end
@@ -290,7 +282,6 @@ end
 return {
     is_handling_remote = is_handling_remote,
     is_marionette = is_marionette,
-    session_child_file = session_child_file,
     safe_close_window = safe_close_window,
     safe_buf_delete = safe_buf_delete,
     find = find,

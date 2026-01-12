@@ -1,5 +1,6 @@
 local funcs = require('functions')
 local ERRORS = require('error_handling')
+local PT = require('passthrough')
 
 local validate_value = function(list, value, msg)
     if funcs.index_of(list, value) ~= -1 then
@@ -113,7 +114,7 @@ return {
 
         vim.api.nvim_create_user_command('VesperEnterMode', function(opts)
             core.enter_mode(opts.fargs[1])
-        end, {nargs = 1, desc = 'Puts `vesper` in the requested mode.\n\n**Parameters**:\n\n * the mode (p or r or s or m or T or n or t or v)'})
+        end, {nargs = 1, desc = "**Parameters**:\n\n* mode The `vesper` mode in which to enter ('p'|'r'|'s'|'m'|'T'|'n'|'t'|'v')\n\nEnters a new `vesper` mode. This will enter any available mode for vesper and\nzellij workflows. For tmux workflow, this will enter only scroll, terminal or\nmodifier mode. For emacs mode, this will enter only scroll or terminal mode."})
 
         vim.api.nvim_create_user_command('VesperShowFloats', function()
             F.show_floats(funcs.current_float_group())
@@ -147,7 +148,7 @@ return {
                 core.enter_mode('t')
             end
             ERRORS.defer(1, function()
-                core.toggle_passthrough(delim)
+                PT.toggle_passthrough(delim)
             end)
         end, {desc = "Toggles the passthrough mode.\n\n**Parameters**:\n\n* The escape sequence", nargs = '?'})
 
@@ -254,6 +255,16 @@ return {
         vim.api.nvim_create_user_command('VesperDumpScrollback', function(opts)
             FILES.write_file(opts.fargs[1], core.fetch_scrollback())
         end, {desc = 'Dumps the content of the scrollback buffer of the current terminal in the\nindicated file', complete = "file", nargs = 1})
+        vim.api.nvim_create_user_command('IVesperRegisterChild', function(opts)
+            local id = opts.fargs[1]
+            local panel_id = opts.fargs[2]
+            PT.register_child(id, panel_id)
+        end, {desc = 'Register a child vesper', nargs = '+'})
+        vim.api.nvim_create_user_command('IVesperUnregisterChild', function(opts)
+            local id = opts.fargs[1]
+            local panel_id = opts.fargs[2]
+            PT.unregister_child(id, panel_id)
+        end, {desc = 'Register a child vesper', nargs = '+'})
     end,
     param_desc = function(command, idx)
         if params_map[command] == nil or params_map[command].list == nil or idx < 1 or idx > #params_map[command].list then

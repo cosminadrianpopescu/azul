@@ -10,6 +10,7 @@ local env = require('environment')
 local F = require('floats')
 local R = require('remote')
 local ERRORS = require('error_handling')
+local PT = require('passthrough')
 
 M.ini_shortcuts = {}
 
@@ -225,13 +226,12 @@ M.default_config = {
                 paste = '<C-v>',
                 enter_mode = {
                     p = '<C-p>',
-                    r = '<C-r>',
+                    r = '<C-n>',
                     v = '<C-S-v>',
-                    s = '<C-s>',
-                    T = '<C-S-t>',
-                    a = '<C-a>',
-                    m = '<C-s-m>',
-                    P = '<C-s-p>',
+                    T = '<C-t>',
+                    a = '<C-s>',
+                    m = '<C-h>',
+                    P = '<C-g>',
                 },
                 disconnect = '<C-d>',
             },
@@ -561,7 +561,7 @@ local set_shortcut = function(action, shortcut, mode, arg)
     elseif action == 'passthrough' then
         map(mode, shortcut, '', {
             callback = function()
-                core.toggle_passthrough()
+                PT.toggle_passthrough()
             end,
             desc = 'Toggle passthrough mode',
             action = action,

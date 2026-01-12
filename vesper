@@ -64,6 +64,16 @@ list_sessions() {
     done
 }
 
+if [ -n "$VESPER_SESSION" ]
+then
+    export VESPER_PARENT_SESSION=$VESPER_SESSION
+fi
+
+if [ -n "$VESPER_PANEL_ID" ]
+then
+    export VESPER_PARENT_PANEL_ID=$VESPER_PANEL_ID
+fi
+
 if [ ! -d $VESPER_RUN_DIR ]
 then
     mkdir $VESPER_RUN_DIR
@@ -71,13 +81,6 @@ fi
 
 export VESPER_CHILD_FILE=""
 export VESPER_VIM_CMD=""
-
-if [ "$VESPER_SESSION" != "" ]
-then
-    export VESPER_CHILD_FILE=$VESPER_RUN_DIR/$VESPER_SESSION-child
-    echo "" > $VESPER_CHILD_FILE
-    export VESPER_PARENT_SESSION=$VESPER_SESSION
-fi
 
 export VESPER_SESSION=""
 export VESPER_LIST=""

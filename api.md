@@ -105,7 +105,9 @@ Opens a new pane with a new shell.
 
 * mode The `vesper` mode in which to enter ('p'|'r'|'s'|'m'|'T'|'n'|'t'|'v')
 
-Enters a new `vesper` mode
+Enters a new `vesper` mode. This will enter any available mode for vesper and
+zellij workflows. For tmux workflow, this will enter only scroll, terminal or
+modifier mode. For emacs mode, this will enter only scroll or terminal mode.
 
 #### show_floats
 

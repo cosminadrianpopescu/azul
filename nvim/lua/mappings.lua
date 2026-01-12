@@ -255,26 +255,6 @@ local generic_key_handler = function()
     end, ns_id)
 end
 
-local has_child_sessions_in_passthrough = function()
-    local f = funcs.session_child_file()
-    if not FILES.exists(f) then
-        return false
-    end
-
-    local content = FILES.read_file(f)
-    return content:gsub('[\n\r\t]', '') == 'true'
-end
-
-core.set_key_map('P', options.passthrough_escape, '', {
-    callback = function()
-        if has_child_sessions_in_passthrough() then
-            core.send_to_current(options.passthrough_escape, true)
-            return
-        end
-        core.enter_mode('t')
-    end
-})
-
 EV.persistent_on('VesperStarted', function()
     generic_key_handler()
 end)

@@ -7,6 +7,7 @@ local U = require('undo')
 local F = require('floats')
 local R = require('remote')
 local MAP = require('mappings')
+local PT = require('passthrough')
 
 local M = {}
 
@@ -49,7 +50,7 @@ M.get_current_workflow = core.get_current_workflow
 M.paste_from_clipboard = core.paste_from_clipboard
 M.start_logging = core.start_logging
 M.stop_logging = core.stop_logging
-M.toggle_passthrough = core.toggle_passthrough
+M.toggle_passthrough = PT.toggle_passthrough
 M.rotate_panel = core.rotate_panel
 M.on = EV.on
 M.clear_event = EV.clear_event
@@ -89,5 +90,6 @@ M.add_key_parser = MAP.add_key_parser
 M.remote_exit_scroll_mode = R.remote_exit_scroll_mode
 M.register_remote_profile = R.register_remote_profile
 M.warning = ERRORS.warning
+M.register_child = PT.register_child
 
 return M

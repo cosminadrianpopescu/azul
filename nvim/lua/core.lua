@@ -391,22 +391,6 @@ local try_recover_layout = function()
     end
 end
 
-local anounce_passthrough = function()
-    local f = funcs.session_child_file(true)
-    if not FILES.exists(f) then
-        return
-    end
-    FILES.write_file(f, "true")
-end
-
-local recall_passthrough = function()
-    local f = funcs.session_child_file(true)
-    if not FILES.exists(f) then
-        return
-    end
-    FILES.write_file(f, "")
-end
-
 --- Enters a custom mode. Use this function for changing custom modes
 --- @param new_mode 'p'|'r'|'s'|'m'|'T'|'n'|'t'|'v'|'P'|'M'|'a'
 M.enter_mode = function(new_mode)
@@ -426,8 +410,6 @@ M.enter_mode = function(new_mode)
         if options.hide_in_passthrough then
             vim.o.laststatus = global_last_status
         end
-        recall_passthrough()
-        L.passthrough_escape = nil
     end
     mode = new_mode
     if mode == 'P' then
@@ -437,7 +419,6 @@ M.enter_mode = function(new_mode)
                 vim.o.laststatus = 0
             end
         end)
-        anounce_passthrough()
     end
     if old_mode ~= new_mode then
         EV.trigger_event('ModeChanged', {old_mode, new_mode})
@@ -1175,19 +1156,6 @@ M.stop_logging = function()
 
     vim.api.nvim_del_autocmd(loggers[t.buf .. ''].autocmd)
     loggers[t.buf .. ''] = nil
-end
-
---- Toggles passthrough mode
---- @param escape string|nil Escape sequence
-M.toggle_passthrough = function(escape)
-    if M.current_mode() ~= 'P' then
-        if escape ~= nil then
-            L.passthrough_escape = escape
-        end
-        M.enter_mode('P')
-    else
-        M.enter_mode('t')
-    end
 end
 
 --- Rotates the current panel
