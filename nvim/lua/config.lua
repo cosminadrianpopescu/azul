@@ -47,7 +47,7 @@ local actions = {
     'copy', 'paste', 'rotate_panel',
     'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
     'show_mode_cheatsheet', 'remote_scroll', 'undo', 'toggle_fullscreen',
-    'start_search', 'select_command',
+    'start_search', 'select_command', 'create_pane', 'rename_current'
 }
 
 local modes = {
@@ -236,26 +236,23 @@ M.default_config = {
                 disconnect = '<C-d>',
             },
             resize = {
-                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
+                enter_mode = {t =  '<cr>$$$<esc>$$$i$$$<C-n>'},
                 resize_left = 'h$$$<left>', resize_right = 'l$$$<right>', resize_up = 'k$$$<up>', resize_down = 'j$$$<down>',
                 show_mode_cheatsheet = '<C-o>',
             },
             pane = {
-                select_terminal = 'T',
-                select_session = 'S',
-                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
+                split_left = 'L', split_right = 'r', split_up = 'U', split_down = 'd',
+                enter_mode = {t =  '<cr>$$$<esc>$$$i$$$<c-p>'},
                 toggle_floats = 'w',
-                create_float = 'f',
+                create_pane = 'n',
                 select_left = 'h$$$<left>', select_right = 'l$$$<right>', select_up = 'k$$$<up>', select_down = 'j$$$<down>',
                 rotate_panel = 'x',
-                edit_scrollback = 'e', edit_scrollback_log = 'ge',
                 show_mode_cheatsheet = '<C-o>',
-                rename_float = 'r',
-                remote_scroll = '[',
-                toggle_fullscreen = 'F',
+                rename_current = 'c',
+                toggle_fullscreen = 'f',
             },
             move = {
-                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
+                enter_mode = {t =  '<cr>$$$<esc>$$$i$$$<C-h>'},
                 move_left = {
                     ["5"] = 'h$$$<left>',
                     ["1"] = '<C-h>$$$<C-left>',
@@ -275,23 +272,33 @@ M.default_config = {
                 move_top = 'K$$$<s-up>', move_bottom = 'J$$$<s-down>', move_start = 'H$$$<s-left>', move_end = 'L$$$<s-right>',
                 show_mode_cheatsheet = '<C-o>',
             },
-            split = {
-                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                split_left = 'h$$$<left>', split_right = 'l$$$<right>', split_up = 'k$$$<up>', split_down = 'j$$$<down>',
-                show_mode_cheatsheet = '<C-o>',
-            },
             tabs = {
-                enter_mode = {t =  '<cr>$$$<esc>$$$i'},
-                tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>', tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>', create_tab = 'c',
+                enter_mode = {t =  '<cr>$$$<esc>$$$i$$$<C-t>'},
+                tab_select_first = 'H$$$<s-left>', tab_select_last = 'L$$$<s-right>',
+                tab_select_previous = 'h$$$<left>', tab_select_next = 'l$$$<right>',
+                create_tab = 'n',
                 rename_tab = 'r',
                 show_mode_cheatsheet = '<C-o>',
                 undo = 'u',
+                tab_select = {
+                    ["1"] = '1',
+                    ["2"] = '2',
+                    ["3"] = '3',
+                    ["4"] = '4',
+                    ["5"] = '5',
+                    ["6"] = '6',
+                    ["7"] = '7',
+                    ["8"] = '8',
+                    ["9"] = '9',
+                },
             },
             visual = {
                 copy = 'y$$$<C-c>',
             },
             vesper = {
                 start_search = '/',
+                edit_scrollback = 'e',
+                enter_mode = {t =  '<cr>$$$<esc>$$$<C-s>'},
             }
         },
         emacs = {
@@ -652,6 +659,32 @@ local set_shortcut = function(action, shortcut, mode, arg)
                 require('core').feedkeys('/', 'n')
             end,
             desc = 'Starts a new search',
+            action = action,
+            arg = arg,
+        })
+    elseif action == 'create_pane' then
+        map(mode, shortcut, '', {
+            callback = function()
+                if funcs.are_floats_hidden(funcs.current_float_group(), core.get_terminals()) then
+                    core.split('right')
+                else
+                    F.open_float({group = funcs.current_float_group()})
+                end
+            end,
+            desc = 'Creates a new pane',
+            action = action,
+            arg = arg,
+        })
+    elseif action == 'rename_current' then
+        map(mode, shortcut, '', {
+            callback = function()
+                if funcs.are_floats_hidden(funcs.current_float_group(), core.get_terminals()) then
+                    core.rename_current_tab()
+                else
+                    F.rename_current_pane()
+                end
+            end,
+            desc = 'Renames the current tab or float',
             action = action,
             arg = arg,
         })

@@ -1,6 +1,7 @@
 local EV = require('events')
 local core = require('core')
 local options = require('options')
+local funcs = require('functions')
 local ERRORS = require('error_handling')
 
 local mode_before_disconnected = nil
@@ -30,6 +31,13 @@ EV.persistent_on({
 }, do_start_insert)
 
 ERRORS.on_error(do_start_insert)
+
+EV.persistent_on('TerminalAdded', function()
+    if options.workflow ~= 'zellij' then
+        return
+    end
+    core.enter_mode('t')
+end)
 
 EV.persistent_on({'MouseClick', 'RemoteEndedScroll'}, function()
     start_insert(true)
