@@ -3,6 +3,7 @@ local vesper = require('vesper')
 local options = require('options')
 local TABS = require('tab_vars')
 local ERRORS = require('error_handling')
+local funcs = require('functions')
 
 local get_title = function(idx)
     local id = vim.api.nvim_list_tabpages()[idx]
@@ -30,7 +31,12 @@ t.wait_events({TabTitleChanged = 1}, function()
                 t.wait_events({TabTitleChanged = 1}, function()
                     assert(get_title(1) == '1 test_1', 'The first tab now should be named 1 test_1')
                     assert(get_title(2) == '2 test_2*', 'The second tab now should be named 2 test_2*')
-                    s = t.action_shortcut('enter_mode', nil, 's') .. ' ' .. t.action_shortcut('split_right', 's')
+                    if options.workflow ~= 'zellij' then
+                        s = t.action_shortcut('enter_mode', nil, 's') .. ' ' .. t.action_shortcut('split_right', 's')
+                    else
+                        s = t.action_shortcut('split_right', nil, 'p')
+                    end
+
                     if options.workflow ~= 'emacs' then
                         s = s .. ' <cr>'
                     end

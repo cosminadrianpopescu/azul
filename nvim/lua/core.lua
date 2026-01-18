@@ -342,7 +342,9 @@ local OnTermClose = function(ev)
             vim.api.nvim_command('bnext')
         end
     end
-    vim.api.nvim_buf_delete(ev.buf, {force = true})
+    if vim.api.nvim_buf_is_valid(ev.buf) then
+        vim.api.nvim_buf_delete(ev.buf, {force = true})
+    end
     EV.trigger_event("PaneClosed", {t})
     ERRORS.defer(1, function()
         ev.buf = vim.fn.bufnr()

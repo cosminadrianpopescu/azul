@@ -284,7 +284,9 @@ EV.persistent_on('ModeChanged', function(args)
     end
     if more then
         local maps = funcs.map_by_action(new_mode, 'show_mode_cheatsheet', core.get_mode_mappings())
-        table.insert(mappings, (#maps > 0 and maps[1]) or "etc.")
+        if #maps > 0 then
+            table.insert(mappings, maps[1])
+        end
     end
     win_id = create_window(mappings, false)
 end)

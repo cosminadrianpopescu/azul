@@ -163,7 +163,7 @@ local default_shortcut_mode = function(action)
         return 'M'
     end
 
-    if vim.tbl_contains({'create_float', 'toggle_floats'}, action) then
+    if vim.tbl_contains({'create_float', 'toggle_floats', 'split_down', 'split_right', 'split_down'}, action) then
         return 'p'
     end
 
@@ -190,7 +190,7 @@ L.action_shortcut = function(action, mode, arg, with_modifier)
     local default_mode = default_shortcut_mode(action)
     local map = funcs.find(function(m) return ((arg ~= nil and m.arg == arg) or m.arg == nil) and m.action == action  and m.mode == (mode or default_mode) end, config.ini_shortcuts)
     if map == nil then
-        quit("Could not find map for " .. action .. " in mode " .. vim.inspect(mode))
+        quit("Could not find map for " .. action .. " in mode " .. vim.inspect(mode) .. " with arguments " .. vim.inspect(arg))
     end
 
     if with_modifier == false then

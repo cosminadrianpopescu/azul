@@ -47,7 +47,8 @@ local actions = {
     'copy', 'paste', 'rotate_panel',
     'rename_tab', 'edit_scrollback', 'edit_scrollback_log', 'rename_float',
     'show_mode_cheatsheet', 'remote_scroll', 'undo', 'toggle_fullscreen',
-    'start_search', 'select_command', 'create_pane', 'rename_current'
+    'start_search', 'select_command', 'create_pane', 'rename_current',
+    'vesper_quit',
 }
 
 local modes = {
@@ -222,7 +223,7 @@ M.default_config = {
         },
         zellij = {
             terminal = {
-                select_command = '<C-:>',
+                select_command = '<C-;>',
                 paste = '<C-v>',
                 enter_mode = {
                     p = '<C-p>',
@@ -233,6 +234,7 @@ M.default_config = {
                     m = '<C-h>',
                     P = '<C-g>',
                 },
+                vesper_quit = '<C-q>',
                 disconnect = '<C-d>',
             },
             resize = {
@@ -687,6 +689,12 @@ local set_shortcut = function(action, shortcut, mode, arg)
             desc = 'Renames the current tab or float',
             action = action,
             arg = arg,
+        })
+    elseif action == 'vesper_quit' then
+        map(mode, shortcut, '', {
+            callback = function()
+                vim.api.nvim_command('quitall!')
+            end
         })
     end
 end

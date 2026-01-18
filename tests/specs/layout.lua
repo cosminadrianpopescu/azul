@@ -3,6 +3,7 @@ local vesper = require('vesper')
 local funcs = require('functions')
 local options = require('options')
 local ERRORS = require('error_handling')
+local funcs = require('functions')
 
 local L = {}
 local TIMEOUT = 150
@@ -46,15 +47,24 @@ local second_tab_shortcut = function()
     return result .. ' ' .. t.action_shortcut('tab_select_next', 'T')
 end
 
-local x = t.action_shortcut('split_down', 's') .. ' '
-local s = t.action_shortcut('enter_mode', nil, 's') .. ' '
-    .. t.action_shortcut('split_right', 's') .. ' ' .. x .. x
-    .. t.action_shortcut('split_left', 's') .. ' ' .. t.action_shortcut('split_up', 's')
+local mode = (options.workflow ~= 'zellij' and 's') or 'p'
+local x = t.action_shortcut('split_down', mode) .. ' '
+if options.workflow == 'zellij' then
+    x = t.action_shortcut('enter_mode', nil, 'p') .. ' ' .. x
+end
+local s = t.action_shortcut('enter_mode', nil, mode) .. ' '
+    .. t.action_shortcut('split_right', mode) .. ' ' .. x .. x
+if options.workflow ~= 'zellij' then
+    s = s .. t.action_shortcut('split_left', mode) .. ' ' .. t.action_shortcut('split_up', mode)
+else
+    local em = t.action_shortcut('enter_mode', nil, 'p')
+    s = s .. em .. ' ' .. t.action_shortcut('split_left', mode) .. ' ' .. em .. ' ' .. t.action_shortcut('split_up', mode)
+end
 
 t.wait_events({TabTitleChanged = 1}, function()
     t.simulate_keys(s, {PaneChanged = 5}, function()
         local events = {ModeChanged = 1}
-        if options.workflow == 'emacs' or options.workflow == 'tmux' then
+        if options.workflow == 'emacs' or options.workflow == 'tmux' or options.workflow == 'zellij' then
             events = nil
         end
         t.simulate_keys("<cr>", events, function()
@@ -93,7 +103,11 @@ t.wait_events({TabTitleChanged = 1}, function()
                                                         t.simulate_keys(tab_shortcut('1'), {PaneChanged = 1}, function()
                                                             term = vesper.get_current_terminal()
                                                             assert(term.vesper_win_id ~= "new-tab", "The first tab should not have the new-tab id")
-                                                            t.simulate_keys(second_tab_shortcut(), {PaneChanged = 1}, function()
+                                                            s = second_tab_shortcut()
+                                                            if options.workflow == 'zellij' then
+                                                                s = '<cr> ' .. s
+                                                            end
+                                                            t.simulate_keys(s, {PaneChanged = 1}, function()
                                                                 term = vesper.get_current_terminal()
                                                                 assert(term.vesper_win_id == "new-tab", "Second tab should have the id new-tab")
                                                                 t.done()

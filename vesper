@@ -12,6 +12,7 @@ usage() {
     echo "    -p, --profile <profile>       Sets the remote connection to the indicated profile"
     echo "    -r <cmd>                      Execute a vim command via the lua api vim.api.nvim_command"
     echo "    -s <cmd>                      Send the command to an existing session (only together with -a)"
+    echo "    -w <workflow>                 The default workflow in which to start vesper"
     echo "    -c, --config <config-path>    Load the config from the <config-path> location"
     echo "    -x, --skip-session            Skip loading the session if a session exists"
     echo "    -v, --version                 Displays the version and exists"
@@ -86,7 +87,7 @@ export VESPER_SESSION=""
 export VESPER_LIST=""
 VESPER_CMD=""
 
-while getopts "a:t:lxnvmhs:c:r:p:-:" o
+while getopts "a:t:lxnvmhs:w:c:r:p:-:" o
 do
     case "${o}" in
         -)
@@ -182,6 +183,9 @@ do
             ;;
         x)
             export VESPER_NO_AUTOSAVE="1"
+            ;;
+        w)
+            export VESPER_DEFAULT_WORKFLOW=$OPTARG
             ;;
         v)
             version

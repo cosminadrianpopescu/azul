@@ -1,5 +1,5 @@
 local M = {
-    workflow = 'vesper',
+    workflow = os.getenv('VESPER_DEFAULT_WORKFLOW') or 'vesper',
     modifier = '<C-s>',
     link_floats_with_tabs = false,
     shell = nil,

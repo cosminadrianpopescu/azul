@@ -9,8 +9,14 @@ local TIMEOUT = 200
 t.wait_events({TabTitleChanged = 1}, function()
     local s = t.action_shortcut('create_tab')
     t.simulate_keys(s, {PaneChanged = 1}, function()
-        s = t.action_shortcut('enter_mode', nil, 's') .. ' ' .. t.action_shortcut('split_right', 's')
-            .. ' ' .. t.action_shortcut('split_down', 's') .. t.action_shortcut('split_left', 's') .. '<cr>'
+        if options.workflow ~= 'zellij' then
+            s = t.action_shortcut('enter_mode', nil, 's') .. ' ' .. t.action_shortcut('split_right', 's')
+                .. ' ' .. t.action_shortcut('split_down', 's') .. t.action_shortcut('split_left', 's') .. '<cr>'
+        else
+            local em = t.action_shortcut('enter_mode', nil, 'p') .. ' '
+            s = em .. t.action_shortcut('split_right', 'p') .. ' ' .. em .. t.action_shortcut('split_down', 'p')
+                .. ' ' .. em .. t.action_shortcut('split_left', 'p')
+        end
         t.simulate_keys(s, {PaneChanged = 3}, function()
             local term = vesper.get_current_terminal()
             assert(#vesper.get_terminals() == 5, 'There should be 5 terminals')

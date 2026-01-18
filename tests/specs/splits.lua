@@ -27,8 +27,12 @@ EV.persistent_on('TerminalAdded', function()
     main_t = vesper.get_current_terminal()
 end)
 
-local x = t.action_shortcut('split_down', 's') .. ' '
-local s = t.action_shortcut('enter_mode', nil, 's') .. ' ' .. t.action_shortcut('split_right', 's') .. ' ' .. x .. x .. x .. '<cr>'
+local mode = (options.workflow ~= 'zellij' and 's') or 'p'
+local x = t.action_shortcut('split_down', mode) .. ' '
+if options.workflow == 'zellij' then
+    x = t.action_shortcut('enter_mode', nil, mode) .. ' ' .. x
+end
+local s = t.action_shortcut('enter_mode', nil, mode) .. ' ' .. t.action_shortcut('split_right', mode) .. ' ' .. x .. x .. x .. '<cr>'
 t.wait_events({TabTitleChanged = 1}, function()
     t.simulate_keys(s, {PaneChanged = 4}, function()
         local n = #vesper.get_terminals()
@@ -39,14 +43,18 @@ t.wait_events({TabTitleChanged = 1}, function()
             assert(new_term == main_t, "The current selected terminal should be " .. main_t.buf .. ", not " .. new_term.buf)
             s = t.action_shortcut('create_float')
             t.simulate_keys(s, {PaneChanged = 1}, function()
-                t.on_warning(function(msg)
-                    n = #vesper.get_terminals()
-                    assert(n == 6, "There should be 6 terminals, not " .. vim.inspect(n))
+                if options.workflow ~= 'zellij' then
+                    t.on_warning(function(msg)
+                        n = #vesper.get_terminals()
+                        assert(n == 6, "There should be 6 terminals, not " .. vim.inspect(n))
+                        test_bug1()
+                    end)
+                    -- This should generate an error, since we cannot split while in floating mode
+                    s = t.action_shortcut('enter_mode', nil, 's') .. ' ' .. t.action_shortcut('split_right', 's')
+                    t.simulate_keys(s)
+                else
                     test_bug1()
-                end)
-                -- This should generate an error, since we cannot split while in floating mode
-                s = t.action_shortcut('enter_mode', nil, 's') .. ' ' .. t.action_shortcut('split_right', 's')
-                t.simulate_keys(s)
+                end
             end)
         end)
     end)

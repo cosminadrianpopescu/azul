@@ -41,24 +41,24 @@ const do_floats = () => {
     test_factory('floats', {workflow: 'vesper'})
     test_factory('floats', {workflow: 'vesper', auto_scroll: 'true'});
     test_factory('floats', {workflow: 'tmux'});
-    test_factory('floats', {workflow: 'zellij', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
+    test_factory('floats', {workflow: 'zellij', shortcuts: {'terminal.enter_mode.m': '<C-x>', 'pane.create_float': 'F'}});
     test_factory('floats', {workflow: 'emacs'});
     test_factory('floats', {workflow: 'vesper', use_cheatsheet: 'false'});
     test_factory('floats', {workflow: 'vesper', use_cheatsheet: 'false', auto_scroll: 'true'});
-    test_factory('floats', {workflow: 'zellij', use_cheatsheet: 'false', shortcuts: {'terminal.enter_mode.m': '<C-x>'}});
+    test_factory('floats', {workflow: 'zellij', use_cheatsheet: 'false', shortcuts: {'terminal.enter_mode.m': '<C-x>', 'pane.create_float': 'F'}});
 }
 
 const expand_test = (which: string, without_modes = true) => {
     test_factory(which, {workflow: 'vesper'})
     test_factory(which, {workflow: 'vesper', auto_scroll: 'true'});
-    test_factory(which, {workflow: 'zellij'});
+    test_factory(which, {workflow: 'zellij', shortcuts: {'pane.create_float': 'F'}});
     if (without_modes) {
         test_factory(which, {workflow: 'emacs'});
         test_factory(which, {workflow: 'tmux'})
     }
     test_factory(which, {workflow: 'vesper', use_cheatsheet: 'false'});
     test_factory(which, {workflow: 'vesper', auto_scroll: 'true', use_cheatsheet: 'false'});
-    test_factory(which, {workflow: 'zellij', use_cheatsheet: 'false'});
+    test_factory(which, {workflow: 'zellij', use_cheatsheet: 'false', shortcuts: {'pane.create_float': 'F'}});
 }
 
 const do_splits = () => {

@@ -1,3 +1,4 @@
+local vim_cmd = vim.api.nvim_create_autocmd
 local core = require('core')
 local funcs = require('functions')
 local EV = require('events')
@@ -12,6 +13,8 @@ local ERRORS = require('error_handling')
 local record_undo = true
 local undo_list = {}
 local M = {}
+
+local buffer_lines = {}
 
 local restore_lines = function(buf, rec)
     if rec.term.remote_info ~= nil then
@@ -112,13 +115,22 @@ local undo_float = function(rec)
     })
 end
 
+vim_cmd('BufUnload', {
+    pattern = "*", callback = function(ev)
+        buffer_lines[ev.buf .. ""] = vim.api.nvim_buf_get_lines(ev.buf, 0, -1, false)
+    end
+})
+
 EV.persistent_on('HistoryChanged', function(args)
     local el = args[1]
     if el.operation ~= 'close' or not record_undo or #core.get_terminals() <= 1 then
         return
     end
     local t = core.term_by_buf_id(el.buf)
-    local lines = vim.api.nvim_buf_get_lines(el.buf, 0, -1, false)
+    local lines = buffer_lines[el.buf .. ""]
+    if lines == nil and vim.api.nvim_buf_is_valid(el.buf) then
+        lines = vim.api.nvim_buf_get_lines(el.buf, 0, -1, false)
+    end
     local create = find_create(el.from, el.tab_id)
     local tab_vars = {}
     if (create and create.operation) == 'create' then
