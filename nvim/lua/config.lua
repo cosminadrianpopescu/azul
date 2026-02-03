@@ -366,7 +366,7 @@ M.default_config = {
                 undo = '<C-z>',
                 toggle_fullscreen = '<F11>',
                 start_search = '<C-S-/>',
-                select_command = '<C-:>'
+                select_command = '<C-;>'
             },
         }
     }

@@ -194,7 +194,7 @@ M.get_remote_command = function(info)
         return nil
     end
 
-    local result = string.gsub(provider.cmd_template, '#bin#', info.bin):gsub('#session_id#', info.uid):gsub('#shell#', options.shell)
+    local result = string.gsub(provider.cmd_template, '#bin#', info.bin):gsub('#session_id#', info.uid):gsub('#shell#', (options.shell or vim.o.shell))
 
     if info.host ~= '' and info.host ~= nil then
         local sock = get_sock_name(info)
@@ -441,11 +441,11 @@ M.register_remote_profile = function(name, opts)
 end
 
 MAP.add_key_parser(function(key)
-    if current_mode == 'c' or vim.fn.mode() == 'c' or current_terminal == nil or current_terminal.remote_info == nil then
+    if current_mode == 'c' or vim.fn.mode() == 'c' or current_terminal == nil or current_terminal.remote_info == nil or vim.b.filetype == 'TelescopePrompt' then
         return false
     end
 
-    if funcs.remote_state(current_terminal) == 'disconnected' and vim.fn.mode() == 'n' and (key == 'q' or key == 'r') then
+    if funcs.remote_state(current_terminal) == 'disconnected' and vim.fn.mode() == 'n' and (key == 'q' or key == 'r') and core.current_mode() == 't' then
         pcall(function()
             if key == 'q' then
                 M.remote_quit(current_terminal)

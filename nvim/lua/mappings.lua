@@ -157,7 +157,7 @@ local generic_key_handler = function()
             return ''
         end
 
-        if core.current_mode() == 'n' or core.current_mode() == 'a' then
+        if (core.current_mode() == 'n' or core.current_mode() == 'a') and not is_editing then
             if trans == ':' and options.strict_scroll then
                 return ''
             end

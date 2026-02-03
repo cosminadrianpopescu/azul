@@ -1,6 +1,7 @@
 local funcs = require('functions')
 local ERRORS = require('error_handling')
 local PT = require('passthrough')
+local R = require('remote')
 
 local validate_value = function(list, value, msg)
     if funcs.index_of(list, value) ~= -1 then
@@ -58,6 +59,9 @@ local params_map = {
     },
     VesperRestoreLayout = {
         list = {'the location',},
+    },
+    VesperSendToCurrentPane = {
+        list = {'characters to send'},
     },
     VesperSetWinId = {
         list = {'*the id of the pane',},
@@ -255,6 +259,9 @@ return {
         vim.api.nvim_create_user_command('VesperDumpScrollback', function(opts)
             FILES.write_file(opts.fargs[1], core.fetch_scrollback())
         end, {desc = 'Dumps the content of the scrollback buffer of the current terminal in the\nindicated file', complete = "file", nargs = 1})
+        vim.api.nvim_create_user_command('VesperOpenRemote', function(opts)
+            R.open_remote()
+        end, {desc = 'Opens a new remote tab. You will be asked to input a remote connection and the tab will be opened using the provided credentials'})
         vim.api.nvim_create_user_command('IVesperRegisterChild', function(opts)
             local id = opts.fargs[1]
             local panel_id = opts.fargs[2]

@@ -1,6 +1,7 @@
 local core = require('core')
 local ERRORS = require('error_handling')
 local funcs = require('functions')
+local EV = require('events')
 
 local safe_put_text_to_buffer = function(buf, row, col, txt, after, me)
     local safe, _ = pcall(function()
@@ -37,6 +38,7 @@ local function wininput(opts, on_confirm, win_opts)
         end
         ERRORS.defer(1, function()
             on_confirm(input)
+            EV.trigger_event('UserInput', {input})
         end)
     end
 
@@ -72,6 +74,7 @@ local function wininput(opts, on_confirm, win_opts)
     win_opts = vim.tbl_deep_extend("force", default_win_opts, win_opts)
 
     win_id = vim.api.nvim_open_win(buf, true, win_opts)
+    EV.trigger_event('UserInputPrompt')
     vim.api.nvim_set_option_value('winhighlight', 'Search:None', {win = win_id})
 
     vim.cmd("startinsert")

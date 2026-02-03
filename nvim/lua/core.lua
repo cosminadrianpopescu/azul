@@ -642,15 +642,19 @@ cmd('TermEnter', {
     end
 })
 
+EV.persistent_on('UserInputPrompt', function()
+    is_user_editing = true
+end)
+
+EV.persistent_on('UserInput', function()
+    is_user_editing = false
+end)
+
 cmd({'FileType', 'BufEnter'}, {
     pattern = "*", callback = function()
-        ERRORS.try_execute(function()
-            local was_user_editing = is_user_editing
-            is_user_editing = vim.o.filetype == 'vesper_prompt'
-            if is_user_editing and not was_user_editing then
-                EV.trigger_event('UserInputPrompt')
-            end
-        end, try_recover_layout)
+        ERRORS.defer(1, function()
+            is_user_editing = vim.o.filetype == 'TelescopePrompt'
+        end)
     end
 })
 
@@ -715,12 +719,11 @@ cmd({'ModeChanged'}, {
             end
             local to = string.gsub(ev.match, '^[^:]+:(.*)', '%1'):sub(1, 1)
             local from = string.gsub(ev.match, '^([^:]+):.*', '%1'):sub(1, 1)
-            if funcs.remote_state(M.get_current_terminal()) == 'disconnected' then
+            if funcs.remote_state(M.get_current_terminal()) == 'disconnected' and not is_user_editing then
                 -- Block insert or visual mode for a disconnected buffer
                 if to == 'i' or to == 'v' then
                     ERRORS.defer(1, function()
                         vim.api.nvim_command('stopinsert')
-                        -- M.feedkeys('<Esc>', to)
                     end)
 
                     return
@@ -1187,7 +1190,6 @@ M.user_input = function(opts, callback, force)
         if (input ~= nil and input ~= '') or force then
             callback(input)
         end
-        EV.trigger_event("UserInput", {input})
     end)
 end
 
