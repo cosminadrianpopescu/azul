@@ -64,7 +64,7 @@ You can install `vesper` in several ways.
 ### Linux
 
 ```bash
-git clone https://github.com/cosminadrianpopescu/azul
+git clone https://github.com/cosminadrianpopescu/vesper
 cd vesper
 ./install.sh
 ```
@@ -76,7 +76,7 @@ directly `~/.local/bin/vesper -a <session-name>`
 To install it in a custom folder: 
 
 ```bash
-git clone https://github.com/cosminadrianpopescu/azul
+git clone https://github.com/cosminadrianpopescu/vesper
 cd vesper
 VESPER_PREFIX=~/programs/vesper ./install.sh
 ```
@@ -87,7 +87,7 @@ just run `~/programs/vesper/bin/vesper -a <session-name>`.
 To install it in /usr/bin: 
 
 ```bash
-git clone https://github.com/cosminadrianpopescu/azul
+git clone https://github.com/cosminadrianpopescu/vesper
 cd vesper
 VESPER_PREFIX=/usr sudo ./install.sh
 ```
@@ -96,14 +96,14 @@ VESPER_PREFIX=/usr sudo ./install.sh
 when installing by using the variable `VESPER_NVIM_EXE`. For example: 
 
 ```bash
-git clone https://github.com/cosminadrianpopescu/azul
+git clone https://github.com/cosminadrianpopescu/vesper
 cd vesper
 VESPER_NVIM_EXE=/opt/nvim.appimage ./install.sh
 ```
 
 By setting the `VESPER_CONFIG` variable during the install folder, you can
 indicate where you want the config to be installed for the first time.
-However, not that then `vesper` will not be ran with that config. It will still
+However, note that then `vesper` will not be ran with that config. It will still
 search in `~/.config/vesper` folder. In order to consider the new folder, you'll
 need to use the `-c` start option when running `vesper`.
 
@@ -173,7 +173,7 @@ machine. See the [Remote panes section](#remote-panes) for how this works.
 ### Passthrough mode
 
 As you seen in the video, you can connect to a ssh session, press a shortcut
-(in my case `<C-s>N`) and then all the keys are passed to the nested session.
+(default `<C-a>N`) and then all the keys are passed to the nested session.
 To pass the control back, you press the escape shortcut `<C-\><C-s>` (this is
 the default, but you can set your own) and you control again the main session.
 Very neat...
@@ -225,7 +225,7 @@ The pane is the backbone of `vesper`. Each pane contains a running shell (for
 example `/bin/bash` for a `linux` environment). 
 
 You can add another pane in a tab by changing to `SPLIT` mode (for example, for
-`vesper` workflow, pressing `<C-s>s`, see [Workflows](#workflows)) and splitting
+`vesper` workflow, pressing `<C-a>s`, see [Workflows](#workflows)) and splitting
 to left, right, top or bottom (for `vesper` workflow, in `SPLIT` mode, clicking
 on the cursors).
 
@@ -256,12 +256,12 @@ delimiter and the modes are called an workflow.
 
 ### Modes
 
-The `tmux`, `zellij` and `vesper` workflows, have multiple modes.
+The `zellij` and `vesper` workflows, have multiple modes.
 
 Like in `vim`, a mode is a certain way of interacting with the app. For
 example, in `PANE RESIZE` mode, pressing `h`, `j`, `k` and `l` will resize the
 currently selected pane, in `FLOAT MOVE` mode, same keys will move the
-currently selected pane while in `TERMINAL` mode, the keys will be sent you
+currently selected pane while in `TERMINAL` mode, the keys will be sent to
 your shell intepreter. The default mode when you start the app is `TERMINAL`
 mode. In `TERMINAL` mode, every key you send is sent automatically to the
 shell (`/bin/bash` for `linux` environments).
@@ -276,27 +276,19 @@ The possible modes are:
   * `SPLIT` (you can add new splits in the currently selected tab)
   * `TABS` (you can change the currently selected tab or add a new one)
   * `MODIFIER` (used for mappings for the first action after the modifier is
-    pressed for `tmux` and `vesper` workflows)
-    * `VESPER`.
+    pressed for `vesper` workflow)
+    * `SCROLL/FIND` (you can scroll the current terminal scrollback buffer and
+      search)
 
-The `VESPER` mode is a special mode in which you interact automatically with
-`vesper`, rather than the currently selected shell.
+In `SCROLL/FIND` mode, clicking on cursors or on `<pgup>`, `<pgdown>` will
+navigate in the scroll buffer (all the output that your current shell
+generated).
 
-In `VESPER` mode, clicking on cursors or on `<pgup>`, `<pgdown>` will navigate
-in the scroll buffer (all the output that your current shell generated).
+From `SCROLL/FIND` mode you can switch to `VISUAL` mode (by clicking `v`),
+that will start a selection, that can be extended by using the cursors, or
+`<pgup>` and `<pgdown>`.
 
-From `VESPER` mode you can switch to `VISUAL` mode (by clicking `v`), that will
-start a selection, that can be extended by using the cursors, or `<pgup>` and
-`<pgdown>`.
-
-In `VESPER` mode you can also communicate with `vesper` directly by sending it
-commands. You can click on `:` and a prompt will appear on top of the status
-bar. If you type `Vesper` (notice the capital `A`) and then you click `tab`, you
-will see a list of all the possible commands you can send to `vesper`. For more
-info and for a description of each command, see the [Commands
-section](#commands).
-
-To return from `VESPER` mode to `TERMINAL` mode, you can click on `i` or
+To return from `SCROLL/FIND` mode to `TERMINAL` mode, you can click on `i` or
 `<ins>`.
 
 The `TERMINAL` mode is the mode in which you start `vesper` by default. In
@@ -306,28 +298,21 @@ The current mode is indicated in the left bottom side of your status bar.
 
 The `MODIFIER` mode is a special mode also, in which `vesper` waits for the next
 keys combination in order to select an action to execute. For `vesper` and
-`tmux` workflows, when you press the modifier (`<C-s>` by default), vesper will
+`tmux` workflows, when you press the modifier (`<C-a>` by default), vesper will
 then wait in this mode for the next key combination or for cancel.
 
 ### Modifiers
 
 For `tmux` and `vesper` workflows, there is also a modifier. A modifier is a key
-combination that can be set via the `delimiter` option (default `<C-s>`) that
+combination that can be set via the `delimiter` option (default `<C-a>`) that
 when pressed in `TERMINAL` mode has a special meaning, depending on the
 workflow. This combination will not be sent automatically to your shell, even
 when in `TERMINAL` mode.
 
-With a `tmux` workflow, the modifier will automatically put `vesper` in `VESPER`
-mode and it will show you (if `use_cheatseet` option is set to true) a list of
-possible shortcuts. The next key will be sent to vesper, instead of your
-terminal. You can click `<esc>` or `<C-c>` if you change your mind and you
-want to get back to `TERMINAL` mode, or you can press for example `p` to
-switch to `PANE SELECT` mode.
-
 When clicking the modifier, `vesper` will show you the next possible keys (if
 `use_cheatsheet` options is set to true) on the bottom of the page, but will
-stay in `TERMINAL` mode. If the next key is an `vesper` shortcut, then an `vesper`
-command will be executed. If no, then both keys (the modifier and the
+stay in `TERMINAL` mode. If the next key is an `vesper` shortcut, then a
+`vesper` command will be executed. If no, then both keys (the modifier and the
 following key) will be sent to the current shell.
 
 ### Emacs workflow
@@ -342,20 +327,17 @@ click on `<a-f>`. For a full list of shortcuts for this workflow, check the
 ### Zellij workflow
 
 In this workflow, there are modes, but there is no modifier. You will mostly
-be in `TERMINAL`, `VESPER` or the custom `vesper` modes (`PANE SELECT`, `PANE
-RESIZE`, `MOVE`, `SPLIT` or `TABS`). To switch in a another mode, you have
-standard shortcuts prefixed by a standard delimiter (`ctrl` or `alt`). For
-example, to change to `TABS` mode, you can click `<C-S-t>`. For a full list of
-shortcuts for this workflow, chek the `examples/zellij-config.ini` file.
+be in `TERMINAL`, `SCROLL/FIND` or the custom `vesper` modes (`PANE SELECT`,
+`PANE RESIZE`, `MOVE`, `SPLIT` or `TABS`). To switch in a another mode, you
+have standard shortcuts prefixed by a standard delimiter (`ctrl` or `alt`).
+For example, to change to `TABS` mode, you can click `<C-S-t>`. For a full
+list of shortcuts for this workflow, chek the `examples/zellij-config.ini`
+file.
 
 ### Tmux workflow
 
-In this workflow, you have modes and you also have a modifier. This means,
-that by default you are in `TERMINAL` mode and all your keys are sent to your
-`bash` interpreter (or `cmd` for windows). Whenever you want to interact with
-`vesper`, you need to press your modifier (by default `<C-s>`). This will put
-`vesper` from `TERMINAL` mode in `VESPER` mode. Now, your key presses will be
-sent to `vesper`, instead of your `bash` interpreter, just like with `tmux`.
+In this workflow, you have a modifier but no modes. The shortcuts will be
+similar to the usual tmux shortcuts. 
 
 ### Vesper workflow
 
@@ -363,12 +345,7 @@ This is the default workflow. After installation, if you don't modify your
 configuration, when you will start `vesper`, you will find yourself in the
 `vesper` workflow. This workflow is a combination of all the previous workflows.
 You are all the time in the `TERMINAL` mode, you have a modifier (default
-`<C-s>`) and you have modes. 
-
-Unlike `tmux` workflow, when you click the modifier `vesper` will remain in
-`TERMINAL` mode, but will wait for the next key and is going to interpret it
-like an `vesper` command if it's a known shortcut, or if not, will send `<C-s>`
-followed by the key you pressed to your interpreter.
+`<C-a>`) and you have modes. 
 
 ## Mouse support
 
@@ -382,29 +359,21 @@ and possible values, you can check
 
 ## Commands
 
-You can communicate directly with vesper from `VESPER` mode, by clicking `:`
-(while in `VESPER` mode). This will open a prompt on top of the status bar.
-There, you can type one of the possible commands and then click `enter`.
-`Vesper` will execute the command and then return in `TERMINAL` mode or stay in
-`VESPER` mode, depending on the command requested. 
-
-Some of the commands can take parameters. For example, `VesperSelectPane` will
-take as a parameter the direction in which to select the next pane (left,
-right, up or down). The parameters are separated by spaces. For example, to
-select the next pane to the left, in `VESPER` mode, you need to click the
-following: `:VesperSelectPane left<cr>` (the `<cr>` represents `enter`).
+If you click `<C-a>:`, vesper will open a prompt for you to select a vesper
+command. Some commands will also require parameters. If this is the case, then
+after the command is selected, you will be asked for parameters.
 
 ### Possible commands
 
-#### VesperHideFloats
+#### HideFloats
 
 Hiddens all the floats. 
 
-#### VesperOpen
+#### Open
 
 Opens a new tab with a new shell. 
 
-#### VesperEnterMode
+#### EnterMode
 
 Puts `vesper` in the requested mode. 
 
@@ -412,24 +381,24 @@ Puts `vesper` in the requested mode.
 
 * the mode (p or r or s or m or T or n or t or v)
 
-#### VesperShowFloats
+#### ShowFloats
 
 Shows the currently opened floats. If no floats are created yet, then nothing
 will be shown. If the option `link_floats_with_tabs` is true, then it shows
 the currently opened floats on the current tab.
 
-#### VesperOpenFloat
+#### OpenFloat
 
 Creates a new float on the current tab. If the option `link_floats_with_tabs`
 is set to `true`, then this float will only be visible on the currently
 selected tab.
 
-#### VesperToggleFloats
+#### ToggleFloats
 
 Toggles the opened floats visibility. If `link_floats_with_tabs` is true, then
 it toggles the visibility of opened floats for the current tab.
 
-#### VesperMoveCurrentFloat
+#### MoveCurrentFloat
 
 Moves the currently selected float in the given direction with the given
 increment.
@@ -440,7 +409,7 @@ increment.
 * increment (number) - optional. If missing, then the float will be moved by 5
   pixels
 
-#### VesperSelectPane
+#### SelectPane
 
 Selects the next pane in the indicated direction
 
@@ -448,7 +417,7 @@ Selects the next pane in the indicated direction
 
 * direction (left, right, up or down)
 
-#### VesperSendToCurrentPane
+#### SendToCurrentPane
 
 Sends the indicated text to the currently selected pane. This commands accepts
 after it a `!` symbol. This means that the characters will be escaped. 
@@ -465,7 +434,7 @@ text `ls -al<cr>`. The `<cr>` will not be replaced by an `enter`.
 
 * the text to send to the currently selected pane
 
-#### VesperPositionCurrentFloat
+#### PositionCurrentFloat
 
 Positions the currently selected floating pane in a region of the screen. 
 
@@ -473,11 +442,11 @@ Positions the currently selected floating pane in a region of the screen.
 
 * the screen region where to position the float (top, bottom, start or end)
 
-#### VesperRedraw
+#### Redraw
 
 Redraws the terminal
 
-#### VesperSuspend
+#### Suspend
 
 Suspends all the `vesper` events. This is an usefull command for advanced users
 who might want to open something in an underlying `nvim` buffer. Normally,
@@ -485,7 +454,7 @@ that something would be overriten by a new shell. In order to prevent this,
 you can suspend the `vesper` events, finish your job and then resume the `vesper`
 events.
 
-#### VesperResume
+#### Resume
 
 Resumes the `vesper` events. This is an usefull command for advanced users
 who might want to open something in an underlying `nvim` buffer. Normally,
@@ -493,11 +462,11 @@ that something would be overriten by a new shell. In order to prevent this,
 you can suspend the `vesper` events, finish your job and then resume the `vesper`
 events.
 
-#### VesperDisconnect
+#### Disconnect
 
 Disconnects the current session
 
-#### VesperSaveLayout
+#### SaveLayout
 
 Saves the current layout. Uppon invoking this command, you will be met with a
 prompt at the bottom of the screen, on top of the status bar, to indicate a
@@ -511,7 +480,7 @@ See the [Session support section](#session-support)
 
 * The file in which to save the layout (optional)
 
-#### VesperRestoreLayout
+#### RestoreLayout
 
 Restores a saved layout. Uppon invoking this command, you will be met with a
 prompt at the bottom of the screen, on top of the status bar, to indicate a
@@ -525,7 +494,7 @@ See the [Session support section](#session-support)
 
 * The file from which to restore the layout (optional)
 
-#### VesperSetCmd
+#### SetCmd
 
 Sets a command to be launched uppon a restore. For more info, see the [Session
 support section](#session-support).
@@ -534,7 +503,7 @@ support section](#session-support).
 
 * the command to be launched uppon a restore
 
-#### VesperStartLogging
+#### StartLogging
 
 Starts logging the current terminal scrollback buffer. 
 
@@ -545,11 +514,11 @@ is in the scroll buffer.
 
 * The file in which to start logging (optional)
 
-#### VesperStopLogging
+#### StopLogging
 
 If started, stops the current terminal logging of the scroll buffer.
 
-#### VesperSetWinId
+#### SetWinId
 
 Sets a vesper windows id for the currently selected pane. See the [Session
 support section](#session-support) for why you would set and how you would use
@@ -559,7 +528,7 @@ this id
 
 * the id of the pane
 
-#### VesperTogglePassthrough
+#### TogglePassthrough
 
 Toggles the passthrough mode.
 
@@ -567,11 +536,11 @@ Toggles the passthrough mode.
 
 * The escape sequence
 
-#### VesperRenameCurrentTab
+#### RenameCurrentTab
 
 Renames the currently selected tab.
 
-#### VesperEdit
+#### Edit
 
 Edits a file in the current terminal by opening in the editor set by the
 `editor` options or the `$EDITOR` variable on your system.
@@ -580,23 +549,23 @@ Edits a file in the current terminal by opening in the editor set by the
 
 * The file in to edit (optional)
 
-#### VesperEditScrollback
+#### EditScrollback
 
 Edits the current terminal's buffer in the editor set by the `editor` option
 or the `$EDITOR` variable on your system.
 
-#### VesperEditScrollbackLog
+#### EditScrollbackLog
 
 Edits the current terminal's scrollback log in the editor set by the `editor`
 option or the `$EDITOR` variable on your system. If the logging is not started
 using `VesperStartLogging` command, an error message is thrown.
 
-#### VesperRenameCurrentFloat
+#### RenameCurrentFloat
 
 Renames the currently selected pane float. If the currently selected pane is
 an embedded pane, it will throw an error.
 
-#### VesperSelectTab
+#### SelectTab
 
 Select the tab indicated by the number in parameter. If the tab does not
 exists (for example you are trying to select the 5th tab, but only have 4
@@ -606,31 +575,31 @@ tabs) it will throw an error.
 
 * The tab to select
 
-#### VesperReloadConfig
+#### ReloadConfig
 
 Reloads the current configuration
 
-#### VesperEditConfig
+#### EditConfig
 
 Edits the current configuration in the currently selected pane (embedded or
 floating)
 
-#### VesperQuit
+#### Quit
 
 Exists vesper closing all the current panes and saving the session if autosave
 is set. This is the recommended way to quit vesper, if you want your session
 to be preserver for the next time you open it.
 
-#### VesperUndo
+#### Undo
 
 Reopens the last tab, float or split closed
 
-#### VesperToggleFullscreen
+#### ToggleFullscreen
 
 Toggles the currently selected floating pane full screen, or if the pane is
 already full screen, it will toggle it to the original state
 
-#### VesperCd
+#### Cd
 
 Changed the directory of the current pane to the indicated new directory
 
@@ -638,10 +607,15 @@ Changed the directory of the current pane to the indicated new directory
 
 * the new directory
 
-#### VesperDumpScrollback
+#### DumpScrollback
 
 Dumps the content of the scrollback buffer of the current terminal in the
 indicated file
+
+#### OpenRemote
+
+Opens a new remote tab. You will be asked to input a remote connection and the
+tab will be opened using the provided credentials
 
 ## Configuration
 
@@ -651,10 +625,9 @@ directly via an init file placed in `~/.config/vesper/init.lua`. This will
 expose the full power and all the configurations of vesper. You can check the
 `vesper` api [here](./api.md).
 
-You have examples of configuration for each workflow inside the `examples/`
-folder (for example, `examples/vesper.lua`). You can get any of the example
-files, corresponding to each of the possible workflows, rename it to
-`init.lua` and copy it to `~/.config/vesper` folder.
+You can find an example configuraiton inside the `examples/` folder. You can
+copy this example as `~/.config/vesper/init.lua` and have it as a starting
+point. 
 
 If you don't need to access the full power of `neovim` or you are not familiar
 with `lua` or `neovim`, you can configure vesper via a simple `ini` file format.
@@ -672,7 +645,7 @@ or the action directly, for the `emacs` workflow. For more info see the
 ### Options
 
 * **workflow** - The current workflow (default `vesper`)
-* **modifier** - The default modifier (default `<C-s>`)
+* **modifier** - The default modifier (default `<C-a>`)
 * **link_floats_with_tabs** - If true, then the floats opened in a tab, are
   displayed only in that tab. Otherwise, the floats will be displayed over all
   the tabs (default `false`)
@@ -719,7 +692,7 @@ or the action directly, for the `emacs` workflow. For more info see the
 * **auto_start_logging** If true, then start logging automatically when
   opening a new pane. This option allows you to have as many lines in your
   current scrollback, that you can see at anytime by invoking
-  `edit_scrollback_log` action `<C-s>pe`
+  `edit_scrollback_log` action `<C-a>pe`
 * **modes_cheatsheet_position** The position where to show the cheatsheet
   (`bottom`, `top` or `auto`). Auto means that depending on where the cursor
   is situated when showing the cheatsheet, the window will be displayed top or
@@ -734,12 +707,16 @@ or the action directly, for the `emacs` workflow. For more info see the
   autosave](#autosave) section
 * **undo_restore_cmd** The command to be executed uppon restoring a closed
   tab, split or float (default `cat`). See [undo section](#undo)
+* **auto_scroll** If set to true, when using `vesper` workflow, after pressing
+  the modifier, if then you select something else than a shortcut defined in
+  `modifier` mode `vesper` will automatically switch to `SCROLL/FIND` mode
+  (default `false`)
 
 **Note**:
 
 If you want to have infinite scrolling on your scrollback buffer, set
 `auto_start_logging` to `true`. Whenever you need to access the scrollback
-buffer of any terminal, just do `<C-s>pge`. Or you can set a faster shortcut,
+buffer of any terminal, just do `<C-a>pge`. Or you can set a faster shortcut,
 like this (assuming `vesper` workflow):
 
 ```lua
@@ -751,7 +728,7 @@ vesper.set_key_map('t', '[', '', {
 })
 ```
 
-Then, just like in `tmux`, doing `<C-s>[` will open your scrollback buffer log
+Then, just like in `tmux`, doing `<C-a>[` will open your scrollback buffer log
 in your current editor set by the the `editor` option or the `$EDITOR` variable.
 
 #### Placeholders
@@ -792,9 +769,9 @@ without asking for user input:
 
 `Vesper` can use any shortcuts that `nvim` can use. As a notation, to set up a
 `ctrl`, `alt` of `shift` shortcut, you need to enclose the shortcut between
-`<` and `>`. So, for example, to set a `ctrl` + `s` shortcut, you would
-define it as `<C-s>`. You can see the example files inside the `examples`
-folder.
+`<` and `>`. So, for example, to set a `ctrl` + `a` shortcut, you would
+define it as `<C-a>`. You can see the example config file inside the
+`examples` folder.
 
 In the `ini` file, each shortcut will be defined on a row. For `vesper`, `tmux`
 or `zellij` workflows, the shortcuts are defined starting with the mode,
@@ -839,50 +816,49 @@ require('config').overwrite_default_action('toggle_floats', 'vesper', 'terminal'
 * **select_terminal**: Selects visually one of the existing pane in the current
 session
   - defaults: 
-    + `vesper`: `terminal.select_terminal = St`
+    + `vesper`: `modifier.select_terminal = St`
     + `tmux`: `vesper.select_terminal = St`
-    + `zellij`: `pane.select_terminal = T`
     + `emacs`: `select_terminal = <C-S-t>`
 
 * **select_session**: Selects one existing vesper session
   - defaults: 
-    + `vesper`: `terminal.select_session = Ss`
-    + `tmux`: `vesper.select_session = Ss`
-    + `zellij`: `pane.select_session = S`
+    + `vesper`: `modifier.select_session = Ss`
+    + `tmux`: `modifier.select_session = Ss`
     + `emacs`: `select_session = <C-S-s>`
 
 * **create_tab**: Creates a new tab with a local shell, or with a shell from a
   remote machine, if `VESPER_REMOTE_CONNECTION` variable is set
   - defaults: 
-    + `vesper`: `terminal.create_tab = c`
+    + `vesper`: `modifier.create_tab = c`
     + `vesper`: `tabs.create_tab = c`
-    + `tmux`: `vesper.create_tab = c`
-    + `tmux`: `tabs.create_tab = c`
-    + `zellij`: `tabs.create_tab = c`
+    + `tmux`: `modifier.create_tab = c`
+    + `zellij`: `tabs.create_tab = n`
     + `emacs`: `create_tab = <A-c>`
 
 * **tab_select**: Selects an existing tab. 
   - arguments: The number of the tab to select
   - defaults: 
-    + `vesper`: `terminal.tab_select.n = n` (where n represents the number of
+    + `vesper`: `modifier.tab_select.n = n` (where n represents the number of
       the tab to select)
-    + `tmux`: `vesper.tab_select.n = n` (where n represents the number of the
+    + `tmux`: `modifier.tab_select.n = n` (where n represents the number of the
+      tab to select)
+    + `zellij`: `tabs.tab_select.n = n` (where n represents the number of the
       tab to select)
     + `emacs`: `tab_select.n = <A-n>` (where n represents the number of the
       tab to select)
 
 * **toggle_floats**: Toggle the floats visibility
   - defaults: 
-    + `vesper`: `terminal.toggle_floats = w`
-    + `tmux`: `vesper.toggle_floats = w`
+    + `vesper`: `modifier.toggle_floats = w`
+    + `tmux`: `modifier.toggle_floats = w`
     + `zellij`: `pane.toggle_floats = w`
     + `emacs`: `toggle_floats = <A-w>`
 
 * **enter_mode**: Enter an `vesper` mode
   - arguments: The mode to enter (p or r or s or m or T or n or t or v or P)
   - defaults: 
-    + `vesper`: `terminal.enter_mode.X = X` (where X is one of the p, r, m, s,
-      T, n, v)
+    + `vesper`: `modifier.enter_mode.X = X` (where X is one of the p, r, m, s,
+      T, a, v, P)
     + `vesper`: `resize.enter_mode.t = <cr>`
     + `vesper`: `resize.enter_mode.t = <esc>`
     + `vesper`: `resize.enter_mode.t = i`
@@ -898,55 +874,51 @@ session
     + `vesper`: `tabs.enter_mode.t = <cr>`
     + `vesper`: `tabs.enter_mode.t = <esc>`
     + `vesper`: `tabs.enter_mode.t = i`
-    + `tmux`: `terminal.enter_mode.X = X` (where X is one of the p, r, m, s,
-      T, v)
-    + `tmux`: `resize.enter_mode.t = <cr>`
-    + `tmux`: `resize.enter_mode.t = <esc>`
-    + `tmux`: `resize.enter_mode.t = i`
-    + `tmux`: `pane.enter_mode.t = <cr>`
-    + `tmux`: `pane.enter_mode.t = <esc>`
-    + `tmux`: `pane.enter_mode.t = i`
-    + `tmux`: `move.enter_mode.t = <cr>`
-    + `tmux`: `move.enter_mode.t = <esc>`
-    + `tmux`: `move.enter_mode.t = i`
-    + `tmux`: `split.enter_mode.t = <cr>`
-    + `tmux`: `split.enter_mode.t = <esc>`
-    + `tmux`: `split.enter_mode.t = i`
-    + `tmux`: `tabs.enter_mode.t = <cr>`
-    + `tmux`: `tabs.enter_mode.t = <esc>`
-    + `tmux`: `tabs.enter_mode.t = i`
+    + `tmux`: `modifier.enter_mode.a = a` (enters `SCROLL/FIND` mode)
     + `zellij`: `terminal.enter_mode.p = <C-p>`
-    + `zellij`: `terminal.enter_mode.r = <C-r>`
+    + `zellij`: `terminal.enter_mode.r = <C-n>`
     + `zellij`: `terminal.enter_mode.v = <C-S-v>`
-    + `zellij`: `terminal.enter_mode.s = <C-s>`
-    + `zellij`: `terminal.enter_mode.T = <C-S-t>`
-    + `zellij`: `terminal.enter_mode.n = <C-a>`
-    + `zellij`: `terminal.enter_mode.m = <C-S-m>`
+    + `zellij`: `terminal.enter_mode.T = <C-t>`
+    + `zellij`: `terminal.enter_mode.n = <C-s>`
+    + `zellij`: `terminal.enter_mode.m = <C-h>`
+    + `zellij`: `terminal.enter_mode.P = <C-g>`
+    + `zellij`: `resize.enter_mode.t = <cr>`
+    + `zellij`: `resize.enter_mode.t = <esc>`
+    + `zellij`: `resize.enter_mode.t = i`
+    + `zellij`: `resize.enter_mode.t = <C-n>`
     + `zellij`: `pane.enter_mode.t = <cr>`
     + `zellij`: `pane.enter_mode.t = <esc>`
     + `zellij`: `pane.enter_mode.t = i`
+    + `zellij`: `pane.enter_mode.t = <C-p>`
     + `zellij`: `move.enter_mode.t = <cr>`
     + `zellij`: `move.enter_mode.t = <esc>`
     + `zellij`: `move.enter_mode.t = i`
-    + `zellij`: `split.enter_mode.t = <cr>`
-    + `zellij`: `split.enter_mode.t = <esc>`
-    + `zellij`: `split.enter_mode.t = i`
+    + `zellij`: `move.enter_mode.t = <C-h>`
     + `zellij`: `tabs.enter_mode.t = <cr>`
     + `zellij`: `tabs.enter_mode.t = <esc>`
     + `zellij`: `tabs.enter_mode.t = i`
+    + `zellij`: `tabs.enter_mode.t = <C-t>`
+    + `zellij`: `vesper.enter_mode.t = <cr>`
+    + `zellij`: `vesper.enter_mode.t = <esc>`
+    + `zellij`: `vesper.enter_mode.t = i`
+    + `zellij`: `vesper.enter_mode.t = <C-s>`
+
+* **create_pane**: Creates a new pane (float if the floating panels are
+  visible or embeded otherwise)
+  - defaults: 
+    + `zellij`: `pane.create_float = n`
 
 * **create_float**: Creates a new float with a local shell, or with a shell
   from a remote machine, if the `VESPER_REMOTE_CONNECTION` variable is set
   - defaults: 
-    + `vesper`: `terminal.create_float = f`
-    + `tmux`: `vesper.create_float = f`
-    + `zellij`: `pane.create_float = f`
+    + `vesper`: `modifier.create_float = f`
+    + `tmux`: `modifier.create_float = f`
     + `emacs`: `create_float = <A-f>`
 
 * **disconnect**: Disconnects the current session
   - defaults: 
-    + `vesper`: `terminal.disconnect = d`
-    + `tmux`: `vesper.disconnect = d`
+    + `vesper`: `modifier.disconnect = d`
+    + `tmux`: `modifier.disconnect = d`
     + `zellij`: `terminal.disconnect = <C-d>`
     + `emacs`: `disconnect = <A-d>`
 
@@ -954,8 +926,7 @@ session
   - defaults: 
     + `vesper`: `resize.resize_left = h`
     + `vesper`: `resize.resize_left = <left>`
-    + `tmux`: `resize.resize_left = h`
-    + `tmux`: `resize.resize_left = <left>`
+    + `tmux`: `modifier.resize_left = <C-left>`
     + `zellij`: `resize.resize_left = h`
     + `zellij`: `resize.resize_left = <left>`
     + `emacs`: `resize_left = <C-S-left>`
@@ -964,8 +935,7 @@ session
   - defaults: 
     + `vesper`: `resize.resize_right = l`
     + `vesper`: `resize.resize_right = <right>`
-    + `tmux`: `resize.resize_right = l`
-    + `tmux`: `resize.resize_right = <right>`
+    + `tmux`: `modifier.resize_right = <C-right>`
     + `zellij`: `resize.resize_right = l`
     + `zellij`: `resize.resize_right = <right>`
     + `emacs`: `resize_up = <C-S-right>`
@@ -974,8 +944,7 @@ session
   - defaults: 
     + `vesper`: `resize.resize_up = k`
     + `vesper`: `resize.resize_up = <up>`
-    + `tmux`: `resize.resize_up = k`
-    + `tmux`: `resize.resize_up = <up>`
+    + `tmux`: `modifier.resize_up = <C-up>`
     + `zellij`: `resize.resize_up = k`
     + `zellij`: `resize.resize_up = <up>`
     + `emacs`: `resize_up = <C-S-up>`
@@ -984,8 +953,7 @@ session
   - defaults: 
     + `vesper`: `resize.resize_down = j`
     + `vesper`: `resize.resize_down = <down>`
-    + `tmux`: `resize.resize_down = j`
-    + `tmux`: `resize.resize_down = <down>`
+    + `tmux`: `modifier.resize_down = <C-down>`
     + `zellij`: `resize.resize_down = j`
     + `zellij`: `resize.resize_down = <down>`
     + `emacs`: `resize_up = <C-S-down>`
@@ -994,8 +962,7 @@ session
   - defaults:
     + `vesper`: `pane.select_left = h`
     + `vesper`: `pane.select_left = <left>`
-    + `tmux`: `pane.select_left = h`
-    + `tmux`: `pane.select_left = <left>`
+    + `tmux`: `modifier.select_left = left`
     + `zellij`: `pane.select_left = h`
     + `zellij`: `pane.select_left = <left>`
     + `emacs`: `select_left = <A-left>`
@@ -1004,8 +971,7 @@ session
   - defaults:
     + `vesper`: `pane.select_right = l`
     + `vesper`: `pane.select_right = <right>`
-    + `tmux`: `pane.select_right = l`
-    + `tmux`: `pane.select_right = <right>`
+    + `tmux`: `modifier.select_right = <right>`
     + `zellij`: `pane.select_right = l`
     + `zellij`: `pane.select_right = <right>`
     + `emacs`: `select_right = <A-right>`
@@ -1014,8 +980,7 @@ session
   - defaults:
     + `vesper`: `pane.select_up = k`
     + `vesper`: `pane.select_up = <up>`
-    + `tmux`: `pane.select_up = k`
-    + `tmux`: `pane.select_up = <up>`
+    + `tmux`: `modifier.select_up = <up>`
     + `zellij`: `pane.select_up = k`
     + `zellij`: `pane.select_up = <up>`
     + `emacs`: `select_up = <A-up>`
@@ -1024,8 +989,7 @@ session
   - defaults:
     + `vesper`: `pane.select_down = j`
     + `vesper`: `pane.select_down = <down>`
-    + `tmux`: `pane.select_down = j`
-    + `tmux`: `pane.select_down = <down>`
+    + `tmux`: `modifier.select_down = <down>`
     + `zellij`: `pane.select_down = j`
     + `zellij`: `pane.select_down = <down>`
     + `emacs`: `select_down = <A-down>`
@@ -1037,10 +1001,7 @@ session
     + `vesper`: `move.move_left.5 = <left>`
     + `vesper`: `move.move_left.1 = <C-h>`
     + `vesper`: `move.move_left.1 = <C-left>`
-    + `tmux`: `move.move_left.5 = h`
-    + `tmux`: `move.move_left.5 = <left>`
-    + `tmux`: `move.move_left.1 = <C-h>`
-    + `tmux`: `move.move_left.1 = <C-left>`
+    + `tmux`: `modifier.move_left.5 = <S-left>`
     + `zellij`: `move.move_left.5 = h`
     + `zellij`: `move.move_left.5 = <left>`
     + `zellij`: `move.move_left.1 = <C-h>`
@@ -1054,10 +1015,7 @@ session
     + `vesper`: `move.move_right.5 = <right>`
     + `vesper`: `move.move_right.1 = <C-l>`
     + `vesper`: `move.move_right.1 = <C-right>`
-    + `tmux`: `move.move_right.5 = l`
-    + `tmux`: `move.move_right.5 = <right>`
-    + `tmux`: `move.move_right.1 = <C-l>`
-    + `tmux`: `move.move_right.1 = <C-right>`
+    + `tmux`: `modifier.move_right.5 = <s-right>`
     + `zellij`: `move.move_right.5 = l`
     + `zellij`: `move.move_right.5 = <right>`
     + `zellij`: `move.move_right.1 = <C-l>`
@@ -1071,10 +1029,7 @@ session
     + `vesper`: `move.move_up.5 = <up>`
     + `vesper`: `move.move_up.1 = <C-k>`
     + `vesper`: `move.move_up.1 = <C-up>`
-    + `tmux`: `move.move_up.5 = k`
-    + `tmux`: `move.move_up.5 = <up>`
-    + `tmux`: `move.move_up.1 = <C-k>`
-    + `tmux`: `move.move_up.1 = <C-up>`
+    + `tmux`: `modifier.move_up.5 = <S-up>`
     + `zellij`: `move.move_up.5 = k`
     + `zellij`: `move.move_up.5 = <up>`
     + `zellij`: `move.move_up.1 = <C-k>`
@@ -1088,10 +1043,7 @@ session
     + `vesper`: `move.move_down.5 = <down>`
     + `vesper`: `move.move_down.1 = <C-j>`
     + `vesper`: `move.move_down.1 = <C-down>`
-    + `tmux`: `move.move_down.5 = j`
-    + `tmux`: `move.move_down.5 = <down>`
-    + `tmux`: `move.move_down.1 = <C-j>`
-    + `tmux`: `move.move_down.1 = <C-down>`
+    + `tmux`: `modifier.move_down.5 = <S-down>`
     + `zellij`: `move.move_down.5 = j`
     + `zellij`: `move.move_down.5 = <down>`
     + `zellij`: `move.move_down.1 = <C-j>`
@@ -1106,12 +1058,8 @@ session
     + `vesper`: `pane.split_left = <S-left>`
     + `vesper`: `split.split_left = h`
     + `vesper`: `split.split_left = <left>`
-    + `tmux`: `pane.split_left = H`
-    + `tmux`: `pane.split_left = <S-left>`
-    + `tmux`: `split.split_left = h`
-    + `tmux`: `split.split_left = <left>`
-    + `zellij`: `split.split_left = h`
-    + `zellij`: `split.split_left = <left>`
+    + `tmux`: `modifier.split_left = |`
+    + `zellij`: `pane.split_left = L`
     + `emacs`: `split_left = <C-left>`
 
 * **split_right**: Splits the currently selected tab to the right opening a
@@ -1122,12 +1070,8 @@ session
     + `vesper`: `pane.split_right = <S-right>`
     + `vesper`: `split.split_right = l`
     + `vesper`: `split.split_right = <right>`
-    + `tmux`: `pane.split_right = H`
-    + `tmux`: `pane.split_right = <S-right>`
-    + `tmux`: `split.split_right = h`
-    + `tmux`: `split.split_right = <right>`
-    + `zellij`: `split.split_right = h`
-    + `zellij`: `split.split_right = <right>`
+    + `tmux`: `modifier.split_right = %`
+    + `zellij`: `pane.split_right = r`
     + `emacs`: `split_right = <C-right>`
 
 * **split_up**: Splits the currently selected tab upwards opening a local
@@ -1138,12 +1082,8 @@ session
     + `vesper`: `pane.split_up = <S-up>`
     + `vesper`: `split.split_up = k`
     + `vesper`: `split.split_up = <up>`
-    + `tmux`: `pane.split_up = K`
-    + `tmux`: `pane.split_up = <S-up>`
-    + `tmux`: `split.split_up = k`
-    + `tmux`: `split.split_up = <up>`
-    + `zellij`: `split.split_up = k`
-    + `zellij`: `split.split_up = <up>`
+    + `tmux`: `modifier.split_up = ^`
+    + `zellij`: `pane.split_up = U`
     + `emacs`: `split_up = <C-up>`
 
 * **split_down**: Splits the currently selected tab downwards a local shell,
@@ -1154,20 +1094,15 @@ session
     + `vesper`: `pane.split_down = <S-down>`
     + `vesper`: `split.split_down = j`
     + `vesper`: `split.split_down = <down>`
-    + `tmux`: `pane.split_down = J`
-    + `tmux`: `pane.split_down = <S-down>`
-    + `tmux`: `split.split_down = j`
-    + `tmux`: `split.split_down = <down>`
-    + `zellij`: `split.split_down = j`
-    + `zellij`: `split.split_down = <down>`
+    + `tmux`: `modifier.split_down = "`
+    + `zellij`: `pane.split_down = d`
     + `emacs`: `split_down = <C-down>`
 
 * **move_top**: Moves the currently selected float to the top of the screen
   - defaults:
     + `vesper`: `move.move_top = K`
     + `vesper`: `move.move_top = <S-up>`
-    + `tmux`: `move.move_top = K`
-    + `tmux`: `move.move_top = <S-up>`
+    + `tmux`: `modifier.move_top = <A-up>`
     + `zellij`: `move.move_top = K`
     + `zellij`: `move.move_top = <S-up>`
     + `emacs`: `move_top = <C-A-n>`
@@ -1176,8 +1111,7 @@ session
   - defaults:
     + `vesper`: `move.move_bottom = J`
     + `vesper`: `move.move_bottom = <S-down>`
-    + `tmux`: `move.move_bottom = J`
-    + `tmux`: `move.move_bottom = <S-down>`
+    + `tmux`: `modifier.move_bottom = <a-down>`
     + `zellij`: `move.move_bottom = J`
     + `zellij`: `move.move_bottom = <S-down>`
     + `emacs`: `move_bottom = <C-A-s>`
@@ -1186,8 +1120,7 @@ session
   - defaults:
     + `vesper`: `move.move_start = H`
     + `vesper`: `move.move_start = <S-left>`
-    + `tmux`: `move.move_start = H`
-    + `tmux`: `move.move_start = <S-left>`
+    + `tmux`: `modifier.move_start = <a-left>`
     + `zellij`: `move.move_start = H`
     + `zellij`: `move.move_start = <S-left>`
     + `emacs`: `move_start = <C-A-w>`
@@ -1196,8 +1129,7 @@ session
   - defaults:
     + `vesper`: `move.move_end = L`
     + `vesper`: `move.move_end = <S-right>`
-    + `tmux`: `move.move_end = L`
-    + `tmux`: `move.move_end = <S-right>`
+    + `tmux`: `modifier.move_end = <a-right>`
     + `zellij`: `move.move_end = L`
     + `zellij`: `move.move_end = <S-right>`
     + `emacs`: `move_end = <C-A-e>`
@@ -1206,8 +1138,7 @@ session
   - defaults:
     + `vesper`: `tabs.tab_select_first = H`
     + `vesper`: `tabs.tab_select_first = <S-left>`
-    + `tmux`: `tabs.tab_select_first = H`
-    + `tmux`: `tabs.tab_select_first = <S-left>`
+    + `tmux`: `modifier.tab_select_first = 0`
     + `zellij`: `tabs.tab_select_first = H`
     + `zellij`: `tabs.tab_select_first = <S-left>`
     + `emacs`: `tab_select_first = <C-x><S-left>`
@@ -1216,8 +1147,7 @@ session
   - defaults:
     + `vesper`: `tabs.tab_select_last = L`
     + `vesper`: `tabs.tab_select_last = <S-right>`
-    + `tmux`: `tabs.tab_select_last = L`
-    + `tmux`: `tabs.tab_select_last = <S-right>`
+    + `tmux`: `modifier.tab_select_last = $`
     + `zellij`: `tabs.tab_select_last = L`
     + `zellij`: `tabs.tab_select_last = <S-right>`
     + `emacs`: `tab_select_last = <C-x><S-right>`
@@ -1226,8 +1156,6 @@ session
   - defaults:
     + `vesper`: `tabs.tab_select_previous = h`
     + `vesper`: `tabs.tab_select_previous = <left>`
-    + `tmux`: `tabs.tab_select_previous = h`
-    + `tmux`: `tabs.tab_select_previous = <left>`
     + `zellij`: `tabs.tab_select_previous = h`
     + `zellij`: `tabs.tab_select_previous = <left>`
     + `emacs`: `tab_select_previous = <C-x><left>`
@@ -1236,8 +1164,6 @@ session
   - defaults:
     + `vesper`: `tabs.tab_select_next = l`
     + `vesper`: `tabs.tab_select_next = <right>`
-    + `tmux`: `tabs.tab_select_next = l`
-    + `tmux`: `tabs.tab_select_next = <right>`
     + `zellij`: `tabs.tab_select_next = l`
     + `zellij`: `tabs.tab_select_next = <right>`
     + `emacs`: `tab_select_next = <C-x><right>`
@@ -1255,45 +1181,43 @@ session
 * **paste**: Pastes the content of the clipboard into the currently selected
   pane
   - defaults:
-    + `vesper`: `terminal.paste = pp`
+    + `vesper`: `modifier.paste = pp`
     + `vesper`: `terminal.paste = <C-v>`
+    + `tmux`: `modifier.paste = pp`
     + `tmux`: `terminal.paste = <C-v>`
     + `zellij`: `terminal.paste = <C-v>`
     + `emacs`: `paste = <C-v>`
 
 * **passthrough**: Toggles the passthrough mode.
   - defaults:
-    + `vesper`: `terminal.passthrough = N`
-    + `tmux`: `terminal.passthrough = N`
+    + `vesper`: `modifier.passthrough = N`
     + `emacs`: `passthrough = <A-n>`
 
 * **rotate_panel**: Rotates the current panel (by doing `wincmd x`)
   - defaults:
     + `vesper`: `pane.rotate_panel = x`
-    + `tmux`: `pane.rotate_panel = x`
+    + `tmux`: `modifier.rotate_panel = x`
     + `zellij`: `pane.rotate_panel = x`
     + `emacs`: `rotate_panel = <C-x>x`
 
 * **rename_tab**: Renames the currently selected tab.
   - defaults:
     + `vesper`: `tabs.rename_tab = r`
-    + `tmux`: `tabs.rename_tab = r`
+    + `tmux`: `modifier.rename_tab = <C-r>`
     + `zellij`: `tabs.rename_tab = r`
     + `emacs`: `rename_tab = <C-x><C-r>`
 
 * **edit_scrollback**: Edits the scrollback of the currently selected terminal
   - defaults:
     + `vesper`: `pane.edit_scrollback = e`
-    + `tmux`: `pane.edit_scrollback = e`
-    + `zellij`: `pane.edit_scrollback = e`
+    + `tmux`: `modifier.edit_scrollback = <C-e>`
+    + `zellij`: `vesper.edit_scrollback = e`
     + `emacs`: `edit_scrollback = <C-x><C-e>`
 
-* **edit_scrollback**: Edits the scrollback log of the currently selected
+* **edit_scrollback_log**: Edits the scrollback log of the currently selected
   terminal (if started with `VesperStartLogging`)
   - defaults:
     + `vesper`: `pane.edit_scrollback = ge`
-    + `tmux`: `pane.edit_scrollback = ge`
-    + `zellij`: `pane.edit_scrollback = ge`
     + `emacs`: `edit_scrollback = <C-x>ge`
 
 * **show_mode_cheatsheet**: Toggles the cheatsheet of the vesper shortcuts for
@@ -1304,11 +1228,6 @@ session
     + `vesper`: `move.show_mode_cheatsheet = <C-o>`
     + `vesper`: `split.show_mode_cheatsheet = <C-o>`
     + `vesper`: `tabs.show_mode_cheatsheet = <C-o>`
-    + `tmux`: `resize.show_mode_cheatsheet = <C-o>`
-    + `tmux`: `pane.show_mode_cheatsheet = <C-o>`
-    + `tmux`: `move.show_mode_cheatsheet = <C-o>`
-    + `tmux`: `split.show_mode_cheatsheet = <C-o>`
-    + `tmux`: `tabs.show_mode_cheatsheet = <C-o>`
     + `zellij`: `resize.show_mode_cheatsheet = <C-o>`
     + `zellij`: `pane.show_mode_cheatsheet = <C-o>`
     + `zellij`: `move.show_mode_cheatsheet = <C-o>`
@@ -1318,30 +1237,50 @@ session
 * **rename_float**: Renames the currently selected floating pane
   - defaults:
     + `vesper`: `pane.rename_float = r`
-    + `tmux`: `pane.rename_float = r`
-    + `zellij`: `pane.rename_float = r`
+    + `tmux`: `modifier.rename_float = <C-s-r>`
     + `emacs`: `rename_float = <C-x><C-f>`
+
+* **rename_current**: Renames the current pane, if floating panes are visible,
+  or tab otherwise.
+  - defaults:
+    + `zellij`: `pane.rename_current = c`
 
 * **remote_scroll**: Puts a remote pane in scrolling mode. 
   - defaults: 
-    + `vesper`: `terminal.remote_scroll = [`
-    + `tmux`: `terminal.remote_scroll = [`
-    + `zellij`: `terminal.remote_scroll = [`
+    + `vesper`: `modifier.remote_scroll = [`
     + `emacs`: `remote_scroll = <C-x>[`
 
 * **undo**: Restores the last closed tab, split or float.
   - defaults: 
-    + `vesper`: `terminal.undo = u`
-    + `tmux`: `terminal.undo = u`
+    + `vesper`: `modifier.undo = u`
+    + `tmux`: `modifier.undo = u`
     + `zellij`: `tabs.undo = u`
     + `emacs`: `undo = <C-z>`
 
 * **toggle_fullscreen**: Toggles the floating pane full screen state.
   - defaults:
-    + `vesper`: `terminal.toggle_fullscreen = F`
-    + `tmux`: `terminal.toggle_fullscreen = F`
+    + `vesper`: `modifier.toggle_fullscreen = F`
+    + `tmux`: `modifier.toggle_fullscreen = F`
     + `zellij`: `pane.toggle_fullscreen = F`
     + `emacs`: `toggle_fullscreen = <F11>`
+
+* **starts_search**: Starts a new search in the scrollback buffer.
+  - defaults:
+    + `vesper`: `vesper.start_search = /`
+    + `tmux`: `vesper.start_search = /`
+    + `zellij`: `vesper.start_search = /`
+    + `emacs`: `start_search = <C-S-/>`
+
+* **select_command**: Opens the command pallette to select a vesper command.
+  - defaults:
+    + `vesper`: `modifier.select_command = :`
+    + `tmux`: `modifier.select_command = :`
+    + `zellij`: `terminal.select_command = <C-;>`
+    + `emacs`: `select_command = <C-:>`
+
+* **vesper_quit**: Quits vesper saving the session if `autosave` option is set
+  - defaults:
+    + `zellij`: `terminal.vesper_quit = <C-q>`
 
 ## Environment
 
@@ -1362,7 +1301,7 @@ For example:
 ...
 
 [Environment]
-DISPLAY = xterm-256color
+DISPLAY = :3
 PATH = $PATH:~/bin
 ```
 
@@ -1401,7 +1340,7 @@ done via the `clipboard` setting. You can see the meaning of it and also
 possible options for possible operating systems
 [here](https://neovim.io/doc/user/options.html#'clipboard').
 
-For `nvim` users, you also have `<C-s>pp` for example to paste in `TERMINAL`
+For `nvim` users, you also have `<C-a>pp` for example to paste in `TERMINAL`
 mode in `vesper` workflow or `y` in `VISUAL` mode for multiple workflows. 
 
 Whenever you select a text with the mouse, you can then click `<C-c>` and
@@ -1429,7 +1368,7 @@ connection to which he or she wants to connect.
 The remote connection has to respect the following format: 
 
 ```
-<provider>://<path-to-executable>[@user@host]
+<provider>://user@host/<path-to-executable>
 ```
 
 * `provider` represents one of the possible providers (see
@@ -1442,7 +1381,7 @@ The remote connection has to respect the following format:
 Let's assume we want to open a remote tab at `my-server.com` where we identify
 with the user `john.doe`. On the server `my-server.com` `vesper` is installed
 in the folder `~/.local/bin`. In this case, the remote connection will be
-`vesper://~/.local/bin/vesper@john.doe@my-server.com`.
+`vesper://john.doe@my-server.com/~/.local/bin/vesper`
 
 **Note**: There is no action to open a pane remote. If you want to have
 shortcuts for opening remote panes you will need to use an `init.lua` in the
@@ -1469,43 +1408,48 @@ replaced by the dialog mentioned above. You will have then to also press `q`
 if you want to really close the pane as to remove the pane from the layout
 also.
 
-#### Scrolling
-
-Since a remote pane is embedded in another instance provided by another app
-(usually an `vesper` on a remote machine), the scrolling has to be handled by
-that app. So, by putting the local `vesper` in normal mode, will not scroll to
-the buffer content. You need to put the remote pane in scrolling mode. This
-means that you need to signal the remote `vesper` that you want to scroll. You
-can do this by calling the action `remote_scroll` (default shortcut `<C-s>[`
-in `vesper` workflow) or by calling directly the function
-`remote_enter_scroll_mode` (`require('vesper').remote_enter_scroll_mode()`).
-
 #### Remote providers
 
-Since the remote connection has to only provide means of scrolling in the back
-buffer and to keep the session in case the connection is lost to the server,
-`vesper` can communicate with several software on the remote machine. Of course,
-the best way to open remote panes is by having your local `vesper` communicate
-with another `vesper` instance on the remote server. However, if you cannot
-install `vesper` on the remote server, but you have there for example `abduco`
-or `dtach`, you can have `vesper` communicating with these, rather than `vesper`. 
+Since the remote connection has to only provide means of retrieving the
+scrollback buffer and to keep the session in case the connection is lost to
+the server, `vesper` can communicate with several software on the remote
+machine. Of course, the best way to open remote panes is by having your local
+`vesper` communicate with another `vesper` instance on the remote server.
+However, if you cannot install `vesper` on the remote server, but you have
+there for example `abduco` or `dtach`, you can have `vesper` communicating
+with these, rather than `vesper`. 
 
 **Note**: the scrolling provided by `dtach` is lost after you disconnect and
-reconnect, while `abduco` does not offer any scrolling. In the future, `vesper`
-will be able to communicate with `tmux` and `gnu screen` for a proper
-scrolling with other providers than `vesper`. You can use any of these providers
-by specifing them in the remote connection.
+reconnect, while `abduco` does not offer any scrolling.
 
 *dtach*:
 
 ```
-dtach:///usr/bin/dtach@john.doe@my-server.com
+dtach://john.doe@my-server.com/usr/bin/dtach
 ```
 
 *abduco*:
 
 ```
-abduco:///usr/bin/abduco@john.doe@my-server.com
+abduco://john.doe@my-server.com/usr/bin/abduco
+```
+
+*tmux*:
+
+```
+tmux://john.doe@my-server.com/tmux
+```
+
+*zellij*:
+
+```
+zellij://john.doe@my-server.com/zellij
+```
+
+*screen*:
+
+```
+screen://john.doe@my-server.com/screen
 ```
 
 ## Passthrough mode
@@ -1515,8 +1459,8 @@ shortcut is valid anymore. In order to leave this mode, you need to press the
 `passthrough_escape` (default `<C-\><C-s>`)
 
 This solves the issue of running an `vesper` session inside another `vesper`
-session. Clicking `<C-s>P` will put you in passthrough mode. So, if for
-example you are in your main host session, you click `<C-s>P` then all the
+session. Clicking `<C-a>P` will put you in passthrough mode. So, if for
+example you are in your main host session, you click `<C-a>P` then all the
 controls are passed through the first session down to the second session.
 
 In order to escape back to the host main session, by default you have to press
@@ -1526,39 +1470,38 @@ will send the control back to the host main session.
 ## Session support
 
 `Vesper` has very powerfull options to save and restore a session. By invoking
-the vesper command `VesperSaveLayout`, your layout will be saved in the selected
+the vesper command `SaveLayout`, your layout will be saved in the selected
 file. This means all the floats and the splits and the tabs. 
 
-By calling `VesperRestoreLayout`, the current layout will be overriten by the
+By calling `RestoreLayout`, the current layout will be overriten by the
 layout saved in the file. This means all your current tabs, splits and floats
 will be closed and the tabs, splits and floats inside the layout file will be
 re-created.
 
 If you also want to save the commands running in a pane, you have two options. 
 
-#### VesperSetCmd
+#### SetCmd
 
-You can call the command `VesperSetCmd`. This variable will be saved together
-with the layout. When `VesperRestoreLayout` is called, then the command saved in
-the `VesperSetCmd` will be sent to the same pane (float or not, in a split or
-not). 
+You can call the command `SetCmd`. This variable will be saved together with
+the layout. When `RestoreLayout` is called, then the command saved in the
+`SetCmd` will be sent to the same pane (float or tab or split). 
 
 **Note**: The command will not be executed if the restored pane is a remote
 pane.
 
-#### VesperSetWinId
+#### SetWinId
 
 If you are used to the way `neovim` works and with `lua`, then you can use
-instead `VesperSetWinId`. This will set a variable identifier on the currently
+instead `SetWinId`. This will set a variable identifier on the currently
 selected pane that will be saved together with the layout. 
 
-To restore the layout, instead of calling the `VesperRestoreLayout` command, you
+To restore the layout, instead of calling the `RestoreLayout` command, you
 can call in a lua file the `vesper.restore_layout` function, which takes as a
 first argument the file where the layout is saved and as a second argument a
 callback with 2 parameters: the vesper terminal structure and this id. This
 gives you a much more flexibility to set up your pane upon a layout restore.
 
-For example: `:VesperSaveLayout<cr>`, and then
+For example: `:SaveLayout<cr>`, and then
 `~/vesper-sessions/my-saved-session.layout<cr>`. This will save the current
 layout in the `~/vesper-sessions/my-saved-session.layout` file.
 
@@ -1576,12 +1519,12 @@ require('vesper').restore_layout('~/vesper-sessions/my-saved-session.layout', fu
 end)
 ```
 
-Then, in `vesper`, you can do: `<C-s>n` (this will put vesper in `VESPER` mode) and
-then `:luafile ~/tmp/my-saved-session.lua<cr>`. This will run the above
-script, which in turn, for the pane with the id `vifm` (split, tab or float)
-will execute `vifm<cr>`, wait one second for `vifm` to open and then execute
-`:session my-vifm-session<cr>`. So, this should restore your `vifm` pane and
-inside this pane, should also restore your saved `vifm` session.
+Then, in `vesper`, you can do: `<C-a>:` to open the command palette and then
+`luafile ~/tmp/my-saved-session.lua<cr>` in the command palette. This will run
+the above script, which in turn, for the pane with the id `vifm` (split, tab
+or float) will execute `vifm<cr>`, wait one second for `vifm` to open and then
+execute `:session my-vifm-session<cr>`. So, this should restore your `vifm`
+pane and inside this pane, should also restore your saved `vifm` session.
 
 **Note**: Be carefull when using the callback with a remote buffer. In case of
 a remote buffer, this callback will be called before the buffer is
@@ -1630,9 +1573,9 @@ This allows you to script your session restore via `lua`.
 
 ## Undo
 
-`Vesper` keeps a history of closed tabs, floats or splits. After closing a pane,
-you can call `VesperUndo` command or click `<C-s>u` (for `vesper` workflow) and
-the last closed pane will be restored.
+`Vesper` keeps a history of closed tabs, floats or splits. After closing a
+pane, you can call `Undo` command or click `<C-a>u` (for `vesper` workflow)
+and the last closed pane will be restored.
 
 The content of the terminal will be restored by executing the
 `undo_restore_cmd` command after restore. If you don't want the content
@@ -1684,7 +1627,7 @@ issue.
 ## Cheatsheet
 for vesper workflow only.
 
-__Modifier M__: `<C-s>`
+__Modifier M__: `<C-a>`
 
 ### Session
 
@@ -1732,12 +1675,17 @@ direction
 - move float: M `m`, then one of `h i j k` to move into a certain direction.
 `ESC` to exit.  
 
-### Vesper mode
+### Scroll/find mode
 
 - M `n` to activate  
   - you interact automatically with vesper.  
-  - You can click on : and a prompt will appear on top of the status bar.  
   - From Vesper mode hit `i` for Terminal mode or `v` for visual mode
   - If you type Vesper (notice the capital A) and then you click tab, you will
   see a list of all the possible commands you can send to vesper.
   [Command reference](https://github.com/cosminadrianpopescu/azul?tab=readme-ov-file#commands)  
+
+### Command palette
+
+- M `:` to activate
+  - You will see a list of vesper commands. You can find a reference
+    [here](https://github.com/cosminadrianpopescu/azul?tab=readme-ov-file#commands)  
